@@ -6,6 +6,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.autojs.plugin.jvmsource.api.AutoJsJvmEntry
 import org.autojs.plugin.jvmsource.api.JvmAppApi
 import org.autojs.plugin.jvmsource.api.JvmCancellation
+import org.autojs.plugin.jvmsource.api.JvmConsoleApi
 import org.autojs.plugin.jvmsource.api.JvmDexRuntimeProfile
 import org.autojs.plugin.jvmsource.api.JvmScriptContext
 import org.autojs.plugin.jvmsource.api.JvmSourceContract
@@ -29,7 +30,7 @@ class JavaProviderPipelineInstrumentedTest {
     fun ecjD8DexValidationAndEntryInvocationRunOnAndroid() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val environment = JavaProviderEnvironment.get(context)
-        PrivateSessionWorkspace.create(context).use { workspace ->
+        PrivateSessionWorkspace.create(context, "Main.java").use { workspace ->
             FileOutputStream(workspace.sourceFile).use { output ->
                 output.write(SOURCE.toByteArray(Charsets.UTF_8))
                 output.fd.sync()
@@ -109,7 +110,13 @@ class JavaProviderPipelineInstrumentedTest {
 
         override fun app(): JvmAppApi = app
 
+        override fun console(): JvmConsoleApi = error("The internal smoke source must not use console")
+
         override fun cancellation(): JvmCancellation = cancellation
+
+        override fun sleep(millis: Long) = error("The internal smoke source must not sleep")
+
+        override fun toast(message: String) = error("The internal smoke source must not show toast")
     }
 
     private companion object {

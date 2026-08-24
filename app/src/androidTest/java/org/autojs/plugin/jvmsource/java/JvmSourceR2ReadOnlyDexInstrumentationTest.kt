@@ -233,7 +233,7 @@ class JvmSourceR2ReadOnlyDexInstrumentationTest {
 
     private fun buildRealDex(context: android.content.Context): ByteArray {
         val environment = JavaProviderEnvironment.get(context)
-        return PrivateSessionWorkspace.create(context).use { workspace ->
+        return PrivateSessionWorkspace.create(context, "Main.java").use { workspace ->
             workspace.sourceFile.writeText(SOURCE, Charsets.UTF_8)
             val ecj = EcjJavaCompiler(environment.compilerClasspath).compile(
                 workspace.sourceFile,

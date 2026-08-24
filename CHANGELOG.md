@@ -11,6 +11,8 @@ with an optional milestone suffix; Android package builds are tracked separately
 - Added PowerShell and POSIX-shell offline pre-push verification entry points.
 - Added a Chinese Java Context API guide covering the source profile, every Entry API 2 method,
   return-value types, resource limits, cancellation, diagnostics, and error semantics.
+- Added cancellation, return-value, compiler-error, and result-limit samples with an automated
+  provider pipeline suite verified on API 24 and API 37 loader branches.
 
 ## [0.3.0-m5] - 2026-08-25
 

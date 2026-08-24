@@ -47,6 +47,10 @@ public final class Main implements AutoJsJvmEntry {
 `console().log/error` is streamed line by line while the worker is running. `sleep` is interrupted by
 session cancellation, and `toast` is an explicitly granted host bridge capability.
 
+More samples cover cancellation, every supported return-value family, sanitized compiler errors,
+and result-size rejection. Their expected output and API 24/API 37 device evidence are recorded in
+the [sample guide](samples/README.zh-CN.md).
+
 ## Versioning
 
 `VERSION_NAME` follows SemVer with an optional milestone suffix (currently `0.3.0-m5`), while

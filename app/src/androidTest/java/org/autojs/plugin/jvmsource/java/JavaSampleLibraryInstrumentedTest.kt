@@ -1,0 +1,301 @@
+package org.autojs.plugin.jvmsource.java
+
+import android.os.ParcelFileDescriptor
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import org.autojs.plugin.jvmsource.api.AutoJsJvmEntry
+import org.autojs.plugin.jvmsource.api.IJvmHostBridge
+import org.autojs.plugin.jvmsource.api.IJvmHostBridgeCallback
+import org.autojs.plugin.jvmsource.api.JvmAppApi
+import org.autojs.plugin.jvmsource.api.JvmCancellation
+import org.autojs.plugin.jvmsource.api.JvmCancellationException
+import org.autojs.plugin.jvmsource.api.JvmCancellationReason
+import org.autojs.plugin.jvmsource.api.JvmConsoleApi
+import org.autojs.plugin.jvmsource.api.JvmProtocolVersion
+import org.autojs.plugin.jvmsource.api.JvmRequestId
+import org.autojs.plugin.jvmsource.api.JvmScriptCapability
+import org.autojs.plugin.jvmsource.api.JvmScriptContext
+import org.autojs.plugin.jvmsource.api.JvmSha256
+import org.autojs.plugin.jvmsource.api.JvmSourceContract
+import org.autojs.plugin.jvmsource.api.JvmSourceErrorCode
+import org.autojs.plugin.jvmsource.api.JvmSourceLanguage
+import org.autojs.plugin.jvmsource.api.JvmSourceRequest
+import org.autojs.plugin.jvmsource.java.worker.RemoteJvmScriptContext
+import org.autojs.plugin.jvmsource.java.worker.WorkerCancellation
+import org.autojs.plugin.jvmsource.java.worker.WorkerDexLoader
+import org.autojs.plugin.jvmsource.java.worker.WorkerEntryFactory
+import org.autojs.plugin.jvmsource.java.worker.WorkerJsonValue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.io.ByteArrayOutputStream
+import java.io.FileOutputStream
+import java.io.PrintStream
+import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
+
+/**
+ * Device evidence for repository samples. Canonical host-to-provider Binder evidence remains in the
+ * host repository; this suite exercises the real provider compiler, verifier, ART loader, context,
+ * cancellation, and result encoder without weakening the production caller boundary.
+ */
+@RunWith(AndroidJUnit4::class)
+class JavaSampleLibraryInstrumentedTest {
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
+    private val targetContext = instrumentation.targetContext.applicationContext
+    private val environment by lazy { JavaProviderEnvironment.get(targetContext) }
+
+    @Test
+    fun returnValuesSampleRunsThroughArtAndEncodesTheDocumentedJson() {
+        withCompiledEntry(RETURN_VALUES_SAMPLE) { entry, _ ->
+            assertEquals(EXPECTED_RETURN_JSON, WorkerJsonValue.encode(entry.run(NoCallsContext)))
+        }
+    }
+
+    @Test
+    fun cancellationSampleSleepIsInterruptedBeforeUnexpectedCompletion() {
+        withCompiledEntry(CANCELLATION_SAMPLE) { entry, sourceBytes ->
+            val stdout = LineSignalingOutputStream()
+            val stderr = ByteArrayOutputStream()
+            val cancellation = WorkerCancellation()
+            val failure = AtomicReference<Throwable?>()
+            val finished = CountDownLatch(1)
+            val context = RemoteJvmScriptContext(
+                request = request(
+                    sourceBytes,
+                    listOf(JvmScriptCapability.CONSOLE_STREAM, JvmScriptCapability.SLEEP),
+                ),
+                bridge = RejectingHostBridge,
+                workerCancellation = cancellation,
+                expectedCompilerPid = 1,
+                expectedCompilerUid = 1,
+                stdout = PrintStream(stdout, true, Charsets.UTF_8.name()),
+                stderr = PrintStream(stderr, true, Charsets.UTF_8.name()),
+            )
+            val executionThread = Thread {
+                cancellation.attach(Thread.currentThread())
+                try {
+                    entry.run(context)
+                } catch (error: Throwable) {
+                    failure.set(error)
+                } finally {
+                    finished.countDown()
+                }
+            }
+
+            executionThread.start()
+            assertTrue("Cancellation sample did not reach its sleep", stdout.firstLine.await(5, TimeUnit.SECONDS))
+            cancellation.cancel(JvmCancellationReason.REQUESTED)
+            assertTrue(cancellation.isCancellationRequested())
+            assertTrue("Cancellation sample did not stop", finished.await(5, TimeUnit.SECONDS))
+            executionThread.join(5_000L)
+
+            assertFalse(executionThread.isAlive)
+            assertTrue(failure.get() is JvmCancellationException)
+            val stdoutText = stdout.toString(Charsets.UTF_8.name())
+            assertEquals("cancellation sample: sleeping" + System.lineSeparator(), stdoutText)
+            assertFalse(stdoutText.contains("unexpected completion"))
+            assertEquals("", stderr.toString(Charsets.UTF_8.name()))
+        }
+    }
+
+    @Test
+    fun compileErrorSampleProducesTheDocumentedSafeDiagnostic() {
+        val sourceBytes = sampleBytes(COMPILE_ERROR_SAMPLE)
+        PrivateSessionWorkspace.create(targetContext, "Main.java").use { workspace ->
+            writeSource(workspace, sourceBytes)
+            val ecj = EcjJavaCompiler(environment.compilerClasspath).compile(
+                sourceFile = workspace.sourceFile,
+                outputDirectory = workspace.classesDirectory,
+                diagnosticByteLimit = JvmSourceContract.MAX_DIAGNOSTIC_BYTES,
+                ensureActive = {},
+            )
+            assertFalse("The intentional compile-error sample unexpectedly compiled", ecj.succeeded)
+            val diagnostic = EcjDiagnosticSanitizer.sanitize(
+                raw = ecj.diagnostics,
+                succeeded = ecj.succeeded,
+                byteLimit = JvmSourceContract.MAX_DIAGNOSTIC_BYTES,
+                privateFiles = listOf(
+                    workspace.classesDirectory,
+                    workspace.programJar,
+                    workspace.d8OutputDirectory,
+                    environment.compilerClasspath.androidJar,
+                    environment.compilerClasspath.entryApiJar,
+                ),
+                sourceFile = workspace.sourceFile,
+                sourceFileName = "Main.java",
+            )
+            assertNotNull(diagnostic)
+            val safeDiagnostic = checkNotNull(diagnostic)
+            assertEquals("ECJ_ERROR", safeDiagnostic.code)
+            assertEquals(7, safeDiagnostic.line)
+            assertTrue(safeDiagnostic.column != null && safeDiagnostic.column!! > 0)
+            assertTrue(safeDiagnostic.message.contains("missingSymbol"))
+            assertFalse(safeDiagnostic.message.contains(checkNotNull(workspace.sourceFile.parentFile).absolutePath))
+        }
+    }
+
+    @Test
+    fun resultLimitSampleRunsButIsRejectedByTheJsonBudget() {
+        withCompiledEntry(RESULT_LIMIT_SAMPLE) { entry, _ ->
+            val error = assertThrows(JavaProviderFailure::class.java) {
+                WorkerJsonValue.encode(entry.run(NoCallsContext))
+            }
+            assertEquals(JvmSourceErrorCode.EXECUTION_FAILED, error.code)
+        }
+    }
+
+    private fun <T> withCompiledEntry(
+        sampleName: String,
+        block: (AutoJsJvmEntry, ByteArray) -> T,
+    ): T {
+        val sourceBytes = sampleBytes(sampleName)
+        return PrivateSessionWorkspace.create(targetContext, "Main.java").use { workspace ->
+            writeSource(workspace, sourceBytes)
+            val ecj = EcjJavaCompiler(environment.compilerClasspath).compile(
+                sourceFile = workspace.sourceFile,
+                outputDirectory = workspace.classesDirectory,
+                diagnosticByteLimit = JvmSourceContract.MAX_DIAGNOSTIC_BYTES,
+                ensureActive = {},
+            )
+            assertTrue("ECJ failed for " + sampleName + ": " + ecj.diagnostics, ecj.succeeded)
+            val classes = UserClassJarWriter.write(
+                workspace.classesDirectory,
+                workspace.programJar,
+            )
+            val dexFile = D8JavaCompiler(environment.d8RuntimeLibraries).compile(
+                programJar = workspace.programJar,
+                outputDirectory = workspace.d8OutputDirectory,
+                minApi = JvmSourceContract.MIN_ANDROID_API,
+                ensureActive = {},
+            )
+            val dexIdentity = ProviderDigests.file(
+                dexFile,
+                JvmSourceContract.MAX_DEX_ARTIFACT_BYTES,
+            )
+            assertTrue("Generated DEX could not be made read-only", dexFile.setReadOnly())
+            val loader = WorkerDexLoader(targetContext)
+            val validated = loader.validateStructure(
+                descriptor = ParcelFileDescriptor.open(dexFile, ParcelFileDescriptor.MODE_READ_ONLY),
+                expectedSizeBytes = dexIdentity.sizeBytes,
+                expectedSha256 = dexIdentity.sha256,
+                expectedClassDescriptors = classes.dexDescriptors,
+                requestMinApi = JvmSourceContract.MIN_ANDROID_API,
+                ensureActive = {},
+            )
+            loader.createClassLoader(
+                validated = validated,
+                generation = 1L,
+                requestId = UUID.randomUUID().toString(),
+                parent = AutoJsJvmEntry::class.java.classLoader!!,
+            ).use { loaded ->
+                val entry = WorkerEntryFactory.instantiate(
+                    WorkerEntryFactory.loadFromArt(loaded.classLoader),
+                )
+                block(entry, sourceBytes)
+            }
+        }
+    }
+
+    private fun sampleBytes(name: String): ByteArray =
+        instrumentation.context.assets.open(name).use { it.readBytes() }
+
+    private fun writeSource(workspace: PrivateSessionWorkspace, bytes: ByteArray) {
+        FileOutputStream(workspace.sourceFile).use { output ->
+            output.write(bytes)
+            output.fd.sync()
+        }
+    }
+
+    private fun request(source: ByteArray, capabilities: List<JvmScriptCapability>) =
+        JvmSourceRequest(
+            requestId = JvmRequestId.fromUuid(UUID.randomUUID()),
+            protocolVersion = JvmProtocolVersion(
+                JvmSourceContract.PROTOCOL_MAJOR,
+                JvmSourceContract.PROTOCOL_MINOR,
+            ),
+            language = JvmSourceLanguage.JAVA,
+            sourceFileName = "Main.java",
+            sourceSizeBytes = source.size.toLong(),
+            sourceSha256 = JvmSha256.digest(source),
+            expectedToolchainFingerprint = JvmSha256.digest("sample-toolchain".toByteArray()),
+            entryClassName = "Main",
+            minApi = JvmSourceContract.MIN_ANDROID_API,
+            timeoutMillis = JvmSourceContract.DEFAULT_TIMEOUT_MILLIS,
+            maxStdoutBytes = JvmSourceContract.MAX_STDOUT_BYTES,
+            maxStderrBytes = JvmSourceContract.MAX_STDERR_BYTES,
+            diagnosticByteLimit = JvmSourceContract.MAX_DIAGNOSTIC_BYTES,
+            allowedHostCalls = emptyList(),
+            grantedCapabilities = capabilities,
+        )
+
+    private object RejectingHostBridge : IJvmHostBridge.Stub() {
+        override fun dispatch(request: ByteArray?, callback: IJvmHostBridgeCallback?) {
+            error("Sample must not dispatch a host call")
+        }
+
+        override fun destroy(reason: ByteArray?) = Unit
+    }
+
+    private object NoCallsContext : JvmScriptContext {
+        private val appApi = object : JvmAppApi {
+            override fun launch(packageName: String): Boolean = kotlin.error("Unexpected app.launch")
+        }
+        private val consoleApi = object : JvmConsoleApi {
+            override fun log(message: String): Unit = kotlin.error("Unexpected console.log")
+
+            override fun error(message: String): Unit = kotlin.error("Unexpected console.error")
+        }
+        private val cancellationView = object : JvmCancellation {
+            override fun isCancellationRequested(): Boolean = false
+
+            override fun throwIfCancellationRequested() = Unit
+        }
+
+        override fun app(): JvmAppApi = appApi
+
+        override fun console(): JvmConsoleApi = consoleApi
+
+        override fun cancellation(): JvmCancellation = cancellationView
+
+        override fun sleep(millis: Long): Unit = kotlin.error("Unexpected sleep")
+
+        override fun toast(message: String): Unit = kotlin.error("Unexpected toast")
+    }
+
+    private class LineSignalingOutputStream : ByteArrayOutputStream() {
+        val firstLine = CountDownLatch(1)
+
+        @Synchronized
+        override fun write(value: Int) {
+            super.write(value)
+            if (value == '\n'.code) firstLine.countDown()
+        }
+
+        @Synchronized
+        override fun write(buffer: ByteArray, offset: Int, length: Int) {
+            super.write(buffer, offset, length)
+            if ((offset until offset + length).any { buffer[it] == '\n'.code.toByte() }) {
+                firstLine.countDown()
+            }
+        }
+    }
+
+    private companion object {
+        const val CANCELLATION_SAMPLE = "cancellation-sleep.java"
+        const val RETURN_VALUES_SAMPLE = "return-values.java"
+        const val COMPILE_ERROR_SAMPLE = "compile-error.java"
+        const val RESULT_LIMIT_SAMPLE = "limit-result-json.java"
+        const val EXPECTED_RETURN_JSON =
+            "{\"nullValue\":null,\"boolean\":true,\"integers\":[1,2,3,4,12345678901234567890]," +
+                "\"decimals\":[1.25,2.5,3.75],\"text\":\"hello\",\"character\":\"中\"," +
+                "\"primitiveArray\":[5,6],\"objectArray\":[\"x\",false]," +
+                "\"nested\":{\"items\":[7,8]}}"
+    }
+}

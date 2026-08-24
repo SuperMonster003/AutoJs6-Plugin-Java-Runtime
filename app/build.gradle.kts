@@ -156,6 +156,9 @@ android {
     sourceSets.named("main") {
         assets.directories.add(generatedCompilerClasspathAssets.get().asFile.absolutePath)
     }
+    sourceSets.named("androidTest") {
+        assets.directories.add(rootProject.file("samples").absolutePath)
+    }
 
     packaging {
         resources.pickFirsts += setOf(
@@ -177,7 +180,7 @@ android {
     }
 
     lint {
-        abortOnError = false
+        abortOnError = true
     }
 }
 
