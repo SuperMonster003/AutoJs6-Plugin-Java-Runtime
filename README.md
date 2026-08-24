@@ -26,7 +26,10 @@ Debug APK 的五阶段耗时、worker 冷启动和缓存计数可从应用私有
 Release 零导出边界见 [M7 Debug 本地观测通道](docs/local-observability.zh-CN.md)。API 24/36 的
 生产 Binder 路径基线、原始 JSONL 与 M8-1 对比口径见 [M7-5 性能基线](docs/perf-baseline.md)；
 worker 并行预绑定的交错测量、no-go 决策与重新开启条件见
-[M8-1 评估记录](docs/worker-prewarm-evaluation.zh-CN.md)。
+[M8-1 评估记录](docs/worker-prewarm-evaluation.zh-CN.md)。编译产物在 API 24/25 与 API 27+ 现支持
+总量 32 MiB 内、最多 4 个连续命名的 DEX；API 26 因平台只有单 buffer 内存 loader 而继续限制为
+单 DEX。集合完整性、缓存迁移和 API 24/36 双加载路径证据见
+[R4 多 DEX 实现与验证](docs/multidex-r4.zh-CN.md)。
 
 ## Source example
 

@@ -1,12 +1,12 @@
 # Roadmap — AutoJs6 Java Runtime Plugin
 
 > 基于 `0.3.0-m5` (VERSION_BUILD=3, Protocol 1.1, Entry API 2) 现状制定, 探查日期 2026-08-24。
-> 当前形态 = R1 能力 profile + R2 落盘规则 + R3 缓存/观测 + M5 能力集。
+> 当前形态 = R1 能力 profile + R2 落盘规则 + R3 缓存/观测 + R4 多 DEX 工件 + M5 能力集。
 >
 > **总体结论**: 插件在"安全与工程严谨度"维度已远超同类水准 (三进程隔离、双侧白名单、DEX 全量结构校验、
-> HMAC 缓存、多层看门狗、126 个单测全绿、零 TODO)。主要的精进空间集中在两条线:
-> **① 能力面与开发者体验** (宿主桥接仅 2 个方法、诊断信息极简、Java 8 单文件单 DEX);
-> **② 工程可持续性** (未提交的构建迁移、无 CHANGELOG/tag/CI、无用户文档)。
+> HMAC 缓存、多层看门狗、137 个单测全绿、零 TODO)。主要的精进空间集中在两条线:
+> **① 能力面与开发者体验** (宿主桥接仅 2 个方法、运行时诊断极简、Java 8 单源码文件);
+> **② 工程可持续性** (设备证据矩阵、远端仓库/CI 与后续发布流程)。
 > 扩展受 Protocol 1.1 冻结约束, 因此路线分为 **本仓独立可落地** 与 **需宿主协同 (协议升级)** 两轨推进。
 
 ## 标签图例
@@ -112,12 +112,22 @@
     42 ms。全部实验运行时代码已回退，串行路径保持不变；原始 JSONL、变体序列和重新开启条件见
     `docs/worker-prewarm-evaluation.zh-CN.md`。
 
-- [ ] **M8-2 多 DEX 支持 (R4 profile)** `[本仓]` `[设备]`
+- [x] **M8-2 多 DEX 支持 (R4 profile)** `[本仓]` `[设备]`
   - 内容: `JavaDexOutputPolicy.kt` 单 DEX 限制 (65536 方法引用上限) 放宽为有界 `classesN.dex` (建议 ≤4 个, 总量仍 ≤32MB)。
-    联动: `DexArtifactValidator` 逐文件校验、`WorkerDexLoader` 的 `InMemoryDexClassLoader(ByteBuffer[])` 与
-    API 24/25 `DexClassLoader` 多路径、缓存 manifest 格式、`ReadOnlyDexWritePolicy` 逐文件时序。
+    联动: `DexArtifactValidator` 逐文件校验、`WorkerDexLoader` 的 API 24/25 `DexClassLoader` 多路径与
+    API 27+ `InMemoryDexClassLoader(ByteBuffer[])`、缓存 manifest 格式、
+    `ReadOnlyDexWritePolicy` 逐文件时序。API 26 仅公开单 buffer 构造器，必须保留单 DEX 限制。
     DEX 不跨宿主协议 (编译执行都在 provider 内), 故为本仓事项。
-  - 验收: 超方法数样例编译执行通过; API 24/25 与 26+ 双加载路径设备证据; 单 DEX 全量用例零回归。
+  - 验收: 超方法数样例编译执行通过; API 24/25 与 27+ 双加载路径设备证据; API 26 单 DEX 回归与
+    多 DEX fail-closed 测试; 单 DEX 全量用例零回归。
+  - 实现: 接受严格连续的 `classes.dex`..`classes4.dex`，集合总量仍为 32 MiB；逐文件验证后对 class
+    descriptor 并集执行完整性与跨 DEX 去重。内部 AIDL 按名称/大小/摘要/FD 数组交接，API 27+ 使用
+    `InMemoryDexClassLoader(ByteBuffer[])`，API 24/25 使用逐文件 R2 只读发布后的私有多路径
+    `DexClassLoader`；API 26 因平台仅有单 buffer 构造器，超过一个 DEX 时在 D8/worker 双门禁拒绝，
+    不使用会破坏跨 DEX 引用的链式 loader。缓存 manifest 升级 schema 2，key 修订为 `r4-cache-v3`。
+    生成 65,536 个辅助方法的
+    129-class fixture 在 API 24 与 API 36 均产出 2 个 DEX，并通过直接加载及一次性 `:worker` Binder
+    执行；详见 `docs/multidex-r4.zh-CN.md`。
 
 - [ ] **M8-3 用户代码 core library desugaring** `[评估]` `[设备]`
   - 内容: 目前 `desugar_jdk_libs_nio` 仅服务插件自身, 用户代码 D8 无 `--desugared-lib`。分两步评估:

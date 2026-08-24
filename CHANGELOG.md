@@ -18,6 +18,10 @@ with an optional milestone suffix; Android package builds are tracked separately
   return-value types, resource limits, cancellation, diagnostics, and error semantics.
 - Added cancellation, return-value, compiler-error, and result-limit samples with an automated
   provider pipeline suite verified on API 24 and API 37 loader branches.
+- Added the bounded R4 multi-DEX artifact profile on API 24/25 and API 27+: one to four contiguous
+  `classesN.dex` files, strict per-file and cross-file validation, and API 24/API 36 direct-loader
+  plus disposable-worker device evidence using a generated 65,536-method fixture. API 26 remains
+  single-DEX because its public in-memory loader has no multi-buffer constructor.
 
 ### Changed
 
@@ -32,6 +36,10 @@ with an optional milestone suffix; Android package builds are tracked separately
 - Closed the M8-1 worker-prewarming evaluation as no-go after API 36 interleaved measurements failed
   to reproduce the required median improvement without tail-latency regression; the serial runtime
   path remains unchanged and the rejected candidate's raw observation evidence is retained.
+- Changed the provider-private compiler/worker handoff to carry ordered DEX metadata and descriptor
+  arrays, while preserving the external Protocol 1.1 surface and legacy single-DEX result identity.
+- Changed compilation-cache manifests to schema 2 and the implementation revision to `r4-cache-v3`;
+  multi-DEX entries are authenticated, materialized, revalidated, and invalidated as one unit.
 
 ## [0.3.0-m5] - 2026-08-25
 

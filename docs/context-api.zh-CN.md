@@ -1,7 +1,8 @@
 # Java Context API 与运行边界
 
 本文适用于 AutoJs6 Java Runtime Plugin <code>0.3.0-m5</code>、JVM Source Protocol
-<code>1.1</code>、Entry API <code>2</code>，描述当前 Java R1/M5 profile 的用户可见行为。
+<code>1.1</code>、Entry API <code>2</code>，描述当前 Java R1/M5 能力 profile 与 R4 DEX 工件 profile
+的用户可见行为。
 协议升级或后续 profile 可能扩展这些能力，但不会放宽当前请求已经协商出的边界。
 
 ## 最小可运行脚本
@@ -38,7 +39,12 @@ public final class Main implements AutoJsJvmEntry {
 - ECJ 使用 <code>-source 8 -target 8</code>、UTF-8 和禁用注解处理器。Java 8 指语言级别；编译类库来自受控的 Android API 24 stub 与 Entry API，并不等同于完整桌面 JDK 8 类库。
 - 输入必须是严格 UTF-8；仅允许文件开头存在一个 UTF-8 BOM，插件会在编译前移除它。畸形 UTF-8 和 NUL 字符会被拒绝。
 - 源码任何位置都禁止 Java Unicode escape 形式 <code>&#92;uXXXX</code>，包括注释、字符串和字符字面量。这避免词法检查结果被 Java 编译器的 Unicode 预处理重新解释。
-- 当前 D8 profile 必须只生成一个 <code>classes.dex</code>；多 DEX 尚未开放。
+- 当前 R4 D8 profile 接受 1 至 4 个严格连续命名的工件：<code>classes.dex</code>、
+  <code>classes2.dex</code>、<code>classes3.dex</code>、<code>classes4.dex</code>。不允许缺号、别名、重排或
+  第 5 个 DEX；所有 DEX 的总量仍受同一个 32 MiB 上限约束。该集合只在 provider 的编译器与隔离
+  worker 之间传递，不改变宿主侧 Protocol 1.1 请求形态。
+- Android API 26 的公开 <code>InMemoryDexClassLoader</code> 只有单 buffer 构造器，因此该版本继续只接受
+  一个 <code>classes.dex</code>；API 24/25 和 API 27+ 才能安全共享 2 至 4 个 DEX 的同一 class namespace。
 
 ## JvmScriptContext API
 
@@ -134,7 +140,7 @@ return result;
 | toast 消息 | 上限 8 KiB UTF-8 | <code>EXECUTION_FAILED</code> |
 | JVM class 文件总量 | 上限 16 MiB，最多 256 个 class | <code>COMPILATION_FAILED</code> |
 | class JAR 协议工件 | 上限 20 MiB | <code>ARTIFACT_INVALID</code> 或编译失败 |
-| DEX 工件 | 上限 32 MiB，当前仅一个 <code>classes.dex</code> | <code>DEXING_FAILED</code> 或 <code>ARTIFACT_INVALID</code> |
+| DEX 工件集合 | 总量上限 32 MiB；API 24/25、27+ 为 1 至 4 个，API 26 为 1 个 | <code>DEXING_FAILED</code> 或 <code>ARTIFACT_INVALID</code> |
 | 并发会话 | 1 | 第二个会话返回可重试的 <code>BUSY</code> |
 
 30 秒默认超时覆盖整次会话，而不只是 <code>run</code>：源码读取、ECJ、D8、worker 启动与执行都会消耗该预算。
@@ -151,7 +157,7 @@ return result;
 | <code>UNSUPPORTED_LANGUAGE</code> | 请求语言不是当前 provider 广告的 Java。 |
 | <code>SOURCE_TOO_LARGE</code> | 源码流超过声明大小或 4 MiB 硬上限。 |
 | <code>COMPILATION_FAILED</code> | ECJ 报错，或 class 输出数量、大小、格式不满足编译 profile。 |
-| <code>DEXING_FAILED</code> | D8 失败，或输出不是当前要求的单个 <code>classes.dex</code>。 |
+| <code>DEXING_FAILED</code> | D8 失败，或输出不满足连续命名、总量及当前设备文件数限制。 |
 | <code>EXECUTION_FAILED</code> | 入口构造器或 <code>run</code> 抛异常、返回值无法编码，或 Context 调用在 worker 中失败。 |
 | <code>OUTPUT_LIMIT_EXCEEDED</code> | stdout 或 stderr 超过各自协商预算。 |
 | <code>TIMEOUT</code> | 协议级超时错误。当前正常的会话看门狗通常通过取消终态和 <code>TIMEOUT</code> cancellation reason 报告。 |
