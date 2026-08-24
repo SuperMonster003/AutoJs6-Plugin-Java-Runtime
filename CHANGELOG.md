@@ -8,6 +8,8 @@ with an optional milestone suffix; Android package builds are tracked separately
 
 ### Added
 
+- Added a debug-only, provider-private, bounded JSONL observation channel for five phase timings,
+  worker startup, per-session cache outcomes, and compiler-process cache counters.
 - Added PowerShell and POSIX-shell offline pre-push verification entry points.
 - Added a Chinese Java Context API guide covering the source profile, every Entry API 2 method,
   return-value types, resource limits, cancellation, diagnostics, and error semantics.
@@ -16,6 +18,8 @@ with an optional milestone suffix; Android package builds are tracked separately
 
 ### Changed
 
+- Changed the offline verification gate to run the unit suite against both Debug and Release build
+  constants, including an assertion that Release observation export has zero file side effects.
 - Changed ECJ diagnostic redaction to replace sensitive path, digest, Binder, process-identity,
   and metadata segments while preserving the remaining actionable compiler message.
 - Changed ECJ batch reporting to emit each compiler problem as an ordered Protocol 1.1 diagnostic

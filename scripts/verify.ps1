@@ -11,6 +11,7 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $gradleWrapper = Join-Path $repositoryRoot 'gradlew.bat'
 $verificationTasks = @(
     ':app:testDebugUnitTest'
+    ':app:testReleaseUnitTest'
     ':app:lintDebug'
     ':app:assembleDebug'
 )

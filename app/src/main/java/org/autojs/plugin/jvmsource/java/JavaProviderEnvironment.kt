@@ -16,6 +16,7 @@ internal class JavaProviderEnvironment private constructor(
     val compilationCacheOperationLane: CompilationCacheOperationLane?,
     val compilationCacheEnablement: CompilationCacheEnablement,
     val compilationCacheTelemetry: CompilationCacheTelemetry,
+    val localObservationExporter: JavaProviderLocalObservationExporter,
     val installedIdentity: ProviderInstalledIdentity,
     private val installedIdentityResolver: () -> ProviderInstalledIdentity,
 ) {
@@ -37,8 +38,10 @@ internal class JavaProviderEnvironment private constructor(
             val compilerClasspath = CompilerClasspath.install(context)
             val d8Libraries = D8RuntimeLibraries.controlled(compilerClasspath)
             val compilerComponent = ComponentName(context, JavaSourceCompilerService::class.java)
+            val providerDebuggable =
+                context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
             val cacheEnablement = CompilationCacheEnablementPolicy.evaluate(
-                providerDebuggable = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
+                providerDebuggable = providerDebuggable,
                 compilerNonDumpable = CompilerProcessMemoryIsolation.wasNonDumpableEnforced(),
             )
             val installedIdentity = ProviderInstalledIdentityResolver.resolve(context, compilerComponent)
@@ -62,6 +65,11 @@ internal class JavaProviderEnvironment private constructor(
                 compilationCache?.let { CompilationCacheOperationLane() },
                 cacheEnablement,
                 CompilationCacheTelemetry(),
+                JavaProviderLocalObservationExporterFactory.create(
+                    debugBuild = BuildConfig.DEBUG,
+                    providerDebuggable = providerDebuggable,
+                    filesDirectory = context.filesDir,
+                ),
                 installedIdentity,
                 { ProviderInstalledIdentityResolver.resolve(context, compilerComponent) },
             )

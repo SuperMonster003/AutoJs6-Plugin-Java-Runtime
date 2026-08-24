@@ -48,6 +48,7 @@ import org.autojs.plugin.jvmsource.java.JavaProviderEnvironment
 import org.autojs.plugin.jvmsource.java.JavaProviderFailure
 import org.autojs.plugin.jvmsource.java.JavaProviderCacheMissReason
 import org.autojs.plugin.jvmsource.java.JavaProviderCacheOutcome
+import org.autojs.plugin.jvmsource.java.JavaProviderLocalObservationRecord
 import org.autojs.plugin.jvmsource.java.JavaProviderObservation
 import org.autojs.plugin.jvmsource.java.JavaProviderObservationCodec
 import org.autojs.plugin.jvmsource.java.JavaProviderObservationCollector
@@ -65,7 +66,6 @@ import org.autojs.plugin.jvmsource.java.ProviderDigests
 import org.autojs.plugin.jvmsource.java.ProviderProcessIdentity
 import org.autojs.plugin.jvmsource.java.UserClassJarSummary
 import org.autojs.plugin.jvmsource.java.UserClassJarWriter
-import org.autojs.plugin.jvmsource.java.BuildConfig
 import org.autojs.plugin.jvmsource.java.worker.IJavaExecutionCallback
 import org.autojs.plugin.jvmsource.java.worker.IJavaExecutionWorker
 import org.autojs.plugin.jvmsource.java.worker.JavaExecutionWorkerService
@@ -123,6 +123,8 @@ internal class RemoteJavaSourceSession(
     private val runtimeDiagnosticLine = AtomicReference<Int?>()
     private val terminalDelivery = ProviderTerminalDeliveryBarrier<() -> Unit>(termination)
     private val createdAtMillis = SystemClock.elapsedRealtime()
+    private val workerBindingStartedAtMillis = AtomicReference<Long?>()
+    private val workerStartupDurationMillis = AtomicReference<Long?>()
     private val cleanupStartedAtMillis = AtomicLong(0L)
     private val compilerTemporaryStorageBytesAfterCleanup = AtomicReference<Long?>(null)
     private val performanceObservationPublished = AtomicBoolean(false)
@@ -601,6 +603,7 @@ internal class RemoteJavaSourceSession(
     private fun bindWorker() {
         check(workerBinding.beginBinding())
         handedToWorker.set(true)
+        workerBindingStartedAtMillis.compareAndSet(null, SystemClock.elapsedRealtime())
         val intent = Intent(context, JavaExecutionWorkerService::class.java)
         val bound = try {
             context.bindService(intent, workerConnection, Context.BIND_AUTO_CREATE)
@@ -629,6 +632,9 @@ internal class RemoteJavaSourceSession(
 
     private val workerConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
+            workerBindingStartedAtMillis.get()?.let { started ->
+                workerStartupDurationMillis.compareAndSet(null, elapsedSince(started))
+            }
             if (termination.snapshot().terminal) {
                 cleanup()
                 return
@@ -1332,7 +1338,19 @@ internal class RemoteJavaSourceSession(
                 outputBytes = null,
             ),
         )
-        JavaProviderObservationRegistry.publishCompiler(performanceObservation.snapshot())
+        val compilerObservation = performanceObservation.snapshot()
+        JavaProviderObservationRegistry.publishCompiler(compilerObservation)
+        runCatching {
+            environment.localObservationExporter.export(
+                JavaProviderLocalObservationRecord.compose(
+                    compiler = compilerObservation,
+                    worker = workerPerformanceObservation.get(),
+                    sessionElapsedMillis = elapsedMillis(),
+                    workerStartupDurationMillis = workerStartupDurationMillis.get(),
+                    cacheTelemetry = environment.compilationCacheTelemetry.snapshot(),
+                ),
+            )
+        }
     }
 
     private fun publicMessage(code: JvmSourceErrorCode): String = when (code) {

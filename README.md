@@ -22,6 +22,9 @@ process. The compiler and worker never run inside the AutoJs6 process.
 有界 JSON profile；源码、输出、诊断、返回值和会话时间均有硬上限。完整的方法说明、类型表、限额与
 错误码见 [Java Context API 与运行边界](docs/context-api.zh-CN.md)。
 
+Debug APK 的五阶段耗时、worker 冷启动和缓存计数可从应用私有 JSONL 读取；字段口径、ADB 命令和
+Release 零导出边界见 [M7 Debug 本地观测通道](docs/local-observability.zh-CN.md)。
+
 ## Source example
 
 The ready-to-run [M5 capability sample](samples/m5-capabilities.java) demonstrates the complete first
@@ -65,8 +68,8 @@ Release/debug APKs must be signed with the same certificate as AutoJs6. Local si
 expected at the ignored files `sign.properties` and `app/sm003.jks`.
 
 Run the pre-push verification gate from PowerShell or a POSIX shell. Both scripts may be invoked
-from any working directory, force Gradle offline mode, and run unit tests, Debug lint, and Debug APK
-assembly:
+from any working directory, force Gradle offline mode, and run both Debug/Release unit-test variants,
+Debug lint, and Debug APK assembly:
 
 ```powershell
 .\scripts\verify.ps1
@@ -80,7 +83,7 @@ Additional Gradle options are forwarded, for example `./scripts/verify.sh --no-d
 produce the signed Release APK, run the full release gate directly:
 
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --offline
+.\gradlew.bat :app:testDebugUnitTest :app:testReleaseUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --offline
 ```
 
 Output:

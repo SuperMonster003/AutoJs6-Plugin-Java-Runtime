@@ -74,7 +74,8 @@ internal data class JavaProviderObservation(
 /**
  * Source-deployed R3 collection policy. It records only coarse numeric counters and durations;
  * request IDs, paths, package/component names, signatures, Binder values, UIDs and PIDs are not
- * representable. Export needs a future negotiated protocol and runtime/performance evidence.
+ * representable. Protocol export still needs future negotiation and runtime/performance evidence;
+ * the debug-only private JSONL channel accepts only a bounded projection of this model.
  */
 internal class JavaProviderObservationCollector(
     private val startProfile: JavaProviderStartProfile,

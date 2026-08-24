@@ -4,7 +4,7 @@
 > 当前形态 = R1 能力 profile + R2 落盘规则 + R3 缓存/观测 + M5 能力集。
 >
 > **总体结论**: 插件在"安全与工程严谨度"维度已远超同类水准 (三进程隔离、双侧白名单、DEX 全量结构校验、
-> HMAC 缓存、多层看门狗、115 个单测全绿、零 TODO)。主要的精进空间集中在两条线:
+> HMAC 缓存、多层看门狗、126 个单测全绿、零 TODO)。主要的精进空间集中在两条线:
 > **① 能力面与开发者体验** (宿主桥接仅 2 个方法、诊断信息极简、Java 8 单文件单 DEX);
 > **② 工程可持续性** (未提交的构建迁移、无 CHANGELOG/tag/CI、无用户文档)。
 > 扩展受 Protocol 1.1 冻结约束, 因此路线分为 **本仓独立可落地** 与 **需宿主协同 (协议升级)** 两轨推进。
@@ -85,11 +85,14 @@
   - 验收: 新单测: 超时→冷却→恢复→可用; 连续失败路径行为可预期; 现有 lane 测试不回归。
   - 实现: 默认冷却 5 秒；仅在旧任务和旧 worker 均确认退出后重建一次，旧 I/O 未退出时继续 fail-closed，替代 worker 二次超时后永久毒化。
 
-- [ ] **M7-4 观测数据本地导出通道 (debug 构建限定)** `[本仓]`
-  - 内容: 在"不跨 Protocol V1"前提下 (`JavaProviderObservationPolicy.kt:75` 明确导出需未来协商协议 + 运行时证据),
+- [x] **M7-4 观测数据本地导出通道 (debug 构建限定)** `[本仓]`
+  - 内容: 在"不跨 Protocol V1"前提下 (`JavaProviderObservationPolicy` 明确协议导出需未来协商 + 运行时证据),
     为 debug 构建增加本地结构化导出 (logcat 结构化行或私有目录文件): 5 阶段耗时 (COMPILE/D8/LOAD/RUN/TERMINATION)、缓存命中计数。
     这是 M9-4 协议化导出的证据积累。
   - 验收: debug 构建可稳定取数; release 构建零导出 (测试断言)。
+  - 实现: `:compiler` 在会话清理后向私有目录写入有界 schema-v1 JSONL，额外记录
+    `bindService`→`onServiceConnected` 的 worker 冷启动耗时；`BuildConfig.DEBUG` 与 debuggable flag 双门禁，
+    Debug/Release unit-test variant 分别断言可写与零文件副作用，详见 `docs/local-observability.zh-CN.md`。
 
 - [ ] **M7-5 性能基线测量** `[设备]`
   - 内容: 用 M7-4 通道在 API 24 与 34/36 各一台设备记录端到端时延基线 (含 worker 冷启动占比), 写入 `docs/perf-baseline.md`。
@@ -154,7 +157,7 @@
   - 验收: 协议字段落定; 脱敏审查通过; 样例可见"类名+行号"。
 
 - [ ] **M9-4 观测数据导出协议化**
-  - 内容: 兑现 `JavaProviderObservationPolicy.kt:75` 的"future negotiated protocol": 以 M7-4/5 积累的字段与
+  - 内容: 兑现 `JavaProviderObservationPolicy` 的"future negotiated protocol": 以 M7-4/5 积累的字段与
     真机证据为输入, 与宿主谈定导出 schema (阶段耗时、缓存结果、资源采样)。
   - 验收: 宿主侧可见编译/执行耗时展示; release 路径字段边界测试。
 
