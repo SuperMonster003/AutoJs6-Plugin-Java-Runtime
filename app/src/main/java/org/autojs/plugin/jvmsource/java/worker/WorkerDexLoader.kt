@@ -53,7 +53,13 @@ internal class WorkerDexLoader(private val context: Context) {
     ): LoadedDex {
         return try {
             when (validated.artifact.loaderKind) {
-                WorkerDexLoaderKind.IN_MEMORY_DEX_CLASS_LOADER -> loadInMemory(validated, parent)
+                WorkerDexLoaderKind.IN_MEMORY_DEX_CLASS_LOADER -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        loadInMemory(validated, parent)
+                    } else {
+                        throw invalidArtifact("In-memory DEX loading is unavailable on this Android version")
+                    }
+                }
                 WorkerDexLoaderKind.PRIVATE_DEX_CLASS_LOADER ->
                     loadFromPrivateFile(validated, generation, requestId, parent)
             }
