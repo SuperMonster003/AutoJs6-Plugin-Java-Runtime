@@ -16,10 +16,8 @@ plugins {
     id("com.android.application")
 }
 
-val ecjVersion = "3.26.0"
-val d8Version = "8.13.17"
-val desugarArtifact = "desugar_jdk_libs_nio"
-val desugarVersion = "2.1.5"
+val ecjVersion = libs.versions.ecj.get()
+val d8Version = libs.versions.r8.get()
 val globalApplicationId = "io.github.supermonster003.autojs6.plugin.java.runtime"
 val providerNamespace = "org.autojs.plugin.jvmsource.java"
 val compilerStubApi = 24
@@ -31,6 +29,14 @@ val expectedProtocolModules = linkedMapOf(
 )
 val protocolArtifacts = expectedProtocolModules.keys.map { rootProject.file("protocol/$it") }
 val jvmSourceApiAar = rootProject.file("protocol/jvm-source-api.aar")
+val expectedPinnedDependencies = linkedMapOf(
+    "AndroidX annotations" to (libs.androidx.annotation to "androidx.annotation:annotation:1.9.1"),
+    "Kotlin standard library" to (libs.kotlin.stdlib to "org.jetbrains.kotlin:kotlin-stdlib:2.3.21"),
+    "ECJ" to (libs.ecj to "org.eclipse.jdt:ecj:3.26.0"),
+    "D8/R8" to (libs.r8 to "com.android.tools:r8:8.13.17"),
+    "core library desugaring" to
+        (libs.desugar.jdk.libs.nio to "com.android.tools:desugar_jdk_libs_nio:2.1.5"),
+)
 val generatedCompilerClasspathAssets = layout.buildDirectory.dir("generated/assets/compilerClasspath")
 val entryApiClassEntries = linkedSetOf(
     "org/autojs/plugin/jvmsource/api/AutoJsJvmEntry.class",
@@ -178,10 +184,10 @@ android {
 dependencies {
     implementation(files(protocolArtifacts))
     implementation(libs.androidx.annotation)
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.3.21")
-    implementation("org.eclipse.jdt:ecj:$ecjVersion")
-    implementation("com.android.tools:r8:$d8Version")
-    coreLibraryDesugaring("com.android.tools:$desugarArtifact:$desugarVersion")
+    implementation(libs.kotlin.stdlib)
+    implementation(libs.ecj)
+    implementation(libs.r8)
+    coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
@@ -203,13 +209,22 @@ fun File.sha256(): String {
 
 val verifyPinnedInputs = tasks.register("verifyPinnedInputs") {
     group = "verification"
-    description = "Verifies the frozen AutoJs6 protocol AAR set and exact digests."
+    description = "Verifies frozen protocol AARs and literal toolchain dependency pins."
     inputs.file(protocolLockFile)
     inputs.files(protocolArtifacts)
 
     doLast {
         check(versions["REQUIRED_HOST_VERSION_CODE"] == "5276") {
             "plugin_requires_host_version must stay aligned with REQUIRED_HOST_VERSION_CODE"
+        }
+        expectedPinnedDependencies.forEach { (label, pin) ->
+            val dependency = pin.first.get()
+            val coordinate = with(dependency) {
+                "${module.group}:${module.name}:${versionConstraint.requiredVersion}"
+            }
+            check(coordinate == pin.second) {
+                "$label dependency must stay pinned to ${pin.second}, but was $coordinate"
+            }
         }
         check(protocolLockFile.isFile) { "Missing protocol lock: $protocolLockFile" }
         val lock = JsonSlurper().parse(protocolLockFile) as? Map<*, *>
