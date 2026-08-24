@@ -52,12 +52,12 @@
   - 内容: 新建 `CHANGELOG.md`, 补记 m5 能力集与构建迁移; 打 tag `v0.3.0-m5` (仓库目前 0 个 tag)。
   - 验收: tag 存在; CHANGELOG 与 `version.properties` 版本一致。
 
-- [ ] **M6-5 本地一键离线验证脚本**
+- [x] **M6-5 本地一键离线验证脚本**
   - 内容: `scripts/verify.ps1` + `scripts/verify.sh`, 封装 `testDebugUnitTest + lintDebug + assembleDebug --offline`,
     作为 pre-push 级本地门禁 (替代暂不可用的远端 CI, 规避网络问题)。
   - 验收: 双脚本一次通过; README 引用。
 
-- [ ] **M6-6 用户面 API 文档 (中文优先)**
+- [x] **M6-6 用户面 API 文档 (中文优先)**
   - 内容: 新建 `docs/context-api.zh-CN.md`: `JvmScriptContext` 全部方法 (`app().launch` / `console().log|error` /
     `sleep` / `toast` / `cancellation()`)、源码形态规则 (单文件、入口 `Main`、Java 8、禁 `\uXXXX`、UTF-8)、
     上限表 (源码 4MB / stdout+stderr 各 1MB / 返回值 JSON 64KB / 超时默认 30s 上限 120s)、

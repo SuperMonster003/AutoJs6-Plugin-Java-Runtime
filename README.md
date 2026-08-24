@@ -15,6 +15,13 @@ process. The compiler and worker never run inside the AutoJs6 process.
 - Entry API: 2 (`AutoJsJvmEntry.run(JvmScriptContext)`)
 - Current source shape: one `.java` file, entry simple name `Main`, optional package/imports
 
+## 中文使用说明
+
+当前版本接受严格 UTF-8 的单文件 Java 8 源码，入口简单名固定为 <code>Main</code>，并通过
+<code>JvmScriptContext</code> 提供启动应用、stdout/stderr、可取消休眠和 toast 能力。返回值只接受
+有界 JSON profile；源码、输出、诊断、返回值和会话时间均有硬上限。完整的方法说明、类型表、限额与
+错误码见 [Java Context API 与运行边界](docs/context-api.zh-CN.md)。
+
 ## Source example
 
 The ready-to-run [M5 capability sample](samples/m5-capabilities.java) demonstrates the complete first
@@ -53,8 +60,23 @@ The repository uses frozen AARs from `protocol/` and can build without a sibling
 Release/debug APKs must be signed with the same certificate as AutoJs6. Local signing material is
 expected at the ignored files `sign.properties` and `app/sm003.jks`.
 
+Run the pre-push verification gate from PowerShell or a POSIX shell. Both scripts may be invoked
+from any working directory, force Gradle offline mode, and run unit tests, Debug lint, and Debug APK
+assembly:
+
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease --offline
+.\scripts\verify.ps1
+```
+
+```bash
+./scripts/verify.sh
+```
+
+Additional Gradle options are forwarded, for example `./scripts/verify.sh --no-daemon`. To also
+produce the signed Release APK, run the full release gate directly:
+
+```powershell
+.\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --offline
 ```
 
 Output:
