@@ -179,6 +179,7 @@ return result;
 ## 诊断与隐私
 
 - ECJ 诊断在回传前会限制总字节数和消息长度；私有绝对路径、摘要、uid/pid、Binder 引用和其他敏感元数据会按片段替换为 <code>&lt;redacted&gt;</code>，其余可操作的编译器原文会保留。
+- 一个源码包含多处 ECJ 问题时，provider 会按编译器顺序分别回传多条诊断；每条仍使用 Protocol 1.1 的单诊断 frame，所有 frame 共用 64 KiB 总 wire 预算。
 - 编译错误包含可安全确认的源码文件名、行和列。诊断预算耗尽时，后续诊断可能不再出现。
 - 运行时异常当前只回传通用的 <code>JAVA_RUNTIME_EXCEPTION</code>、源码行号与列 1；不会回传异常 message、任意类名或完整堆栈。
 - 错误消息是稳定的公开摘要，不应依赖内部异常文本进行程序逻辑判断；应使用 error code 与 phase。

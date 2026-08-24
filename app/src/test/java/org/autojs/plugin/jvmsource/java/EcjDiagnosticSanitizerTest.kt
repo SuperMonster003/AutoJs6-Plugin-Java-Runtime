@@ -1,5 +1,6 @@
 package org.autojs.plugin.jvmsource.java
 
+import org.eclipse.jdt.core.compiler.batch.BatchCompiler
 import org.autojs.plugin.jvmsource.api.JvmDiagnosticSeverity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -8,6 +9,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.PrintWriter
+import java.io.StringWriter
 
 class EcjDiagnosticSanitizerTest {
     @get:Rule
@@ -124,6 +127,65 @@ class EcjDiagnosticSanitizerTest {
         assertFalse(diagnostic.message.contains(digest))
         listOf("classpath=", "signer=", "Binder@", "uid=", "pid=").forEach {
             assertFalse(it in diagnostic.message)
+        }
+    }
+
+    @Test
+    fun multiErrorSourceProducesDistinctOrderedDiagnostics() {
+        val workspace = temporaryFolder.newFolder("ecj-multiple-diagnostics")
+        val source = workspace.resolve("Main.java").apply {
+            writeText(
+                """
+                    public final class Main {
+                        public Object run() {
+                            int first = missingFirst;
+                            int second = missingSecond;
+                            return first + second;
+                        }
+                    }
+                """.trimIndent(),
+                Charsets.UTF_8,
+            )
+        }
+        val output = workspace.resolve("classes").apply { check(mkdir()) }
+        val compilerOutput = StringWriter()
+        val writer = PrintWriter(compilerOutput, true)
+
+        val succeeded = BatchCompiler.compile(
+            arrayOf(
+                "-source", "8",
+                "-target", "8",
+                "-proc:none",
+                "-encoding", "UTF-8",
+                "-d", output.absolutePath,
+                source.absolutePath,
+            ),
+            writer,
+            writer,
+            null,
+        )
+        assertFalse("The intentionally invalid source unexpectedly compiled", succeeded)
+
+        val diagnostics = EcjDiagnosticSanitizer.sanitizeAll(
+            raw = compilerOutput.toString(),
+            succeeded = false,
+            byteLimit = 4_096,
+            privateFiles = listOf(workspace, output),
+            sourceFile = source,
+            sourceFileName = "Main.java",
+        )
+
+        assertEquals(2, diagnostics.size)
+        assertEquals(listOf(3, 4), diagnostics.map { it.line })
+        assertTrue(diagnostics[0].message.contains("missingFirst"))
+        assertFalse(diagnostics[0].message.contains("missingSecond"))
+        assertTrue(diagnostics[1].message.contains("missingSecond"))
+        assertFalse(diagnostics[1].message.contains("missingFirst"))
+        diagnostics.forEach {
+            assertEquals(JvmDiagnosticSeverity.ERROR, it.severity)
+            assertEquals("ECJ_ERROR", it.code)
+            assertTrue((it.column ?: 0) > 0)
+            assertFalse(it.message.contains(workspace.absolutePath))
         }
     }
 

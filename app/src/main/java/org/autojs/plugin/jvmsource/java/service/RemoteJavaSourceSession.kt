@@ -356,7 +356,7 @@ internal class RemoteJavaSourceSession(
                     elapsedSince(compileStartedAt),
                 )
             }
-            emitCompilerDiagnostic(ecj.diagnostics, ecj.succeeded, privateWorkspace)
+            emitCompilerDiagnostics(ecj.diagnostics, ecj.succeeded, privateWorkspace)
             if (!ecj.succeeded) {
                 throw JavaProviderFailure(
                     JvmSourceErrorCode.COMPILATION_FAILED,
@@ -543,12 +543,12 @@ internal class RemoteJavaSourceSession(
         )
     }
 
-    private fun emitCompilerDiagnostic(
+    private fun emitCompilerDiagnostics(
         raw: String,
         succeeded: Boolean,
         privateWorkspace: PrivateSessionWorkspace,
     ) {
-        val sanitized = EcjDiagnosticSanitizer.sanitize(
+        val sanitized = EcjDiagnosticSanitizer.sanitizeAll(
             raw = raw,
             succeeded = succeeded,
             byteLimit = request.diagnosticByteLimit,
@@ -561,24 +561,41 @@ internal class RemoteJavaSourceSession(
             ),
             sourceFile = privateWorkspace.sourceFile,
             sourceFileName = request.sourceFileName,
-        ) ?: return
-        val diagnostic = JvmSourceDiagnostic(
-            requestId = request.requestId,
-            severity = sanitized.severity,
-            code = sanitized.code,
-            message = sanitized.message,
-            sourceFileName = request.sourceFileName,
-            line = sanitized.line,
-            column = sanitized.column,
         )
-        emitDiagnostic(diagnostic)
+        emitDiagnostics(
+            sanitized.map { value ->
+                JvmSourceDiagnostic(
+                    requestId = request.requestId,
+                    severity = value.severity,
+                    code = value.code,
+                    message = value.message,
+                    sourceFileName = request.sourceFileName,
+                    line = value.line,
+                    column = value.column,
+                )
+            },
+        )
     }
 
-    private fun emitDiagnostic(diagnostic: JvmSourceDiagnostic) {
-        val remaining = request.diagnosticByteLimit - diagnosticBytesEmitted.get()
-        val encoded = EncodedDiagnosticBudget.encodeWithin(diagnostic, remaining) ?: return
-        diagnosticBytesEmitted.addAndGet(encoded.size)
-        dispatchCallback { callback.onDiagnostic(encoded) }
+    private fun emitDiagnostic(diagnostic: JvmSourceDiagnostic) = emitDiagnostics(listOf(diagnostic))
+
+    private fun emitDiagnostics(diagnostics: Iterable<JvmSourceDiagnostic>) {
+        val encoded = diagnostics.mapNotNull(::encodeAndReserveDiagnostic)
+        if (encoded.isEmpty()) return
+        // One lane task avoids exhausting the bounded callback queue when ECJ reports many errors,
+        // while the synchronous Binder calls still deliver one Protocol 1.1 frame per diagnostic.
+        dispatchCallback {
+            encoded.forEach(callback::onDiagnostic)
+        }
+    }
+
+    private fun encodeAndReserveDiagnostic(diagnostic: JvmSourceDiagnostic): ByteArray? {
+        while (true) {
+            val emitted = diagnosticBytesEmitted.get()
+            val remaining = request.diagnosticByteLimit - emitted
+            val encoded = EncodedDiagnosticBudget.encodeWithin(diagnostic, remaining) ?: return null
+            if (diagnosticBytesEmitted.compareAndSet(emitted, emitted + encoded.size)) return encoded
+        }
     }
 
     private fun bindWorker() {

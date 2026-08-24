@@ -75,9 +75,10 @@
     用户丢失全部原始诊断。改为逐段替换敏感片段、保留其余内容。
   - 验收: 新增单测覆盖混合内容消息的保留率; 现有"不泄露绝对路径/摘要/uid/pid/Binder"测试继续通过。
 
-- [ ] **M7-2 单次回传多条编译诊断** `[本仓/待确认]`
+- [x] **M7-2 单次回传多条编译诊断** `[本仓/已确认]`
   - 内容: 确认 wire 诊断格式是否允许在 64KB 预算 (`EncodedDiagnosticBudget`) 内打包多条诊断; 若 wire 限单条, 移入 M9 协议项。
   - 验收: 多错误源文件一次回传多条诊断 (或形成移交 M9 的结论记录)。
+  - 结论: Protocol 1.1 允许重复发送单条 `onDiagnostic` frame；provider 已按 ECJ 源顺序逐条发送，宿主按累计 wire bytes 验证并收集为列表，详见 `docs/diagnostic-wire.zh-CN.md`。
 
 - [ ] **M7-3 缓存 lane 毒化恢复** `[本仓]`
   - 内容: `CompilationCacheOperationLane` 1 秒超时后**永久毒化**直到进程重启。增加有界恢复: 冷却期后单次重建 lane, 二次失败再永久毒化, 保持单线程单槽语义。

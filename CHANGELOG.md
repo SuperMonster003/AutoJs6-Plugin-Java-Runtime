@@ -18,6 +18,8 @@ with an optional milestone suffix; Android package builds are tracked separately
 
 - Changed ECJ diagnostic redaction to replace sensitive path, digest, Binder, process-identity,
   and metadata segments while preserving the remaining actionable compiler message.
+- Changed ECJ batch reporting to emit each compiler problem as an ordered Protocol 1.1 diagnostic
+  frame under the existing cumulative 64 KiB wire budget.
 
 ## [0.3.0-m5] - 2026-08-25
 

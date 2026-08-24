@@ -21,6 +21,8 @@ internal data class SanitizedEcjDiagnostic(
  */
 internal object EcjDiagnosticSanitizer {
     private val LINE = Regex("\\(at line ([1-9][0-9]*)\\)")
+    private val DIAGNOSTIC_HEADER = Regex("(?m)^[0-9]+\\. (?:ERROR|WARNING) in ")
+    private val DIAGNOSTIC_SEPARATOR = Regex("(?m)^-{10,}[\\t ]*$")
     private val ABSOLUTE_UNIX_PATH = Regex("(?:/[\\w.@$+~%-]+){2,}/?")
     private val ABSOLUTE_WINDOWS_PATH = Regex("[A-Za-z]:[\\\\/][^\\s\"'<>|]*")
     private val DIGEST_LIKE = Regex("\\b[0-9a-fA-F]{32,}\\b")
@@ -39,8 +41,45 @@ internal object EcjDiagnosticSanitizer {
         privateFiles: Collection<File>,
         sourceFile: File? = null,
         sourceFileName: String? = null,
-    ): SanitizedEcjDiagnostic? {
-        if (raw.isBlank()) return null
+    ): SanitizedEcjDiagnostic? = sanitizeAll(
+        raw = raw,
+        succeeded = succeeded,
+        byteLimit = byteLimit,
+        privateFiles = privateFiles,
+        sourceFile = sourceFile,
+        sourceFileName = sourceFileName,
+    ).firstOrNull()
+
+    /** Returns one ordered wire candidate for every ECJ ERROR/WARNING block in the batch output. */
+    fun sanitizeAll(
+        raw: String,
+        succeeded: Boolean,
+        byteLimit: Int,
+        privateFiles: Collection<File>,
+        sourceFile: File? = null,
+        sourceFileName: String? = null,
+    ): List<SanitizedEcjDiagnostic> {
+        if (raw.isBlank()) return emptyList()
+        return diagnosticBlocks(raw).map { block ->
+            sanitizeBlock(
+                raw = block,
+                succeeded = succeeded,
+                byteLimit = byteLimit,
+                privateFiles = privateFiles,
+                sourceFile = sourceFile,
+                sourceFileName = sourceFileName,
+            )
+        }
+    }
+
+    private fun sanitizeBlock(
+        raw: String,
+        succeeded: Boolean,
+        byteLimit: Int,
+        privateFiles: Collection<File>,
+        sourceFile: File?,
+        sourceFileName: String?,
+    ): SanitizedEcjDiagnostic {
         val parsedLine = LINE.find(raw)?.groupValues?.get(1)?.toIntOrNull()
             ?.takeIf { it in 1..MAX_SOURCE_POSITION }
         val parsedColumn = raw.lineSequence()
@@ -78,6 +117,17 @@ internal object EcjDiagnosticSanitizer {
             line = line,
             column = column,
         )
+    }
+
+    private fun diagnosticBlocks(raw: String): List<String> {
+        val headers = DIAGNOSTIC_HEADER.findAll(raw).toList()
+        if (headers.isEmpty()) return listOf(raw)
+        return headers.mapIndexedNotNull { index, header ->
+            val end = headers.getOrNull(index + 1)?.range?.first ?: raw.length
+            val candidate = raw.substring(header.range.first, end)
+            val separator = DIAGNOSTIC_SEPARATOR.find(candidate)?.range?.first ?: candidate.length
+            candidate.substring(0, separator).trim().takeIf(String::isNotBlank)
+        }
     }
 
     /**
