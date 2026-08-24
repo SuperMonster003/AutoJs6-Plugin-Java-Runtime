@@ -103,10 +103,14 @@
 
 ## M8 — 运行时增强 (本仓独立)
 
-- [ ] **M8-1 Worker 预热 (并行绑定)** `[本仓]` `[设备]`
+- [x] **M8-1 Worker 预热 (并行绑定) — 评估关闭 / no-go** `[本仓]` `[设备]`
   - 内容: 目前每次执行串行经历"编译完成 → 绑定 `:worker` → 冷启动进程"。改为会话打开/编译进行中并行预绑定 worker,
     保持一次性 worker、pid/uid pin、全部看门狗与取消语义不变。涉及 `WorkerServiceBindingLifecycle`、`RemoteJavaSourceSession`。
   - 验收: 对比 M7-5 基线端到端时延显著下降 (目标: 摊销掉大部分 worker 冷启动); 终态/取消/看门狗全部测试通过。
+  - 结论: 立即预绑定会与 ECJ/D8 争用资源；延迟预绑定及单线程 D8 候选在 API 36 的 P–S–P
+    交错复验中收益方向反转。最终完整候选区块暖态 p50 仅改善 42.5 ms（门槛 213 ms），p90 回归
+    42 ms。全部实验运行时代码已回退，串行路径保持不变；原始 JSONL、变体序列和重新开启条件见
+    `docs/worker-prewarm-evaluation.zh-CN.md`。
 
 - [ ] **M8-2 多 DEX 支持 (R4 profile)** `[本仓]` `[设备]`
   - 内容: `JavaDexOutputPolicy.kt` 单 DEX 限制 (65536 方法引用上限) 放宽为有界 `classesN.dex` (建议 ≤4 个, 总量仍 ≤32MB)。

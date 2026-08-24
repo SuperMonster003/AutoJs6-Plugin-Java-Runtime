@@ -29,6 +29,9 @@ with an optional milestone suffix; Android package builds are tracked separately
   frame under the existing cumulative 64 KiB wire budget.
 - Changed the compilation-cache operation lane to permit one cooldown-gated, quiescence-checked
   worker rebuild after a timeout; a second timeout remains permanently fail-closed.
+- Closed the M8-1 worker-prewarming evaluation as no-go after API 36 interleaved measurements failed
+  to reproduce the required median improvement without tail-latency regression; the serial runtime
+  path remains unchanged and the rejected candidate's raw observation evidence is retained.
 
 ## [0.3.0-m5] - 2026-08-25
 

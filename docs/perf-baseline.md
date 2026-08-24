@@ -87,7 +87,7 @@ direct-path 路由在该受控 AVD 上通过 `MANAGE_EXTERNAL_STORAGE` app-op �
 3. 通过导出的生产 Activity 发起 direct-path launch：
 
    ```powershell
-   adb -s <serial> shell am start -W `
+   adb -s <serial> shell am start `
      -n org.autojs.autojs6/org.autojs.autojs.external.shortcut.ShortcutActivity `
      --es path /data/user/0/org.autojs.autojs6/cache/m7-perf/Main.java
    ```
@@ -99,8 +99,9 @@ direct-path 路由在该受控 AVD 上通过 `MANAGE_EXTERNAL_STORAGE` app-op �
    schema 为 1、五阶段均为非负数、第一行 compiler 为 `COLD`、其余为 `WARM`、所有 worker 为 `COLD`。
 
 这条 Activity 路由实际进入 `Scripts.executeLaunch` → `JvmSourceExplicitRunner` →
-`RemoteJvmSourceHost` → provider Binder，会覆盖生产宿主与 provider 的真实 Binder 路径；`am start -W`
-本身只等待 Activity，不被当作完成信号，观测文件新增完整行才是完成信号。
+`RemoteJvmSourceHost` → provider Binder，会覆盖生产宿主与 provider 的真实 Binder 路径。命令刻意不使用
+`-W`，因为 API 24 上等待 `Theme.NoDisplay` Activity 可能不会及时返回；`am start` 返回也不被
+当作完成信号，观测文件新增完整行才是完成信号。
 
 标准 Debug 构建按安全策略禁用 HMAC 编译缓存，所以 22 条记录都应为 `MISS/CACHE_DISABLED`，累计
 `hits=0`，`misses` 与 `missesByReason.CACHE_DISABLED` 从 1 严格递增到 11。该不变量已由原始数据校验。
@@ -186,3 +187,7 @@ M8-1 应在相同 AVD、相同 AutoJs6 APK、相同 Java 输入和相同 Debug/c
 
 样本量较小且环境没有做实验室级隔离；这个阈值是工程验收线，不是统计显著性声明。若结果靠近阈值，
 应扩大样本量并交错运行旧/新实现，再决定是否接受性能结论。
+
+M8-1 已按该契约完成候选与串行控制的交错测量。收益不能稳定复现，最终候选区块未通过 p50/p90 门槛，
+因此保持串行 worker 绑定；完整 no-go 证据见
+[`worker-prewarm-evaluation.zh-CN.md`](worker-prewarm-evaluation.zh-CN.md)。
