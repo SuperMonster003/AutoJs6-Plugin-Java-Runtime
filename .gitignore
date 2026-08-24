@@ -2,6 +2,8 @@
 .idea/
 .kotlin/
 **/build/
+!build-logic/convention/src/main/kotlin/org/autojs/build/
+!build-logic/convention/src/main/kotlin/org/autojs/build/**
 local.properties
 *.jks
 *.keystore

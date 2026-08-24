@@ -43,7 +43,7 @@ session cancellation, and `toast` is an explicitly granted host bridge capabilit
 ## Versioning
 
 `VERSION_NAME` follows SemVer with an optional milestone suffix (currently `0.3.0-m5`), while
-`VERSION_CODE` is a positive, monotonically increasing Android package version. Release metadata
+`VERSION_BUILD` is a positive, monotonically increasing Android package version. Release metadata
 declares engine `jvm-source`, provider ID `ecj-java`, variant `java-ecj-d8`, Protocol 1.1, and
 required host version code 5276 for schema-v2 official-index generation.
 

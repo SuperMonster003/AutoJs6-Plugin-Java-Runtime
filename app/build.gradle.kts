@@ -11,11 +11,9 @@ import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
 
 plugins {
+    id("org.autojs.build.versions")
+    id("org.autojs.build.jvm-convention")
     id("com.android.application")
-}
-
-val versionProperties = Properties().apply {
-    rootProject.file("version.properties").inputStream().use(::load)
 }
 
 val ecjVersion = "3.26.0"
@@ -78,14 +76,14 @@ val hostAlignedSigning = loadHostAlignedSigningMaterial()
 
 android {
     namespace = providerNamespace
-    compileSdk = versionProperties.getProperty("COMPILE_SDK_VERSION").toInt()
+    compileSdk = versions.sdkVersionCompile
 
     defaultConfig {
         applicationId = globalApplicationId
-        minSdk = versionProperties.getProperty("MIN_SDK_VERSION").toInt()
-        targetSdk = versionProperties.getProperty("TARGET_SDK_VERSION").toInt()
-        versionCode = versionProperties.getProperty("VERSION_CODE").toInt()
-        versionName = versionProperties.getProperty("VERSION_NAME")
+        minSdk = versions.sdkVersionMin
+        targetSdk = versions.sdkVersionTarget
+        versionCode = versions.appVersionCode
+        versionName = versions.appVersionName
         multiDexEnabled = true
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -93,7 +91,7 @@ android {
         buildConfigField(
             "long",
             "MIN_HOST_VERSION_CODE",
-            "${versionProperties.getProperty("REQUIRED_HOST_VERSION_CODE")}L",
+            "${versions["REQUIRED_HOST_VERSION_CODE"]}L",
         )
         buildConfigField("String", "ECJ_VERSION", "\"$ecjVersion\"")
         buildConfigField("String", "D8_VERSION", "\"$d8Version\"")
@@ -121,8 +119,6 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
         isCoreLibraryDesugaringEnabled = true
     }
 
@@ -211,7 +207,7 @@ val verifyPinnedInputs = tasks.register("verifyPinnedInputs") {
     inputs.files(protocolArtifacts)
 
     doLast {
-        check(versionProperties.getProperty("REQUIRED_HOST_VERSION_CODE") == "5276") {
+        check(versions["REQUIRED_HOST_VERSION_CODE"] == "5276") {
             "plugin_requires_host_version must stay aligned with REQUIRED_HOST_VERSION_CODE"
         }
         check(protocolLockFile.isFile) { "Missing protocol lock: $protocolLockFile" }
@@ -323,3 +319,5 @@ tasks.matching { task ->
 }.configureEach {
     dependsOn(prepareJvmSourceCompilerClasspath)
 }
+
+versions.handleIfNeeded(project, "", listOf("debug", "release"))
