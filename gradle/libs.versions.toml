@@ -1,8 +1,10 @@
 [versions]
+androidx-annotation = "1.9.1"
 commons-compress = "1.28.0"
 foojay-resolver-convention = "1.0.0"
 xz = "1.12"
 
 [libraries]
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
 apache-commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
 tukaani-xz = { module = "org.tukaani:xz", version.ref = "xz" }

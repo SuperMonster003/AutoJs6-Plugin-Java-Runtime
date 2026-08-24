@@ -1,9 +1,9 @@
 package org.autojs.plugin.jvmsource.java.worker
 
-import android.annotation.TargetApi
 import android.content.Context
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import androidx.annotation.RequiresApi
 import dalvik.system.DexClassLoader
 import dalvik.system.InMemoryDexClassLoader
 import org.autojs.plugin.jvmsource.api.JvmSha256
@@ -110,7 +110,7 @@ internal class WorkerDexLoader(private val context: Context) {
         return bytes
     }
 
-    @TargetApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun loadInMemory(validated: StructurallyValidatedWorkerDex, parent: ClassLoader): LoadedDex {
         // ART requires a non-direct buffer to expose its backing array while constructing the
         // in-memory DEX. The validated bytes remain private to this isolated worker.

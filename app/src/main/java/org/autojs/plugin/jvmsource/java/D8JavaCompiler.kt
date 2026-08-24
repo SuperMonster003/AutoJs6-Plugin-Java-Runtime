@@ -1,7 +1,7 @@
 package org.autojs.plugin.jvmsource.java
 
-import android.annotation.TargetApi
 import android.os.Build
+import androidx.annotation.RequiresApi
 import com.android.tools.r8.CompilationFailedException
 import com.android.tools.r8.CompilationMode
 import com.android.tools.r8.D8
@@ -52,7 +52,7 @@ internal class D8JavaCompiler(private val runtimeLibraries: D8RuntimeLibraries) 
         add(programJar.absolutePath)
     }.toTypedArray()
 
-    @TargetApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun runWithPathApi(programJar: File, outputDirectory: File, minApi: Int) {
         val builder = D8Command.builder()
             .addProgramFiles(programJar.toPath())

@@ -177,6 +177,7 @@ android {
 
 dependencies {
     implementation(files(protocolArtifacts))
+    implementation(libs.androidx.annotation)
     implementation("org.jetbrains.kotlin:kotlin-stdlib:2.3.21")
     implementation("org.eclipse.jdt:ecj:$ecjVersion")
     implementation("com.android.tools:r8:$d8Version")
