@@ -23,7 +23,8 @@ process. The compiler and worker never run inside the AutoJs6 process.
 错误码见 [Java Context API 与运行边界](docs/context-api.zh-CN.md)。
 
 Debug APK 的五阶段耗时、worker 冷启动和缓存计数可从应用私有 JSONL 读取；字段口径、ADB 命令和
-Release 零导出边界见 [M7 Debug 本地观测通道](docs/local-observability.zh-CN.md)。
+Release 零导出边界见 [M7 Debug 本地观测通道](docs/local-observability.zh-CN.md)。API 24/36 的
+生产 Binder 路径基线、原始 JSONL 与 M8-1 对比口径见 [M7-5 性能基线](docs/perf-baseline.md)。
 
 ## Source example
 

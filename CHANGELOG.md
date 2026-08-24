@@ -10,6 +10,9 @@ with an optional milestone suffix; Android package builds are tracked separately
 
 - Added a debug-only, provider-private, bounded JSONL observation channel for five phase timings,
   worker startup, per-session cache outcomes, and compiler-process cache counters.
+- Added a reproducible API 24/API 36 production-Binder performance baseline, including raw
+  schema-v1 JSONL evidence, pinned artifact digests, worker-startup share, and the M8-1 comparison
+  contract.
 - Added PowerShell and POSIX-shell offline pre-push verification entry points.
 - Added a Chinese Java Context API guide covering the source profile, every Entry API 2 method,
   return-value types, resource limits, cancellation, diagnostics, and error semantics.

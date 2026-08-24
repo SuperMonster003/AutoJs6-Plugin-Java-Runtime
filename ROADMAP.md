@@ -94,9 +94,12 @@
     `bindService`→`onServiceConnected` 的 worker 冷启动耗时；`BuildConfig.DEBUG` 与 debuggable flag 双门禁，
     Debug/Release unit-test variant 分别断言可写与零文件副作用，详见 `docs/local-observability.zh-CN.md`。
 
-- [ ] **M7-5 性能基线测量** `[设备]`
+- [x] **M7-5 性能基线测量** `[设备]`
   - 内容: 用 M7-4 通道在 API 24 与 34/36 各一台设备记录端到端时延基线 (含 worker 冷启动占比), 写入 `docs/perf-baseline.md`。
   - 验收: 基线文档完成, 可供 M8-1 预热项对比。
+  - 结果: 在 API 24/x86 与 API 36/x86_64 AVD 上经 AutoJs6 生产 Binder 路径分别保留
+    1 条 compiler cold + 10 条 warm 原始 schema-v1 JSONL。暖态 worker 启动占 session 的 p50 分别为
+    5.44% 与 36.09%；API 36 是 M8-1 的主要收益判据，详见 `docs/perf-baseline.md`。
 
 ## M8 — 运行时增强 (本仓独立)
 

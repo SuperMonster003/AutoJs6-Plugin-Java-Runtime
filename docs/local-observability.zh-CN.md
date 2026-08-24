@@ -125,3 +125,6 @@ workerColdStartShare = workerStartupDurationMillis / sessionElapsedMillis
 仅对两个字段都为非空且 `sessionElapsedMillis > 0` 的行计算。报告应分别呈现 compiler `COLD`/`WARM`，
 不要把缺失阶段当成零，也不要用五阶段之和反推 worker 冷启动；源码读取、缓存判断、Binder 交接等时间
 并不属于五阶段中的任何一个。
+
+2026-08-25 的 API 24/API 36 生产 Binder 路径基线、原始 JSONL、统计口径和 M8-1 前后对比契约见
+[`perf-baseline.md`](perf-baseline.md)。
