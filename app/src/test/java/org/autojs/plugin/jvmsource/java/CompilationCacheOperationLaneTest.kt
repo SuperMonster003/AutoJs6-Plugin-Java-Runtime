@@ -1,11 +1,13 @@
 package org.autojs.plugin.jvmsource.java
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 class CompilationCacheOperationLaneTest {
@@ -55,7 +57,7 @@ class CompilationCacheOperationLaneTest {
     }
 
     @Test
-    fun timeoutPoisonsTheOnlyWorkerAndLaterRequestsFailFast() {
+    fun timeoutPoisonsTheWorkerAndRequestsFailFastDuringCooldown() {
         val entered = CountDownLatch(1)
         val release = CountDownLatch(1)
         CompilationCacheOperationLane(timeoutMillis = 50L).use { lane ->
@@ -88,6 +90,110 @@ class CompilationCacheOperationLaneTest {
             assertTrue("poisoned rejection took $elapsedMillis ms", elapsedMillis < 500L)
             assertSame(worker, lane.workerForTest())
             release.countDown()
+        }
+    }
+
+    @Test
+    fun timeoutThenCooldownRebuildsOnceAndBecomesUsable() {
+        val clockNanos = AtomicLong(0L)
+        CompilationCacheOperationLane(
+            timeoutMillis = 50L,
+            recoveryCooldownMillis = 100L,
+            monotonicNanos = clockNanos::get,
+        ).use { lane ->
+            val originalWorker = lane.workerForTest()
+
+            assertTimeout(lane)
+            originalWorker.join(1_000L)
+            assertTrue("Original cache worker did not stop", !originalWorker.isAlive)
+            assertEquals(
+                CompilationCacheOperationFailure.POISONED,
+                (lane.execute { 1 } as CompilationCacheOperationResult.Unavailable).failure,
+            )
+
+            clockNanos.set(TimeUnit.MILLISECONDS.toNanos(100L))
+            assertEquals(2, (lane.execute { 2 } as CompilationCacheOperationResult.Success).value)
+            assertNotSame(originalWorker, lane.workerForTest())
+            assertTrue(lane.recoveryUsedForTest())
+            assertTrue(!lane.isPoisonedForTest())
+        }
+    }
+
+    @Test
+    fun elapsedCooldownCannotOverlapAnUninterruptibleOldWorker() {
+        val clockNanos = AtomicLong(0L)
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        CompilationCacheOperationLane(
+            timeoutMillis = 50L,
+            recoveryCooldownMillis = 100L,
+            monotonicNanos = clockNanos::get,
+        ).use { lane ->
+            val originalWorker = lane.workerForTest()
+            val timedOut = lane.execute {
+                entered.countDown()
+                while (true) {
+                    try {
+                        if (release.await(10L, TimeUnit.MILLISECONDS)) break
+                    } catch (_: InterruptedException) {
+                        // Model platform I/O that remains live beyond interruption and cooldown.
+                    }
+                }
+                1
+            }
+            assertTrue(entered.count == 0L)
+            assertEquals(
+                CompilationCacheOperationFailure.TIMED_OUT,
+                (timedOut as CompilationCacheOperationResult.Unavailable).failure,
+            )
+
+            clockNanos.set(TimeUnit.MILLISECONDS.toNanos(100L))
+            val blockedRecovery = lane.execute { 2 }
+            assertEquals(
+                CompilationCacheOperationFailure.POISONED,
+                (blockedRecovery as CompilationCacheOperationResult.Unavailable).failure,
+            )
+            assertSame(originalWorker, lane.workerForTest())
+            assertTrue(!lane.recoveryUsedForTest())
+
+            release.countDown()
+            originalWorker.join(1_000L)
+            assertTrue("Original cache worker did not stop after release", !originalWorker.isAlive)
+            assertEquals(3, (lane.execute { 3 } as CompilationCacheOperationResult.Success).value)
+            assertNotSame(originalWorker, lane.workerForTest())
+        }
+    }
+
+    @Test
+    fun secondTimeoutAfterRecoveryPermanentlyPoisonsTheLane() {
+        val clockNanos = AtomicLong(0L)
+        CompilationCacheOperationLane(
+            timeoutMillis = 50L,
+            recoveryCooldownMillis = 100L,
+            monotonicNanos = clockNanos::get,
+        ).use { lane ->
+            val originalWorker = lane.workerForTest()
+            assertTimeout(lane)
+            originalWorker.join(1_000L)
+            assertTrue("Original cache worker did not stop", !originalWorker.isAlive)
+
+            clockNanos.set(TimeUnit.MILLISECONDS.toNanos(100L))
+            assertEquals(1, (lane.execute { 1 } as CompilationCacheOperationResult.Success).value)
+            val replacementWorker = lane.workerForTest()
+            assertNotSame(originalWorker, replacementWorker)
+
+            assertTimeout(lane)
+            replacementWorker.join(1_000L)
+            assertTrue("Replacement cache worker did not stop", !replacementWorker.isAlive)
+            clockNanos.set(TimeUnit.SECONDS.toNanos(10L))
+
+            val permanentlyPoisoned = lane.execute { 2 }
+            assertEquals(
+                CompilationCacheOperationFailure.POISONED,
+                (permanentlyPoisoned as CompilationCacheOperationResult.Unavailable).failure,
+            )
+            assertSame(replacementWorker, lane.workerForTest())
+            assertTrue(lane.isPoisonedForTest())
         }
     }
 
@@ -131,6 +237,24 @@ class CompilationCacheOperationLaneTest {
         assertEquals(
             CompilationCacheOperationFailure.CLOSED,
             (result.get() as CompilationCacheOperationResult.Unavailable).failure,
+        )
+    }
+
+    private fun assertTimeout(lane: CompilationCacheOperationLane) {
+        val entered = CountDownLatch(1)
+        val result = lane.execute {
+            entered.countDown()
+            try {
+                CountDownLatch(1).await()
+            } catch (_: InterruptedException) {
+                // Cooperative stand-in for a cache operation that stops after cancellation.
+            }
+            1
+        }
+        assertTrue(entered.count == 0L)
+        assertEquals(
+            CompilationCacheOperationFailure.TIMED_OUT,
+            (result as CompilationCacheOperationResult.Unavailable).failure,
         )
     }
 }

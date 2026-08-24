@@ -30,31 +30,41 @@ internal sealed interface CompilationCacheOperationResult<out T> {
 }
 
 /**
- * One permanent daemon thread and one admitted operation, with no pending-operation queue.
+ * One active daemon thread and one admitted operation, with no pending-operation queue.
  *
  * A timed-out or caller-interrupted operation may be stuck in uninterruptible platform I/O. The
- * lane is therefore permanently poisoned instead of replacing the thread. The stuck operation
- * retains the sole slot, and every later caller receives an immediate unavailable result. This
- * bounds request retirement without accumulating tasks or cache-operation threads.
+ * first poisoned worker may be rebuilt once, but only after a cooldown and proof that the old task
+ * and thread have both stopped. A second poison is permanent. This preserves one-thread/one-slot
+ * cache access without accumulating tasks or overlapping an abandoned I/O operation.
  */
 internal class CompilationCacheOperationLane internal constructor(
     timeoutMillis: Long = DEFAULT_OPERATION_TIMEOUT_MILLIS,
     threadName: String = "jvm-source-compilation-cache",
+    recoveryCooldownMillis: Long = DEFAULT_RECOVERY_COOLDOWN_MILLIS,
+    private val monotonicNanos: () -> Long = System::nanoTime,
 ) : Closeable {
     private val timeoutMillis = timeoutMillis.also { require(it > 0L) }
     private val workerName = threadName.also { require(it.isNotBlank()) }
+    private val recoveryCooldownNanos = TimeUnit.MILLISECONDS.toNanos(recoveryCooldownMillis).also {
+        require(it > 0L) { "Recovery cooldown must be positive" }
+    }
     private val admissionLock = ReentrantLock()
     private val signal = Semaphore(0)
     private val occupied = AtomicBoolean(false)
     private val poisoned = AtomicBoolean(false)
     private val closed = AtomicBoolean(false)
+    private var recoveryUsed = false
+    private var poisonedAtNanos: Long? = null
 
     private val pending = AtomicReference<FutureTask<*>?>(null)
     private val active = AtomicReference<FutureTask<*>?>(null)
+    private val worker = AtomicReference<Thread>()
 
-    private val worker = Thread(::runWorker, workerName).apply {
-        isDaemon = true
-        start()
+    init {
+        newWorker().also { initial ->
+            worker.set(initial)
+            initial.start()
+        }
     }
 
     fun <T> execute(operation: () -> T): CompilationCacheOperationResult<T> {
@@ -69,7 +79,9 @@ internal class CompilationCacheOperationLane internal constructor(
         }
         admissionLock.withLock {
             if (closed.get()) return unavailable(CompilationCacheOperationFailure.CLOSED)
-            if (poisoned.get()) return unavailable(CompilationCacheOperationFailure.POISONED)
+            if (poisoned.get() && !tryRecoverLocked()) {
+                return unavailable(CompilationCacheOperationFailure.POISONED)
+            }
             if (!occupied.compareAndSet(false, true)) {
                 return unavailable(CompilationCacheOperationFailure.REJECTED)
             }
@@ -107,12 +119,13 @@ internal class CompilationCacheOperationLane internal constructor(
             active.get()?.cancel(true)
             signal.release()
         }
-        worker.interrupt()
+        worker.get().interrupt()
     }
 
     internal fun isPoisonedForTest(): Boolean = poisoned.get()
+    internal fun recoveryUsedForTest(): Boolean = admissionLock.withLock { recoveryUsed }
     internal fun hasPendingForTest(): Boolean = pending.get() != null
-    internal fun workerForTest(): Thread = worker
+    internal fun workerForTest(): Thread = worker.get()
 
     private fun runWorker() {
         while (!closed.get() && !poisoned.get()) {
@@ -136,13 +149,35 @@ internal class CompilationCacheOperationLane internal constructor(
     }
 
     private fun poisonAndCancel(task: FutureTask<*>) {
-        admissionLock.withLock {
+        val workerToInterrupt = admissionLock.withLock {
             poisoned.set(true)
-            pending.compareAndSet(task, null)
+            poisonedAtNanos = monotonicNanos()
+            if (pending.compareAndSet(task, null)) occupied.set(false)
             task.cancel(true)
+            worker.get()
         }
-        worker.interrupt()
+        workerToInterrupt.interrupt()
     }
+
+    /** Called with [admissionLock] held. Recovery never overlaps the previous worker generation. */
+    private fun tryRecoverLocked(): Boolean {
+        if (recoveryUsed) return false
+        val poisonedAt = poisonedAtNanos ?: return false
+        if (monotonicNanos() - poisonedAt < recoveryCooldownNanos) return false
+        val previous = worker.get()
+        if (occupied.get() || pending.get() != null || active.get() != null || previous.isAlive) return false
+
+        recoveryUsed = true
+        poisonedAtNanos = null
+        signal.drainPermits()
+        val replacement = newWorker()
+        worker.set(replacement)
+        poisoned.set(false)
+        replacement.start()
+        return true
+    }
+
+    private fun newWorker(): Thread = Thread(::runWorker, workerName).apply { isDaemon = true }
 
     private fun terminalFailure(): CompilationCacheOperationFailure =
         if (closed.get()) CompilationCacheOperationFailure.CLOSED
@@ -153,5 +188,6 @@ internal class CompilationCacheOperationLane internal constructor(
 
     companion object {
         internal const val DEFAULT_OPERATION_TIMEOUT_MILLIS = 1_000L
+        internal const val DEFAULT_RECOVERY_COOLDOWN_MILLIS = 5_000L
     }
 }

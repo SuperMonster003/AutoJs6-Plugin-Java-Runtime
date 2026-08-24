@@ -20,6 +20,8 @@ with an optional milestone suffix; Android package builds are tracked separately
   and metadata segments while preserving the remaining actionable compiler message.
 - Changed ECJ batch reporting to emit each compiler problem as an ordered Protocol 1.1 diagnostic
   frame under the existing cumulative 64 KiB wire budget.
+- Changed the compilation-cache operation lane to permit one cooldown-gated, quiescence-checked
+  worker rebuild after a timeout; a second timeout remains permanently fail-closed.
 
 ## [0.3.0-m5] - 2026-08-25
 

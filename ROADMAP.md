@@ -80,9 +80,10 @@
   - 验收: 多错误源文件一次回传多条诊断 (或形成移交 M9 的结论记录)。
   - 结论: Protocol 1.1 允许重复发送单条 `onDiagnostic` frame；provider 已按 ECJ 源顺序逐条发送，宿主按累计 wire bytes 验证并收集为列表，详见 `docs/diagnostic-wire.zh-CN.md`。
 
-- [ ] **M7-3 缓存 lane 毒化恢复** `[本仓]`
+- [x] **M7-3 缓存 lane 毒化恢复** `[本仓]`
   - 内容: `CompilationCacheOperationLane` 1 秒超时后**永久毒化**直到进程重启。增加有界恢复: 冷却期后单次重建 lane, 二次失败再永久毒化, 保持单线程单槽语义。
   - 验收: 新单测: 超时→冷却→恢复→可用; 连续失败路径行为可预期; 现有 lane 测试不回归。
+  - 实现: 默认冷却 5 秒；仅在旧任务和旧 worker 均确认退出后重建一次，旧 I/O 未退出时继续 fail-closed，替代 worker 二次超时后永久毒化。
 
 - [ ] **M7-4 观测数据本地导出通道 (debug 构建限定)** `[本仓]`
   - 内容: 在"不跨 Protocol V1"前提下 (`JavaProviderObservationPolicy.kt:75` 明确导出需未来协商协议 + 运行时证据),
