@@ -33,22 +33,22 @@
 
 ## M6 — 工程基线巩固 (全部 `[本仓]`)
 
-- [ ] **M6-1 提交构建体系迁移改动**
+- [x] **M6-1 提交构建体系迁移改动**
   - 内容: 当前工作区有 6 个已修改 + 2 个未跟踪文件 (`build-logic/`、`gradle/libs.versions.toml`、
     `settings.gradle.kts`、`app/build.gradle.kts`、`version.properties` 的 `VERSION_CODE→VERSION_BUILD` 等),
     主题是迁移到 `org.autojs.build.platform-versions` 共享 convention 插件体系。审阅后拆分成语义清晰的 commit 提交。
   - 验收: `git status` 干净; `.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease --offline` 三连通过; `verifyPinnedInputs` 常绿。
 
-- [ ] **M6-2 修复 2 处 UseRequiresApi lint**
+- [x] **M6-2 修复 2 处 UseRequiresApi lint**
   - 内容: `D8JavaCompiler.kt:55` 与 `WorkerDexLoader.kt:113` 的 `@TargetApi(O)` 改为 `@RequiresApi(O)`, 使 API 约束传播到调用方。
   - 验收: `:app:lintDebug --offline` 报告中 UseRequiresApi 归零; 单测全绿。
 
-- [ ] **M6-3 依赖版本目录化**
+- [x] **M6-3 依赖版本目录化**
   - 内容: `app/build.gradle.kts` 中硬编码的 ECJ 3.26.0 / D8 8.13.17 / desugar_jdk_libs_nio 2.1.5 / kotlin-stdlib 2.3.21
     坐标迁入 `gradle/libs.versions.toml` (目前该 toml 只服务 build-logic)。**保留** `verifyPinnedInputs` 的字面量断言双源模式 (刻意冗余)。
   - 验收: 离线构建产物等价; lock 校验行为不变。
 
-- [ ] **M6-4 建立 CHANGELOG 与版本 tag 基线**
+- [x] **M6-4 建立 CHANGELOG 与版本 tag 基线**
   - 内容: 新建 `CHANGELOG.md`, 补记 m5 能力集与构建迁移; 打 tag `v0.3.0-m5` (仓库目前 0 个 tag)。
   - 验收: tag 存在; CHANGELOG 与 `version.properties` 版本一致。
 
