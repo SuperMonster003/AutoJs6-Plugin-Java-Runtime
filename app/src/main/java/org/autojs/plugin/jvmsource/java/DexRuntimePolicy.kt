@@ -1,5 +1,6 @@
 package org.autojs.plugin.jvmsource.java
 
+import android.os.Build
 import org.autojs.plugin.jvmsource.api.JvmDexLoaderKind
 import org.autojs.plugin.jvmsource.api.JvmDexRuntimeProfile
 import org.autojs.plugin.jvmsource.api.JvmSourceContract
@@ -12,6 +13,18 @@ import org.autojs.plugin.jvmsource.api.JvmSourceContract
  * requested minApi contract.
  */
 internal object DexRuntimePolicy {
+    /**
+     * API 26 exposes only the one-buffer InMemoryDexClassLoader constructor. The array constructor
+     * required for a sound shared multi-DEX namespace was added in API 27; a chain of one-buffer
+     * loaders would fail for cyclic cross-DEX references and is therefore deliberately forbidden.
+     */
+    fun maximumDexFiles(deviceApi: Int): Int {
+        require(deviceApi >= JvmSourceContract.MIN_ANDROID_API) {
+            "The worker device API is below the JVM source minimum"
+        }
+        return if (deviceApi == Build.VERSION_CODES.O) 1 else JavaDexOutputPolicy.MAX_DEX_FILES
+    }
+
     fun loaderKind(deviceApi: Int): WorkerDexLoaderKind {
         require(deviceApi >= JvmSourceContract.MIN_ANDROID_API) {
             "The worker device API is below the JVM source minimum"

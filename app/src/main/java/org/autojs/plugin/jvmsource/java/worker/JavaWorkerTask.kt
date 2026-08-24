@@ -26,6 +26,7 @@ import org.autojs.plugin.jvmsource.java.JavaProviderObservedProcess
 import org.autojs.plugin.jvmsource.java.JavaProviderResourceProbe
 import org.autojs.plugin.jvmsource.java.JavaProviderObservationCodec
 import org.autojs.plugin.jvmsource.java.JavaRuntimeDiagnosticPolicy
+import org.autojs.plugin.jvmsource.java.ProviderDexSetIdentity
 import org.autojs.plugin.jvmsource.java.ProviderProcessIdentity
 import org.autojs.plugin.jvmsource.java.WorkerDexLoaderKind
 import org.autojs.plugin.jvmsource.java.worker.IJavaExecutionCallback
@@ -41,10 +42,9 @@ internal class JavaWorkerTask(
     private val compilationElapsedMillis: Long,
     private val classArtifactSizeBytes: Long,
     private val classArtifactSha256: JvmSha256,
-    private val dexArtifactSizeBytes: Long,
-    private val dexArtifactSha256: JvmSha256,
+    private val dexArtifactIdentity: ProviderDexSetIdentity,
     private val expectedClassDescriptors: Set<String>,
-    private val dexFd: ParcelFileDescriptor,
+    private val dexFds: List<ParcelFileDescriptor>,
     private val stdoutFd: ParcelFileDescriptor,
     private val stderrFd: ParcelFileDescriptor,
     private val hostBridge: IJvmHostBridge,
@@ -122,9 +122,8 @@ internal class JavaWorkerTask(
             val loadStartedAt = SystemClock.elapsedRealtime()
             val dexLoader = WorkerDexLoader(context)
             val validatedDex = dexLoader.validateStructure(
-                descriptor = dexFd,
-                expectedSizeBytes = dexArtifactSizeBytes,
-                expectedSha256 = dexArtifactSha256,
+                descriptors = dexFds,
+                expectedIdentity = dexArtifactIdentity,
                 expectedClassDescriptors = expectedClassDescriptors,
                 requestMinApi = request.minApi,
                 ensureActive = ::ensureActive,
@@ -140,7 +139,7 @@ internal class JavaWorkerTask(
             val loadedTemporaryStorageBytes = when (activeLoadedDex.actualLoaderKind) {
                 WorkerDexLoaderKind.IN_MEMORY_DEX_CLASS_LOADER -> 0L
                 // API 24/25 also has runtime-generated optimized output. Until a bounded tree
-                // measurement is retained, unknown is safer than reporting only classes.dex.
+                // measurement is retained, unknown is safer than reporting only published DEX bytes.
                 WorkerDexLoaderKind.PRIVATE_DEX_CLASS_LOADER -> null
             }
             ensureActive()
@@ -204,23 +203,23 @@ internal class JavaWorkerTask(
             )
             val executionElapsed = elapsedSince(executionStartedAt)
             val totalElapsed = Math.addExact(compilationElapsedMillis, executionElapsed)
-            val loadedArtifact = activeLoadedDex.validatedArtifact
+            val loadedArtifacts = activeLoadedDex.validatedArtifacts
             check(validatedDex.stage == WorkerDexLoadStage.STRUCTURE_VALIDATED)
             check(activeLoadedDex.stage == WorkerDexLoadStage.ART_CLASS_LOADER_CREATED)
             check(loadedEntry.stage == WorkerDexLoadStage.ART_ENTRY_CLASS_LOADED)
-            check(loadedArtifact.loaderKind == activeLoadedDex.actualLoaderKind)
-            check(loadedArtifact.requestMinApi == request.minApi)
-            check(loadedArtifact.deviceApi == Build.VERSION.SDK_INT)
+            check(loadedArtifacts.loaderKind == activeLoadedDex.actualLoaderKind)
+            check(loadedArtifacts.requestMinApi == request.minApi)
+            check(loadedArtifacts.deviceApi == Build.VERSION.SDK_INT)
             finishCompleted(
                 JvmSourceResult(
                     requestId = request.requestId,
                     toolchainFingerprint = request.expectedToolchainFingerprint,
                     classArtifactSizeBytes = classArtifactSizeBytes,
                     classArtifactSha256 = classArtifactSha256,
-                    dexArtifactSizeBytes = dexArtifactSizeBytes,
-                    dexArtifactSha256 = dexArtifactSha256,
-                    dexVersion = loadedArtifact.version,
-                    loaderKind = loadedArtifact.loaderKind.apiKind,
+                    dexArtifactSizeBytes = dexArtifactIdentity.sizeBytes,
+                    dexArtifactSha256 = dexArtifactIdentity.sha256,
+                    dexVersion = loadedArtifacts.version,
+                    loaderKind = loadedArtifacts.loaderKind.apiKind,
                     resultJson = resultJson,
                     stdoutSizeBytes = stdoutSnapshot.sizeBytes,
                     stdoutSha256 = stdoutSnapshot.sha256,
@@ -373,7 +372,7 @@ internal class JavaWorkerTask(
     }
 
     private fun closeDescriptors() {
-        runCatching { dexFd.close() }
+        dexFds.forEach { runCatching { it.close() } }
         runCatching { stdoutFd.close() }
         runCatching { stderrFd.close() }
     }

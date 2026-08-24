@@ -69,6 +69,8 @@ class CompilerArgumentsTest {
         assertEquals(2, arguments.count { it == "--lib" })
         assertEquals(1, arguments.count { it == "--min-api" })
         assertEquals("24", arguments[arguments.indexOf("--min-api") + 1])
+        assertTrue("dex-output-profile=r4-contiguous" in D8JavaCompiler.optionsIdentity(24))
+        assertTrue("max-dex-files=4" in D8JavaCompiler.optionsIdentity(24))
     }
 
     @Test

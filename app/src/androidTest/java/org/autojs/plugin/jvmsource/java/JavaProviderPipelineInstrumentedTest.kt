@@ -46,24 +46,22 @@ class JavaProviderPipelineInstrumentedTest {
 
             val classes = UserClassJarWriter.write(workspace.classesDirectory, workspace.programJar)
             assertEquals(setOf("LMain;"), classes.dexDescriptors)
-            val dexFile = D8JavaCompiler(environment.d8RuntimeLibraries).compile(
+            val dexFiles = D8JavaCompiler(environment.d8RuntimeLibraries).compile(
                 programJar = workspace.programJar,
                 outputDirectory = workspace.d8OutputDirectory,
                 minApi = JvmSourceContract.MIN_ANDROID_API,
                 ensureActive = {},
             )
-            val dexIdentity = ProviderDigests.file(
-                dexFile,
-                JvmSourceContract.MAX_DEX_ARTIFACT_BYTES,
-            )
-            assertTrue("Generated classes.dex must be frozen before dynamic loading", dexFile.setReadOnly())
+            val dexIdentity = ProviderDexSetIdentity.fromFiles(dexFiles)
+            dexFiles.forEach { dexFile ->
+                assertTrue("Generated ${dexFile.name} must be frozen before dynamic loading", dexFile.setReadOnly())
+            }
 
-            val descriptor = ParcelFileDescriptor.open(dexFile, ParcelFileDescriptor.MODE_READ_ONLY)
+            val descriptors = dexFiles.map { ParcelFileDescriptor.open(it, ParcelFileDescriptor.MODE_READ_ONLY) }
             val loader = WorkerDexLoader(context)
             val validatedDex = loader.validateStructure(
-                descriptor = descriptor,
-                expectedSizeBytes = dexIdentity.sizeBytes,
-                expectedSha256 = dexIdentity.sha256,
+                descriptors = descriptors,
+                expectedIdentity = dexIdentity,
                 expectedClassDescriptors = classes.dexDescriptors,
                 requestMinApi = JvmSourceContract.MIN_ANDROID_API,
                 ensureActive = {},
@@ -76,17 +74,17 @@ class JavaProviderPipelineInstrumentedTest {
                 parent = AutoJsJvmEntry::class.java.classLoader!!,
             ).use { loaded ->
                 assertEquals(WorkerDexLoadStage.ART_CLASS_LOADER_CREATED, loaded.stage)
-                assertEquals(loaded.validatedArtifact.loaderKind, loaded.actualLoaderKind)
+                assertEquals(loaded.validatedArtifacts.loaderKind, loaded.actualLoaderKind)
                 assertEquals(
                     DexRuntimePolicy.loaderKind(android.os.Build.VERSION.SDK_INT),
-                    loaded.validatedArtifact.loaderKind,
+                    loaded.validatedArtifacts.loaderKind,
                 )
                 assertEquals(
                     JvmDexRuntimeProfile.loaderKindForApi(android.os.Build.VERSION.SDK_INT),
                     loaded.actualLoaderKind.apiKind,
                 )
                 assertTrue(
-                    loaded.validatedArtifact.version in
+                    loaded.validatedArtifacts.version in
                         JvmDexRuntimeProfile.admittedVersions(android.os.Build.VERSION.SDK_INT),
                 )
                 val loadedEntry = WorkerEntryFactory.loadFromArt(loaded.classLoader)

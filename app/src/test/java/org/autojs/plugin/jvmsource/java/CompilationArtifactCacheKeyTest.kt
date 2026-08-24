@@ -97,7 +97,7 @@ class CompilationArtifactCacheKeyTest {
     @Test
     fun canonicalSchemaHasAPinnedGoldenDigest() {
         assertEquals(
-            "c22bc34db11da5ea27b2d32d91a3abc1c0b054419080bc8db5c56631957f3b97",
+            "9a1294ab53e86c5201420c726a94132e39894249a3ef77328afa314e95c64c89",
             key(provenance()).hex,
         )
     }

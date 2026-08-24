@@ -248,7 +248,7 @@ class JvmSourceR2ReadOnlyDexInstrumentationTest {
                 workspace.d8OutputDirectory,
                 JvmSourceContract.MIN_ANDROID_API,
                 ensureActive = {},
-            )
+            ).single()
             val identity = ProviderDigests.file(dex, JvmSourceContract.MAX_DEX_ARTIFACT_BYTES)
             require(identity.sizeBytes <= Int.MAX_VALUE.toLong())
             dex.readBytes().also { bytes -> require(bytes.size.toLong() == identity.sizeBytes) }

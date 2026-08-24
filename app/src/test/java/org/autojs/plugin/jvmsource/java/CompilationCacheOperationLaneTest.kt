@@ -60,7 +60,7 @@ class CompilationCacheOperationLaneTest {
     fun timeoutPoisonsTheWorkerAndRequestsFailFastDuringCooldown() {
         val entered = CountDownLatch(1)
         val release = CountDownLatch(1)
-        CompilationCacheOperationLane(timeoutMillis = 50L).use { lane ->
+        CompilationCacheOperationLane(timeoutMillis = TEST_OPERATION_TIMEOUT_MILLIS).use { lane ->
             val worker = lane.workerForTest()
             val timedOut = lane.execute {
                 entered.countDown()
@@ -97,7 +97,7 @@ class CompilationCacheOperationLaneTest {
     fun timeoutThenCooldownRebuildsOnceAndBecomesUsable() {
         val clockNanos = AtomicLong(0L)
         CompilationCacheOperationLane(
-            timeoutMillis = 50L,
+            timeoutMillis = TEST_OPERATION_TIMEOUT_MILLIS,
             recoveryCooldownMillis = 100L,
             monotonicNanos = clockNanos::get,
         ).use { lane ->
@@ -125,7 +125,7 @@ class CompilationCacheOperationLaneTest {
         val entered = CountDownLatch(1)
         val release = CountDownLatch(1)
         CompilationCacheOperationLane(
-            timeoutMillis = 50L,
+            timeoutMillis = TEST_OPERATION_TIMEOUT_MILLIS,
             recoveryCooldownMillis = 100L,
             monotonicNanos = clockNanos::get,
         ).use { lane ->
@@ -168,7 +168,7 @@ class CompilationCacheOperationLaneTest {
     fun secondTimeoutAfterRecoveryPermanentlyPoisonsTheLane() {
         val clockNanos = AtomicLong(0L)
         CompilationCacheOperationLane(
-            timeoutMillis = 50L,
+            timeoutMillis = TEST_OPERATION_TIMEOUT_MILLIS,
             recoveryCooldownMillis = 100L,
             monotonicNanos = clockNanos::get,
         ).use { lane ->
@@ -256,5 +256,11 @@ class CompilationCacheOperationLaneTest {
             CompilationCacheOperationFailure.TIMED_OUT,
             (result as CompilationCacheOperationResult.Unavailable).failure,
         )
+    }
+
+    private companion object {
+        // Full verification runs unit variants alongside lint/R8. Keep the fixture well above
+        // transient host scheduling latency while remaining far below production session limits.
+        const val TEST_OPERATION_TIMEOUT_MILLIS = 2_000L
     }
 }

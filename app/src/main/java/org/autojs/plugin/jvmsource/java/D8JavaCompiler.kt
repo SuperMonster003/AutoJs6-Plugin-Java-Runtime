@@ -18,7 +18,7 @@ internal class D8JavaCompiler(private val runtimeLibraries: D8RuntimeLibraries) 
         outputDirectory: File,
         minApi: Int,
         ensureActive: () -> Unit,
-    ): File {
+    ): List<File> {
         ensureActive()
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -36,7 +36,11 @@ internal class D8JavaCompiler(private val runtimeLibraries: D8RuntimeLibraries) 
             throw failure(error.message ?: "D8 failed to produce Android DEX", error)
         }
         ensureActive()
-        return JavaDexOutputPolicy.requireSingleDexFile(outputDirectory.listFiles()?.asList().orEmpty())
+        val dexFiles = JavaDexOutputPolicy.requireDexFiles(outputDirectory.listFiles()?.asList().orEmpty())
+        if (dexFiles.size > DexRuntimePolicy.maximumDexFiles(Build.VERSION.SDK_INT)) {
+            throw failure("Android API 26 cannot load a shared multi-DEX in-memory namespace")
+        }
+        return dexFiles
     }
 
     internal fun arguments(programJar: File, outputDirectory: File, minApi: Int): Array<String> = buildList {
@@ -77,6 +81,8 @@ internal class D8JavaCompiler(private val runtimeLibraries: D8RuntimeLibraries) 
             "min-api=$minApi",
             "libraries=controlled-runtime",
             "single-program-jar=true",
+            "dex-output-profile=r4-contiguous",
+            "max-dex-files=${JavaDexOutputPolicy.MAX_DEX_FILES}",
         )
     }
 }

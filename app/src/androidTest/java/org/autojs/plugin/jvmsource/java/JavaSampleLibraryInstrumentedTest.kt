@@ -169,22 +169,20 @@ class JavaSampleLibraryInstrumentedTest {
                 workspace.classesDirectory,
                 workspace.programJar,
             )
-            val dexFile = D8JavaCompiler(environment.d8RuntimeLibraries).compile(
+            val dexFiles = D8JavaCompiler(environment.d8RuntimeLibraries).compile(
                 programJar = workspace.programJar,
                 outputDirectory = workspace.d8OutputDirectory,
                 minApi = JvmSourceContract.MIN_ANDROID_API,
                 ensureActive = {},
             )
-            val dexIdentity = ProviderDigests.file(
-                dexFile,
-                JvmSourceContract.MAX_DEX_ARTIFACT_BYTES,
-            )
-            assertTrue("Generated DEX could not be made read-only", dexFile.setReadOnly())
+            val dexIdentity = ProviderDexSetIdentity.fromFiles(dexFiles)
+            dexFiles.forEach { dexFile ->
+                assertTrue("Generated ${dexFile.name} could not be made read-only", dexFile.setReadOnly())
+            }
             val loader = WorkerDexLoader(targetContext)
             val validated = loader.validateStructure(
-                descriptor = ParcelFileDescriptor.open(dexFile, ParcelFileDescriptor.MODE_READ_ONLY),
-                expectedSizeBytes = dexIdentity.sizeBytes,
-                expectedSha256 = dexIdentity.sha256,
+                descriptors = dexFiles.map { ParcelFileDescriptor.open(it, ParcelFileDescriptor.MODE_READ_ONLY) },
+                expectedIdentity = dexIdentity,
                 expectedClassDescriptors = classes.dexDescriptors,
                 requestMinApi = JvmSourceContract.MIN_ANDROID_API,
                 ensureActive = {},

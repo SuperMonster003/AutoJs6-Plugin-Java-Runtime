@@ -16,6 +16,7 @@ import org.autojs.plugin.jvmsource.api.JvmSourceErrorCode
 import org.autojs.plugin.jvmsource.api.JvmSourceFailurePhase
 import org.autojs.plugin.jvmsource.api.JvmSourceValidation
 import org.autojs.plugin.jvmsource.java.ProviderProcessIdentity
+import org.autojs.plugin.jvmsource.java.ProviderDexSetIdentity
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 
@@ -52,10 +53,11 @@ class JavaExecutionWorkerService : Service() {
             compilationElapsedMillis: Long,
             classArtifactSizeBytes: Long,
             classArtifactSha256: ByteArray?,
-            dexArtifactSizeBytes: Long,
-            dexArtifactSha256: ByteArray?,
+            dexArtifactNames: Array<out String>?,
+            dexArtifactSizes: LongArray?,
+            dexArtifactSha256s: ByteArray?,
             expectedClassDescriptors: Array<out String>?,
-            dexFd: ParcelFileDescriptor?,
+            dexFds: Array<out ParcelFileDescriptor>?,
             stdoutFd: ParcelFileDescriptor?,
             stderrFd: ParcelFileDescriptor?,
             hostBridge: IJvmHostBridge?,
@@ -63,31 +65,38 @@ class JavaExecutionWorkerService : Service() {
         ) {
             val admittedCompiler = enforceCompilerCaller(
                 true,
-                dexFd,
+                dexFds,
                 stdoutFd,
                 stderrFd,
             )
             if (executionLifecycle.tryClaim() != SingleUseWorkerLifecycle.Admission.ACQUIRED) {
-                closeDescriptors(dexFd, stdoutFd, stderrFd)
+                closeDescriptors(dexFds, stdoutFd, stderrFd)
                 retireProcess(WorkerProcessRetirementPolicy.Trigger.INVALID_ADMISSION)
                 return
             }
-            if (requestMetadata == null || classArtifactSha256 == null || dexArtifactSha256 == null ||
-                expectedClassDescriptors == null || dexFd == null || stdoutFd == null || stderrFd == null ||
+            if (requestMetadata == null || classArtifactSha256 == null || dexArtifactNames == null ||
+                dexArtifactSizes == null || dexArtifactSha256s == null || expectedClassDescriptors == null ||
+                dexFds == null || stdoutFd == null || stderrFd == null ||
                 hostBridge == null || callback == null || generation <= 0L || compilationElapsedMillis < 0L
             ) {
-                closeDescriptors(dexFd, stdoutFd, stderrFd)
+                closeDescriptors(dexFds, stdoutFd, stderrFd)
                 retireProcess(WorkerProcessRetirementPolicy.Trigger.INVALID_ADMISSION)
                 return
             }
             val request = try {
                 JvmSourceCodec.decodeRequest(requestMetadata.copyOf()).also(JvmSourceValidation::validateRequest)
             } catch (_: Throwable) {
-                closeDescriptors(dexFd, stdoutFd, stderrFd)
+                closeDescriptors(dexFds, stdoutFd, stderrFd)
                 retireProcess(WorkerProcessRetirementPolicy.Trigger.INVALID_ADMISSION)
                 return
             }
             val task = try {
+                val dexIdentity = ProviderDexSetIdentity.fromTransport(
+                    dexArtifactNames,
+                    dexArtifactSizes,
+                    dexArtifactSha256s,
+                )
+                require(dexFds.size == dexIdentity.files.size)
                 JavaWorkerTask(
                     context = applicationContext,
                     request = request,
@@ -95,10 +104,9 @@ class JavaExecutionWorkerService : Service() {
                     compilationElapsedMillis = compilationElapsedMillis,
                     classArtifactSizeBytes = classArtifactSizeBytes,
                     classArtifactSha256 = JvmSha256.fromBytes(classArtifactSha256),
-                    dexArtifactSizeBytes = dexArtifactSizeBytes,
-                    dexArtifactSha256 = JvmSha256.fromBytes(dexArtifactSha256),
+                    dexArtifactIdentity = dexIdentity,
                     expectedClassDescriptors = expectedClassDescriptors.toSet(),
-                    dexFd = dexFd,
+                    dexFds = dexFds.toList(),
                     stdoutFd = stdoutFd,
                     stderrFd = stderrFd,
                     hostBridge = hostBridge,
@@ -114,12 +122,12 @@ class JavaExecutionWorkerService : Service() {
                     },
                 )
             } catch (_: Throwable) {
-                closeDescriptors(dexFd, stdoutFd, stderrFd)
+                closeDescriptors(dexFds, stdoutFd, stderrFd)
                 retireProcess(WorkerProcessRetirementPolicy.Trigger.INVALID_ADMISSION)
                 return
             }
             if (!active.compareAndSet(null, task)) {
-                closeDescriptors(dexFd, stdoutFd, stderrFd)
+                closeDescriptors(dexFds, stdoutFd, stderrFd)
                 sendBusy(callback, generation, request.requestId)
                 retireProcess(WorkerProcessRetirementPolicy.Trigger.INVALID_ADMISSION)
                 return
@@ -158,21 +166,22 @@ class JavaExecutionWorkerService : Service() {
 
     private fun enforceCompilerCaller(
         pinIfAbsent: Boolean,
+        dexDescriptors: Array<out ParcelFileDescriptor>? = null,
         vararg descriptors: ParcelFileDescriptor?,
     ): CompilerCaller {
         val caller = CompilerCaller(Binder.getCallingPid(), Binder.getCallingUid())
         if (caller.uid != Process.myUid() || caller.pid <= 0 || caller.pid == Process.myPid()) {
-            closeDescriptors(*descriptors)
+            closeDescriptors(dexDescriptors, *descriptors)
             throw SecurityException("Worker accepts only its provider compiler process")
         }
         val pinned = compilerCaller.get()
         if (pinned == null && pinIfAbsent) {
             if (!compilerCaller.compareAndSet(null, caller) && compilerCaller.get() != caller) {
-                closeDescriptors(*descriptors)
+                closeDescriptors(dexDescriptors, *descriptors)
                 throw SecurityException("Worker compiler identity changed during admission")
             }
         } else if (pinned != caller) {
-            closeDescriptors(*descriptors)
+            closeDescriptors(dexDescriptors, *descriptors)
             throw SecurityException("Worker command does not belong to its compiler process")
         }
         return caller
@@ -195,7 +204,11 @@ class JavaExecutionWorkerService : Service() {
         runCatching { callback.onFailed(generation, payload) }
     }
 
-    private fun closeDescriptors(vararg descriptors: ParcelFileDescriptor?) {
+    private fun closeDescriptors(
+        dexDescriptors: Array<out ParcelFileDescriptor>? = null,
+        vararg descriptors: ParcelFileDescriptor?,
+    ) {
+        dexDescriptors?.forEach { runCatching { it.close() } }
         descriptors.forEach { runCatching { it?.close() } }
     }
 

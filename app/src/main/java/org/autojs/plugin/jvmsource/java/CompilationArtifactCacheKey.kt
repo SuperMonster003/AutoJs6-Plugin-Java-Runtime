@@ -5,7 +5,7 @@ import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.security.MessageDigest
 
-internal const val JAVA_COMPILATION_CACHE_IMPLEMENTATION_REVISION = "r3-cache-v2"
+internal const val JAVA_COMPILATION_CACHE_IMPLEMENTATION_REVISION = "r4-cache-v3"
 
 internal data class CompilationArtifactProvenance(
     val rawSourceSha256: JvmSha256,

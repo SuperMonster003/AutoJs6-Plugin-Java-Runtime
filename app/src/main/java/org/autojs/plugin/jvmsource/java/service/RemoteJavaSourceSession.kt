@@ -62,6 +62,7 @@ import org.autojs.plugin.jvmsource.java.PrivateSessionWorkspace
 import org.autojs.plugin.jvmsource.java.ProviderInstalledIdentityDecision
 import org.autojs.plugin.jvmsource.java.ProviderInstalledIdentityPolicy
 import org.autojs.plugin.jvmsource.java.ProviderFileIdentity
+import org.autojs.plugin.jvmsource.java.ProviderDexSetIdentity
 import org.autojs.plugin.jvmsource.java.ProviderDigests
 import org.autojs.plugin.jvmsource.java.ProviderProcessIdentity
 import org.autojs.plugin.jvmsource.java.UserClassJarSummary
@@ -287,10 +288,10 @@ internal class RemoteJavaSourceSession(
                 if (cached != null) {
                     ensureActive()
                     val materializationAttempt = cacheLane.execute {
-                        compilationCache.materialize(
+                        compilationCache.materializeSet(
                             cached = cached,
                             destinationProgramJar = java.io.File(privateWorkspace.cacheHitDirectory, "program.jar"),
-                            destinationDexFile = java.io.File(privateWorkspace.cacheHitDirectory, "classes.dex"),
+                            destinationDexDirectory = privateWorkspace.cacheHitDirectory,
                             requestMinApi = request.minApi,
                             deviceApi = Build.VERSION.SDK_INT,
                             entryClassName = request.entryClassName,
@@ -306,11 +307,11 @@ internal class RemoteJavaSourceSession(
                         )
                         environment.compilationCacheTelemetry.recordHit()
                         artifacts = CompiledArtifacts(
-                            dexFile = materialized.dexFile,
+                            dexFiles = materialized.dexFiles,
                             programJar = materialized.programJar,
                             classSummary = materialized.classSummary,
                             classIdentity = materialized.classIdentity,
-                            dexIdentity = materialized.dexIdentity,
+                            dexIdentity = materialized.dexSetIdentity,
                             compilationElapsedMillis = elapsedMillis(),
                             cacheKey = materialized.cacheKey,
                             publishOnSuccess = false,
@@ -318,7 +319,7 @@ internal class RemoteJavaSourceSession(
                         recordCompilerResource(
                             JavaProviderObservedPhase.COMPILE,
                             materialized.classIdentity.sizeBytes,
-                            materialized.dexIdentity.sizeBytes,
+                            materialized.dexSetIdentity.sizeBytes,
                         )
                         bindWorker()
                         return
@@ -379,7 +380,7 @@ internal class RemoteJavaSourceSession(
             )
             environment.compilerClasspath.verifyInstalled()
             val d8StartedAt = SystemClock.elapsedRealtime()
-            val dexFile = try {
+            val dexFiles = try {
                 D8JavaCompiler(environment.d8RuntimeLibraries).compile(
                     privateWorkspace.programJar,
                     privateWorkspace.d8OutputDirectory,
@@ -392,17 +393,19 @@ internal class RemoteJavaSourceSession(
                     elapsedSince(d8StartedAt),
                 )
             }
-            val dexIdentity = ProviderDigests.file(dexFile, JvmSourceContract.MAX_DEX_ARTIFACT_BYTES)
-            if (!dexFile.setReadOnly()) {
-                throw JavaProviderFailure(
-                    JvmSourceErrorCode.ARTIFACT_INVALID,
-                    JvmSourceFailurePhase.DEXING,
-                    "Unable to freeze classes.dex",
-                )
+            val dexIdentity = ProviderDexSetIdentity.fromFiles(dexFiles)
+            dexFiles.forEach { dexFile ->
+                if (!dexFile.setReadOnly()) {
+                    throw JavaProviderFailure(
+                        JvmSourceErrorCode.ARTIFACT_INVALID,
+                        JvmSourceFailurePhase.DEXING,
+                        "Unable to freeze ${dexFile.name}",
+                    )
+                }
             }
             ensureActive()
             artifacts = CompiledArtifacts(
-                dexFile = dexFile,
+                dexFiles = dexFiles,
                 programJar = privateWorkspace.programJar,
                 classSummary = classSummary,
                 classIdentity = classIdentity,
@@ -673,13 +676,15 @@ internal class RemoteJavaSourceSession(
 
     private fun handArtifactsToWorker(remote: IJavaExecutionWorker) {
         val compiled = checkNotNull(artifacts)
-        var dex: ParcelFileDescriptor? = null
+        val dexDescriptors = mutableListOf<ParcelFileDescriptor>()
         var stdout: ParcelFileDescriptor? = null
         var stderr: ParcelFileDescriptor? = null
         var dispatchReserved = false
         var submitted = false
         try {
-            dex = ParcelFileDescriptor.open(compiled.dexFile, ParcelFileDescriptor.MODE_READ_ONLY)
+            compiled.dexFiles.forEach { dexFile ->
+                dexDescriptors += ParcelFileDescriptor.open(dexFile, ParcelFileDescriptor.MODE_READ_ONLY)
+            }
             val outputs = descriptors.duplicateOutputsForWorker()
             stdout = outputs.first
             stderr = outputs.second
@@ -694,10 +699,11 @@ internal class RemoteJavaSourceSession(
                 compiled.compilationElapsedMillis,
                 compiled.classIdentity.sizeBytes,
                 compiled.classIdentity.sha256.toByteArray(),
-                compiled.dexIdentity.sizeBytes,
-                compiled.dexIdentity.sha256.toByteArray(),
+                compiled.dexIdentity.files.map(ProviderFileIdentity::name).toTypedArray(),
+                compiled.dexIdentity.files.map(ProviderFileIdentity::sizeBytes).toLongArray(),
+                compiled.dexIdentity.flattenedSha256(),
                 compiled.classSummary.dexDescriptors.toTypedArray(),
-                dex,
+                dexDescriptors.toTypedArray(),
                 stdout,
                 stderr,
                 hostProxy,
@@ -708,7 +714,7 @@ internal class RemoteJavaSourceSession(
             if (dispatchReserved) {
                 handleWorkerDispatchCompletion(termination.completeWorkerDispatch(submitted))
             }
-            runCatching { dex?.close() }
+            dexDescriptors.forEach { runCatching { it.close() } }
             runCatching { stdout?.close() }
             runCatching { stderr?.close() }
         }
@@ -920,10 +926,10 @@ internal class RemoteJavaSourceSession(
             val currentIdentity = runCatching(environment::resolveCurrentInstalledIdentity).getOrNull()
             when (ProviderInstalledIdentityPolicy.evaluate(environment.installedIdentity, currentIdentity)) {
                 ProviderInstalledIdentityDecision.MATCH -> {
-                    compilationCache.publish(
+                    compilationCache.publishSet(
                         cacheKey = compiled.cacheKey,
                         programJar = compiled.programJar,
-                        dexFile = compiled.dexFile,
+                        dexFiles = compiled.dexFiles,
                         classSummary = compiled.classSummary,
                         classIdentity = compiled.classIdentity,
                         dexIdentity = compiled.dexIdentity,
@@ -1357,7 +1363,7 @@ internal class RemoteJavaSourceSession(
         JvmSourceErrorCode.INVALID_REQUEST -> "Request is outside the Java R1 profile"
         JvmSourceErrorCode.SOURCE_TOO_LARGE -> "Java source exceeds its declared limit"
         JvmSourceErrorCode.COMPILATION_FAILED -> "ECJ could not compile the Java source"
-        JvmSourceErrorCode.DEXING_FAILED -> "D8 could not produce classes.dex"
+        JvmSourceErrorCode.DEXING_FAILED -> "D8 could not produce a valid DEX set"
         JvmSourceErrorCode.ARTIFACT_INVALID -> "A source or compiled artifact failed integrity validation"
         JvmSourceErrorCode.ENTRY_POINT_MISSING -> "Java entry point is missing"
         JvmSourceErrorCode.ENTRY_POINT_AMBIGUOUS -> "More than one entry point was produced"
@@ -1373,11 +1379,11 @@ internal class RemoteJavaSourceSession(
     }
 
     private data class CompiledArtifacts(
-        val dexFile: java.io.File,
+        val dexFiles: List<java.io.File>,
         val programJar: java.io.File,
         val classSummary: UserClassJarSummary,
         val classIdentity: ProviderFileIdentity,
-        val dexIdentity: ProviderFileIdentity,
+        val dexIdentity: ProviderDexSetIdentity,
         val compilationElapsedMillis: Long,
         val cacheKey: CompilationArtifactCacheKey,
         val publishOnSuccess: Boolean,

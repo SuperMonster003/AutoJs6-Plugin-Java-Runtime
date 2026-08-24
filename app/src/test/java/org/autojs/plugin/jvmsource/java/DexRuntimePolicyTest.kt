@@ -31,6 +31,16 @@ class DexRuntimePolicyTest {
     }
 
     @Test
+    fun api26RetainsItsFrozenInMemoryKindButOnlyHasASoundSingleDexConstructor() {
+        assertEquals(JavaDexOutputPolicy.MAX_DEX_FILES, DexRuntimePolicy.maximumDexFiles(24))
+        assertEquals(JavaDexOutputPolicy.MAX_DEX_FILES, DexRuntimePolicy.maximumDexFiles(25))
+        assertEquals(1, DexRuntimePolicy.maximumDexFiles(26))
+        assertEquals(JavaDexOutputPolicy.MAX_DEX_FILES, DexRuntimePolicy.maximumDexFiles(27))
+        assertEquals(JavaDexOutputPolicy.MAX_DEX_FILES, DexRuntimePolicy.maximumDexFiles(36))
+        assertEquals(WorkerDexLoaderKind.IN_MEMORY_DEX_CLASS_LOADER, DexRuntimePolicy.loaderKind(26))
+    }
+
+    @Test
     fun api24Through36ExposeTheConservativeDexVersionMatrix() {
         val versionsByApi = (24..36).associateWith(DexRuntimePolicy::admittedVersions)
 

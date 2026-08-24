@@ -18,13 +18,16 @@ import javax.crypto.spec.SecretKeySpec
 internal data class CachedCompilationArtifacts(
     val cacheKey: CompilationArtifactCacheKey,
     val programJar: File,
-    val dexFile: File,
+    val dexFiles: List<File>,
     val classSummary: UserClassJarSummary,
     val classIdentity: ProviderFileIdentity,
-    val dexIdentity: ProviderFileIdentity,
+    val dexSetIdentity: ProviderDexSetIdentity,
     val dexVersion: String,
     val loaderKind: WorkerDexLoaderKind,
-)
+) {
+    val dexFile: File get() = dexFiles.single()
+    val dexIdentity: ProviderFileIdentity get() = dexSetIdentity.files.single()
+}
 
 internal enum class CompilationCacheMissReason {
     NOT_FOUND,
@@ -123,6 +126,31 @@ internal class CompilationArtifactCache internal constructor(
         deviceApi: Int,
         entryClassName: String = "Main",
         ensureActive: () -> Unit,
+    ): CachedCompilationArtifacts = publishSet(
+        cacheKey = cacheKey,
+        programJar = programJar,
+        dexFiles = listOf(dexFile),
+        classSummary = classSummary,
+        classIdentity = classIdentity,
+        dexIdentity = ProviderDexSetIdentity.of(listOf(dexIdentity)),
+        requestMinApi = requestMinApi,
+        deviceApi = deviceApi,
+        entryClassName = entryClassName,
+        ensureActive = ensureActive,
+    )
+
+    @Synchronized
+    fun publishSet(
+        cacheKey: CompilationArtifactCacheKey,
+        programJar: File,
+        dexFiles: List<File>,
+        classSummary: UserClassJarSummary,
+        classIdentity: ProviderFileIdentity,
+        dexIdentity: ProviderDexSetIdentity,
+        requestMinApi: Int,
+        deviceApi: Int,
+        entryClassName: String = "Main",
+        ensureActive: () -> Unit,
     ): CachedCompilationArtifacts {
         ensureActive()
         val root = ensureRoot()
@@ -136,21 +164,27 @@ internal class CompilationArtifactCache internal constructor(
         try {
             ensureActive()
             val cachedJar = File(temporary, PROGRAM_JAR)
-            val cachedDex = File(temporary, CLASSES_DEX)
+            val orderedDexFiles = JavaDexOutputPolicy.requireDexFiles(dexFiles)
+            require(orderedDexFiles.map(File::getName) == dexIdentity.files.map(ProviderFileIdentity::name))
+            val cachedDexFiles = dexIdentity.files.map { File(temporary, it.name) }
             copyFrozen(programJar, cachedJar, JvmSourceContract.MAX_CLASS_ARTIFACT_BYTES, ensureActive)
-            copyFrozen(dexFile, cachedDex, JvmSourceContract.MAX_DEX_ARTIFACT_BYTES, ensureActive)
+            var remainingDexBytes = JvmSourceContract.MAX_DEX_ARTIFACT_BYTES
+            orderedDexFiles.zip(cachedDexFiles).forEach { (source, destinationDex) ->
+                remainingDexBytes = Math.subtractExact(
+                    remainingDexBytes,
+                    copyFrozen(source, destinationDex, remainingDexBytes, ensureActive),
+                )
+            }
 
             val rebuiltClass = UserClassJarValidator.validate(cachedJar, entryClassName)
             require(rebuiltClass.first == classIdentity && rebuiltClass.second == classSummary) {
                 "Class artifact changed before cache publication"
             }
-            val rebuiltDexIdentity = ProviderDigests.file(cachedDex, JvmSourceContract.MAX_DEX_ARTIFACT_BYTES)
+            val rebuiltDexIdentity = ProviderDexSetIdentity.fromFiles(cachedDexFiles)
             require(rebuiltDexIdentity == dexIdentity) { "DEX artifact changed before cache publication" }
-            val dexBytes = readBounded(cachedDex, dexIdentity.sizeBytes, JvmSourceContract.MAX_DEX_ARTIFACT_BYTES)
-            val validatedDex = DexArtifactValidator.validate(
-                bytes = dexBytes,
-                expectedSizeBytes = dexIdentity.sizeBytes,
-                expectedSha256 = dexIdentity.sha256,
+            val validatedDex = validateDexSet(
+                dexFiles = cachedDexFiles,
+                expectedIdentity = dexIdentity,
                 requestMinApi = requestMinApi,
                 deviceApi = deviceApi,
                 expectedClassDescriptors = classSummary.dexDescriptors,
@@ -175,7 +209,7 @@ internal class CompilationArtifactCache internal constructor(
                 manifestHmac(manifestBytes).toHex().toByteArray(Charsets.US_ASCII),
             )
             writeFrozen(File(temporary, MANIFEST), manifestBytes)
-            require(temporary.list().orEmpty().toSet() == EXPECTED_FILES) {
+            require(temporary.list().orEmpty().toSet() == expectedFiles(dexIdentity)) {
                 "Compilation cache staging directory is incomplete"
             }
             require(treeBytes(temporary) <= maximumBytes) {
@@ -214,6 +248,30 @@ internal class CompilationArtifactCache internal constructor(
         entryClassName: String = "Main",
         ensureActive: () -> Unit,
     ): CachedCompilationArtifacts {
+        require(cached.dexFiles.size == 1 && destinationDexFile.name == "classes.dex")
+        return materializeSet(
+            cached = cached,
+            destinationProgramJar = destinationProgramJar,
+            destinationDexDirectory = checkNotNull(destinationDexFile.parentFile),
+            requestMinApi = requestMinApi,
+            deviceApi = deviceApi,
+            entryClassName = entryClassName,
+            ensureActive = ensureActive,
+        ).also { materialized ->
+            require(materialized.dexFiles.single().absoluteFile == destinationDexFile.absoluteFile)
+        }
+    }
+
+    @Synchronized
+    fun materializeSet(
+        cached: CachedCompilationArtifacts,
+        destinationProgramJar: File,
+        destinationDexDirectory: File,
+        requestMinApi: Int,
+        deviceApi: Int,
+        entryClassName: String = "Main",
+        ensureActive: () -> Unit,
+    ): CachedCompilationArtifacts {
         ensureActive()
         copyFrozen(
             cached.programJar,
@@ -221,24 +279,27 @@ internal class CompilationArtifactCache internal constructor(
             JvmSourceContract.MAX_CLASS_ARTIFACT_BYTES,
             ensureActive,
         )
-        copyFrozen(
-            cached.dexFile,
-            destinationDexFile,
-            JvmSourceContract.MAX_DEX_ARTIFACT_BYTES,
-            ensureActive,
-        )
+        val destinationDexFiles = cached.dexSetIdentity.files.map { File(destinationDexDirectory, it.name) }
+        require(cached.dexFiles.size == destinationDexFiles.size)
+        require(cached.dexFiles.map(File::getName) == cached.dexSetIdentity.files.map(ProviderFileIdentity::name))
+        var remainingDexBytes = JvmSourceContract.MAX_DEX_ARTIFACT_BYTES
+        cached.dexFiles.zip(destinationDexFiles).forEach { (source, destinationDex) ->
+            remainingDexBytes = Math.subtractExact(
+                remainingDexBytes,
+                copyFrozen(source, destinationDex, remainingDexBytes, ensureActive),
+            )
+        }
         val rebuiltClass = UserClassJarValidator.validate(destinationProgramJar, entryClassName)
         require(rebuiltClass.first == cached.classIdentity && rebuiltClass.second == cached.classSummary) {
             "Materialized class artifact differs from the verified cache hit"
         }
-        val rebuiltDex = ProviderDigests.file(destinationDexFile, JvmSourceContract.MAX_DEX_ARTIFACT_BYTES)
-        require(rebuiltDex == cached.dexIdentity) {
+        val rebuiltDex = ProviderDexSetIdentity.fromFiles(destinationDexFiles)
+        require(rebuiltDex == cached.dexSetIdentity) {
             "Materialized DEX differs from the verified cache hit"
         }
-        val validatedDex = DexArtifactValidator.validate(
-            bytes = readBounded(destinationDexFile, rebuiltDex.sizeBytes, JvmSourceContract.MAX_DEX_ARTIFACT_BYTES),
-            expectedSizeBytes = rebuiltDex.sizeBytes,
-            expectedSha256 = rebuiltDex.sha256,
+        val validatedDex = validateDexSet(
+            dexFiles = destinationDexFiles,
+            expectedIdentity = rebuiltDex,
             requestMinApi = requestMinApi,
             deviceApi = deviceApi,
             expectedClassDescriptors = rebuiltClass.second.dexDescriptors,
@@ -250,10 +311,10 @@ internal class CompilationArtifactCache internal constructor(
         return CachedCompilationArtifacts(
             cacheKey = cached.cacheKey,
             programJar = destinationProgramJar,
-            dexFile = destinationDexFile,
+            dexFiles = destinationDexFiles,
             classSummary = rebuiltClass.second,
             classIdentity = rebuiltClass.first,
-            dexIdentity = rebuiltDex,
+            dexSetIdentity = rebuiltDex,
             dexVersion = validatedDex.version,
             loaderKind = validatedDex.loaderKind,
         )
@@ -275,9 +336,7 @@ internal class CompilationArtifactCache internal constructor(
         val root = rootDirectory.absoluteFile.canonicalFile
         requireOrdinaryExactChild(entry, root, directory = true)
         val listed = entry.listFiles() ?: throw IOException("Unable to enumerate compilation cache entry")
-        require(listed.map(File::getName).toSet() == EXPECTED_FILES && listed.size == EXPECTED_FILES.size) {
-            "Compilation cache entry is incomplete"
-        }
+        requireAllowedEntryFiles(listed.asList())
         listed.forEach {
             requireOrdinaryExactChild(it, entry, directory = false)
             require(!it.canWrite()) { "Compilation cache file is not immutable" }
@@ -288,6 +347,9 @@ internal class CompilationArtifactCache internal constructor(
         val manifestBytes = readBounded(manifestFile, manifestIdentity.sizeBytes, MAX_MANIFEST_BYTES)
         verifyManifestAuthentication(entry, manifestBytes)
         val manifest = decodeManifest(manifestBytes)
+        require(listed.map(File::getName).toSet() == expectedFiles(manifest.dexIdentity)) {
+            "Compilation cache entry differs from its authenticated manifest"
+        }
         require(manifest.keyHex == expectedKey.hex) { "Compilation cache key differs from its directory" }
         require(manifest.publicationState == PUBLICATION_COMPLETE) {
             "Compilation cache entry was not completely published"
@@ -303,18 +365,12 @@ internal class CompilationArtifactCache internal constructor(
         require(rebuiltClass.first == manifest.classIdentity && rebuiltClass.second == manifest.classSummary) {
             "Compilation cache class summary or digest changed"
         }
-        val dexFile = File(entry, CLASSES_DEX)
-        val actualDexIdentity = ProviderDigests.file(dexFile, JvmSourceContract.MAX_DEX_ARTIFACT_BYTES)
+        val dexFiles = manifest.dexIdentity.files.map { File(entry, it.name) }
+        val actualDexIdentity = ProviderDexSetIdentity.fromFiles(dexFiles)
         require(actualDexIdentity == manifest.dexIdentity) { "Compilation cache DEX digest changed" }
-        val dexBytes = readBounded(
-            dexFile,
-            manifest.dexIdentity.sizeBytes,
-            JvmSourceContract.MAX_DEX_ARTIFACT_BYTES,
-        )
-        val validatedDex = DexArtifactValidator.validate(
-            bytes = dexBytes,
-            expectedSizeBytes = manifest.dexIdentity.sizeBytes,
-            expectedSha256 = manifest.dexIdentity.sha256,
+        val validatedDex = validateDexSet(
+            dexFiles = dexFiles,
+            expectedIdentity = manifest.dexIdentity,
             requestMinApi = requestMinApi,
             deviceApi = deviceApi,
             expectedClassDescriptors = rebuiltClass.second.dexDescriptors,
@@ -325,10 +381,10 @@ internal class CompilationArtifactCache internal constructor(
         CachedCompilationArtifacts(
             cacheKey = expectedKey,
             programJar = programJar,
-            dexFile = dexFile,
+            dexFiles = dexFiles,
             classSummary = rebuiltClass.second,
             classIdentity = rebuiltClass.first,
-            dexIdentity = actualDexIdentity,
+            dexSetIdentity = actualDexIdentity,
             dexVersion = validatedDex.version,
             loaderKind = validatedDex.loaderKind,
         )
@@ -346,8 +402,7 @@ internal class CompilationArtifactCache internal constructor(
                     val metadata = runCatching {
                         requireOrdinaryExactChild(candidate, root, directory = true)
                         val children = candidate.listFiles() ?: throw IOException("Unable to enumerate cache entry")
-                        require(children.map(File::getName).toSet() == EXPECTED_FILES &&
-                            children.size == EXPECTED_FILES.size)
+                        requireAllowedEntryFiles(children.asList())
                         children.forEach {
                             requireOrdinaryExactChild(it, candidate, directory = false)
                             require(!it.canWrite())
@@ -357,6 +412,7 @@ internal class CompilationArtifactCache internal constructor(
                         val manifestBytes = readBounded(manifest, identity.sizeBytes, MAX_MANIFEST_BYTES)
                         verifyManifestAuthentication(candidate, manifestBytes)
                         val value = decodeManifest(manifestBytes)
+                        require(children.map(File::getName).toSet() == expectedFiles(value.dexIdentity))
                         require(value.keyHex == key)
                         val age = Math.subtractExact(now, value.createdAtMillis)
                         require(age in 0L..ttlMillis)
@@ -400,14 +456,20 @@ internal class CompilationArtifactCache internal constructor(
         throw IOException("Unable to allocate compilation cache staging directory")
     }
 
-    private fun copyFrozen(source: File, destination: File, maximumBytes: Long, ensureActive: () -> Unit) {
+    private fun copyFrozen(
+        source: File,
+        destination: File,
+        maximumBytes: Long,
+        ensureActive: () -> Unit,
+    ): Long {
+        require(maximumBytes >= 0L)
         requireOrdinaryFile(source)
         requireFreshOrdinaryDestination(destination)
+        var written = 0L
         FileInputStream(source).buffered().use { input ->
             fileWriter.openFreshReadOnly(destination).use { output ->
                 requireOrdinaryFile(destination)
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                var written = 0L
                 while (true) {
                     ensureActive()
                     val read = input.read(buffer)
@@ -420,6 +482,7 @@ internal class CompilationArtifactCache internal constructor(
                 output.sync()
             }
         }
+        return written
     }
 
     private fun writeFrozen(destination: File, bytes: ByteArray) {
@@ -447,6 +510,42 @@ internal class CompilationArtifactCache internal constructor(
         return result
     }
 
+    private fun validateDexSet(
+        dexFiles: List<File>,
+        expectedIdentity: ProviderDexSetIdentity,
+        requestMinApi: Int,
+        deviceApi: Int,
+        expectedClassDescriptors: Set<String>,
+    ): ValidatedDexArtifactSet {
+        require(dexFiles.map(File::getName) == expectedIdentity.files.map(ProviderFileIdentity::name))
+        val payloads = dexFiles.zip(expectedIdentity.files).map { (file, identity) ->
+            DexArtifactPayload(
+                identity,
+                readBounded(file, identity.sizeBytes, JvmSourceContract.MAX_DEX_ARTIFACT_BYTES),
+            )
+        }
+        return DexArtifactSetValidator.validate(
+            payloads,
+            expectedIdentity,
+            requestMinApi,
+            deviceApi,
+            expectedClassDescriptors,
+        )
+    }
+
+    private fun requireAllowedEntryFiles(files: List<File>) {
+        val names = files.map(File::getName)
+        require(names.size == names.toSet().size && names.all(ALLOWED_ENTRY_FILES::contains)) {
+            "Compilation cache entry contains an unexpected file"
+        }
+        require(REQUIRED_ENTRY_FILES.all(names::contains)) { "Compilation cache entry is incomplete" }
+        val dexNames = ALLOWED_DEX_FILES.filter(names::contains)
+        JavaDexOutputPolicy.requireCanonicalDexNames(dexNames)
+    }
+
+    private fun expectedFiles(identity: ProviderDexSetIdentity): Set<String> =
+        REQUIRED_ENTRY_FILES + identity.files.map(ProviderFileIdentity::name)
+
     private fun encodeManifest(value: CacheManifest): ByteArray = ByteArrayOutputStream().use { bytes ->
         DataOutputStream(bytes).use { output ->
             output.writeInt(MANIFEST_MAGIC)
@@ -459,7 +558,8 @@ internal class CompilationArtifactCache internal constructor(
             output.writeUTF(value.dexVersion)
             output.writeUTF(value.loaderKind.name)
             writeIdentity(output, value.classIdentity)
-            writeIdentity(output, value.dexIdentity)
+            output.writeInt(value.dexIdentity.files.size)
+            value.dexIdentity.files.forEach { writeIdentity(output, it) }
             output.writeInt(value.classSummary.classFileCount)
             output.writeInt(value.classSummary.dexDescriptors.size)
             value.classSummary.dexDescriptors.sorted().forEach(output::writeUTF)
@@ -506,7 +606,13 @@ internal class CompilationArtifactCache internal constructor(
             accepted && this.loaderKind == loaderKind
         })
         val classIdentity = readIdentity(input, PROGRAM_JAR, JvmSourceContract.MAX_CLASS_ARTIFACT_BYTES)
-        val dexIdentity = readIdentity(input, CLASSES_DEX, JvmSourceContract.MAX_DEX_ARTIFACT_BYTES)
+        val dexCount = input.readInt()
+        require(dexCount in 1..JavaDexOutputPolicy.MAX_DEX_FILES)
+        val dexIdentity = ProviderDexSetIdentity.of(
+            JavaDexOutputPolicy.expectedDexNames(dexCount).map { name ->
+                readIdentity(input, name, JvmSourceContract.MAX_DEX_ARTIFACT_BYTES)
+            },
+        )
         val classCount = input.readInt()
         val descriptorCount = input.readInt()
         require(classCount in 1..UserClassJarWriter.MAX_CLASS_FILES && descriptorCount == classCount)
@@ -591,7 +697,7 @@ internal class CompilationArtifactCache internal constructor(
         val lexicalParent = expectedParent.absoluteFile
         val lexical = File(lexicalParent, candidate.name).absoluteFile
         require(candidate.absoluteFile.path == lexical.path) { "Cache cleanup escaped its lexical root" }
-        treeCleaner.deleteFlatTree(lexical, lexicalParent, EXPECTED_FILES)
+        treeCleaner.deleteFlatTree(lexical, lexicalParent, ALLOWED_ENTRY_FILES)
     }
 
     private fun entryName(key: CompilationArtifactCacheKey): String = ENTRY_PREFIX + key.hex
@@ -605,7 +711,7 @@ internal class CompilationArtifactCache internal constructor(
         val dexVersion: String,
         val loaderKind: WorkerDexLoaderKind,
         val classIdentity: ProviderFileIdentity,
-        val dexIdentity: ProviderFileIdentity,
+        val dexIdentity: ProviderDexSetIdentity,
         val classSummary: UserClassJarSummary,
     )
 
@@ -619,11 +725,10 @@ internal class CompilationArtifactCache internal constructor(
     companion object {
         private const val ENTRY_PREFIX = "entry-"
         private const val PROGRAM_JAR = "program.jar"
-        private const val CLASSES_DEX = "classes.dex"
         private const val MANIFEST = "manifest.bin"
         private const val COMPLETE = "complete.hmac"
         private const val MANIFEST_MAGIC = 0x414a5343
-        private const val MANIFEST_SCHEMA = 1
+        private const val MANIFEST_SCHEMA = 2
         private const val PUBLICATION_COMPLETE = "complete"
         private const val HMAC_ALGORITHM = "HmacSHA256"
         private const val AUTHENTICATION_KEY_BYTES = 32
@@ -639,7 +744,9 @@ internal class CompilationArtifactCache internal constructor(
         private val CACHE_DESCRIPTOR = Regex(
             "L[A-Za-z_$][A-Za-z0-9_$]*(?:/[A-Za-z_$][A-Za-z0-9_$]*)*;",
         )
-        private val EXPECTED_FILES = setOf(PROGRAM_JAR, CLASSES_DEX, MANIFEST, COMPLETE)
+        private val REQUIRED_ENTRY_FILES = setOf(PROGRAM_JAR, MANIFEST, COMPLETE)
+        private val ALLOWED_DEX_FILES = JavaDexOutputPolicy.expectedDexNames(JavaDexOutputPolicy.MAX_DEX_FILES)
+        private val ALLOWED_ENTRY_FILES = REQUIRED_ENTRY_FILES + ALLOWED_DEX_FILES
         private fun newAuthenticationKey(): ByteArray = ByteArray(AUTHENTICATION_KEY_BYTES).also {
             SecureRandom().nextBytes(it)
         }

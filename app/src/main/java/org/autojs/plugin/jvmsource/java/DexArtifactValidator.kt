@@ -15,9 +15,32 @@ internal data class ValidatedDexArtifact(
     val requestMinApi: Int,
     val deviceApi: Int,
     val loaderKind: WorkerDexLoaderKind,
+    val name: String = "classes.dex",
 )
 
-/** Strict framing and integrity validation for the single raw classes.dex production profile. */
+internal data class DexArtifactPayload(
+    val identity: ProviderFileIdentity,
+    val bytes: ByteArray,
+)
+
+internal data class ValidatedDexArtifactSet(
+    val identity: ProviderDexSetIdentity,
+    val artifacts: List<ValidatedDexArtifact>,
+) {
+    val version: String = artifacts.map(ValidatedDexArtifact::version).distinct().single()
+    val classDescriptors: Set<String> = artifacts.flatMapTo(linkedSetOf()) { it.classDescriptors }
+    val requestMinApi: Int = artifacts.map(ValidatedDexArtifact::requestMinApi).distinct().single()
+    val deviceApi: Int = artifacts.map(ValidatedDexArtifact::deviceApi).distinct().single()
+    val loaderKind: WorkerDexLoaderKind = artifacts.map(ValidatedDexArtifact::loaderKind).distinct().single()
+
+    init {
+        require(artifacts.isNotEmpty() && artifacts.map(ValidatedDexArtifact::name) == identity.files.map {
+            it.name
+        })
+    }
+}
+
+/** Strict framing and integrity validation for one raw classesN.dex artifact. */
 internal object DexArtifactValidator {
     private const val HEADER_SIZE = 0x70
     private const val ENDIAN_CONSTANT = 0x12345678L
@@ -39,6 +62,8 @@ internal object DexArtifactValidator {
         requestMinApi: Int,
         deviceApi: Int,
         expectedClassDescriptors: Set<String>,
+        name: String = "classes.dex",
+        requireCompleteClassSet: Boolean = true,
     ): ValidatedDexArtifact {
         try {
             require(expectedSizeBytes in HEADER_SIZE.toLong()..JvmSourceContract.MAX_DEX_ARTIFACT_BYTES)
@@ -81,7 +106,7 @@ internal object DexArtifactValidator {
             validateFixedSections(sections, dataOffset, bytes.size)
             val map = validateMap(bytes, mapOffset, sections, dataOffset)
             val descriptors = readClassDescriptors(bytes, sections, map, dataOffset)
-            require(expectedClassDescriptors.all(descriptors::contains)) {
+            require(!requireCompleteClassSet || expectedClassDescriptors.all(descriptors::contains)) {
                 "DEX omits an ECJ class artifact"
             }
             require(descriptors.all { it in expectedClassDescriptors || D8_SYNTHETIC_DESCRIPTOR.matches(it) }) {
@@ -95,6 +120,7 @@ internal object DexArtifactValidator {
                 requestMinApi = requestMinApi,
                 deviceApi = deviceApi,
                 loaderKind = checkNotNull(admission.loaderKind),
+                name = name,
             )
         } catch (error: JavaProviderFailure) {
             throw error
@@ -102,7 +128,7 @@ internal object DexArtifactValidator {
             throw JavaProviderFailure(
                 JvmSourceErrorCode.ARTIFACT_INVALID,
                 JvmSourceFailurePhase.WORKER_START,
-                "classes.dex failed strict framing and integrity validation",
+                "$name failed strict framing and integrity validation",
                 error,
             )
         }
@@ -236,6 +262,52 @@ internal object DexArtifactValidator {
     private const val TYPE_CLASS_DEF = 0x0006
     private const val TYPE_MAP_LIST = 0x1000
     private const val TYPE_STRING_DATA = 0x2002
+}
+
+/** Validates the ordered DEX set and lifts class completeness/uniqueness across all files. */
+internal object DexArtifactSetValidator {
+    fun validate(
+        payloads: List<DexArtifactPayload>,
+        expectedIdentity: ProviderDexSetIdentity,
+        requestMinApi: Int,
+        deviceApi: Int,
+        expectedClassDescriptors: Set<String>,
+    ): ValidatedDexArtifactSet {
+        try {
+            require(payloads.size <= DexRuntimePolicy.maximumDexFiles(deviceApi)) {
+                "DEX count exceeds the device loader's safe namespace limit"
+            }
+            require(payloads.map(DexArtifactPayload::identity) == expectedIdentity.files) {
+                "DEX payload metadata differs from the admitted set"
+            }
+            val validated = payloads.map { payload ->
+                DexArtifactValidator.validate(
+                    bytes = payload.bytes,
+                    expectedSizeBytes = payload.identity.sizeBytes,
+                    expectedSha256 = payload.identity.sha256,
+                    requestMinApi = requestMinApi,
+                    deviceApi = deviceApi,
+                    expectedClassDescriptors = expectedClassDescriptors,
+                    name = payload.identity.name,
+                    requireCompleteClassSet = false,
+                )
+            }
+            val descriptorCount = validated.sumOf { it.classDescriptors.size }
+            val descriptors = validated.flatMapTo(linkedSetOf()) { it.classDescriptors }
+            require(descriptors.size == descriptorCount) { "DEX files contain a duplicate class descriptor" }
+            require(expectedClassDescriptors.all(descriptors::contains)) { "DEX set omits an ECJ class artifact" }
+            return ValidatedDexArtifactSet(expectedIdentity, validated)
+        } catch (error: JavaProviderFailure) {
+            throw error
+        } catch (error: Throwable) {
+            throw JavaProviderFailure(
+                JvmSourceErrorCode.ARTIFACT_INVALID,
+                JvmSourceFailurePhase.WORKER_START,
+                "DEX set failed strict framing and integrity validation",
+                error,
+            )
+        }
+    }
 }
 
 private fun ByteArray.u16(offset: Int): Int {

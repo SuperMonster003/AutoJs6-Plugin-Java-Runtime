@@ -4,7 +4,11 @@ import org.autojs.plugin.jvmsource.api.JvmSha256
 import org.autojs.plugin.jvmsource.api.JvmSourceErrorCode
 import org.autojs.plugin.jvmsource.api.JvmSourceFailurePhase
 import org.autojs.plugin.jvmsource.java.JavaProviderFailure
+import org.autojs.plugin.jvmsource.java.DexArtifactPayload
+import org.autojs.plugin.jvmsource.java.ProviderDexSetIdentity
+import org.autojs.plugin.jvmsource.java.ProviderFileIdentity
 import org.autojs.plugin.jvmsource.java.ValidatedDexArtifact
+import org.autojs.plugin.jvmsource.java.ValidatedDexArtifactSet
 import org.autojs.plugin.jvmsource.java.WorkerDexLoaderKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -14,16 +18,23 @@ import org.junit.Test
 class WorkerDexLoadGateTest {
     @Test
     fun structureValidationStateDoesNotClaimArtLoadSuccess() {
-        val validated = StructurallyValidatedWorkerDex(
-            bytes = byteArrayOf(1),
-            artifact = ValidatedDexArtifact(
-                sizeBytes = 1L,
-                sha256 = JvmSha256.digest(byteArrayOf(1)),
-                version = "037",
-                classDescriptors = setOf("LMain;"),
-                requestMinApi = 24,
-                deviceApi = 24,
-                loaderKind = WorkerDexLoaderKind.PRIVATE_DEX_CLASS_LOADER,
+        val bytes = byteArrayOf(1)
+        val identity = ProviderFileIdentity("classes.dex", 1L, JvmSha256.digest(bytes))
+        val validated = StructurallyValidatedWorkerDexSet(
+            payloads = listOf(DexArtifactPayload(identity, bytes)),
+            artifacts = ValidatedDexArtifactSet(
+                ProviderDexSetIdentity.of(listOf(identity)),
+                listOf(
+                    ValidatedDexArtifact(
+                        sizeBytes = 1L,
+                        sha256 = identity.sha256,
+                        version = "037",
+                        classDescriptors = setOf("LMain;"),
+                        requestMinApi = 24,
+                        deviceApi = 24,
+                        loaderKind = WorkerDexLoaderKind.PRIVATE_DEX_CLASS_LOADER,
+                    ),
+                ),
             ),
         )
 
@@ -44,20 +55,26 @@ class WorkerDexLoadGateTest {
 
     @Test
     fun actualClassLoaderBranchMustMatchTheValidatedArtifactPolicy() {
-        val artifact = ValidatedDexArtifact(
-            sizeBytes = 1L,
-            sha256 = JvmSha256.digest(byteArrayOf(1)),
-            version = "037",
-            classDescriptors = setOf("LMain;"),
-            requestMinApi = 24,
-            deviceApi = 24,
-            loaderKind = WorkerDexLoaderKind.PRIVATE_DEX_CLASS_LOADER,
+        val identity = ProviderFileIdentity("classes.dex", 1L, JvmSha256.digest(byteArrayOf(1)))
+        val artifact = ValidatedDexArtifactSet(
+            ProviderDexSetIdentity.of(listOf(identity)),
+            listOf(
+                ValidatedDexArtifact(
+                    sizeBytes = 1L,
+                    sha256 = identity.sha256,
+                    version = "037",
+                    classDescriptors = setOf("LMain;"),
+                    requestMinApi = 24,
+                    deviceApi = 24,
+                    loaderKind = WorkerDexLoaderKind.PRIVATE_DEX_CLASS_LOADER,
+                ),
+            ),
         )
 
         assertThrows(IllegalArgumentException::class.java) {
             LoadedDex(
                 classLoader = javaClass.classLoader!!,
-                validatedArtifact = artifact,
+                validatedArtifacts = artifact,
                 actualLoaderKind = WorkerDexLoaderKind.IN_MEMORY_DEX_CLASS_LOADER,
             )
         }

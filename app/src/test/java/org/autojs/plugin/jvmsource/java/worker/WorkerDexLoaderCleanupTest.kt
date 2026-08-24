@@ -2,6 +2,9 @@ package org.autojs.plugin.jvmsource.java.worker
 
 import org.autojs.plugin.jvmsource.api.JvmSha256
 import org.autojs.plugin.jvmsource.java.ValidatedDexArtifact
+import org.autojs.plugin.jvmsource.java.ValidatedDexArtifactSet
+import org.autojs.plugin.jvmsource.java.ProviderDexSetIdentity
+import org.autojs.plugin.jvmsource.java.ProviderFileIdentity
 import org.autojs.plugin.jvmsource.java.WorkerDexLoaderKind
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -63,13 +66,22 @@ class WorkerDexLoaderCleanupTest {
 
     private fun validatedArtifact(
         loaderKind: WorkerDexLoaderKind = WorkerDexLoaderKind.PRIVATE_DEX_CLASS_LOADER,
-    ) = ValidatedDexArtifact(
-        sizeBytes = 112L,
-        sha256 = JvmSha256.digest(byteArrayOf(1)),
-        version = "037",
-        classDescriptors = setOf("LMain;"),
-        requestMinApi = 24,
-        deviceApi = 24,
-        loaderKind = loaderKind,
-    )
+    ): ValidatedDexArtifactSet {
+        val digest = JvmSha256.digest(byteArrayOf(1))
+        val identity = ProviderFileIdentity("classes.dex", 112L, digest)
+        return ValidatedDexArtifactSet(
+            ProviderDexSetIdentity.of(listOf(identity)),
+            listOf(
+                ValidatedDexArtifact(
+                    sizeBytes = 112L,
+                    sha256 = digest,
+                    version = "037",
+                    classDescriptors = setOf("LMain;"),
+                    requestMinApi = 24,
+                    deviceApi = 24,
+                    loaderKind = loaderKind,
+                ),
+            ),
+        )
+    }
 }

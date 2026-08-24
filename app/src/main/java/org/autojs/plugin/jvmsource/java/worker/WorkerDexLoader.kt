@@ -6,15 +6,17 @@ import android.os.ParcelFileDescriptor
 import androidx.annotation.RequiresApi
 import dalvik.system.DexClassLoader
 import dalvik.system.InMemoryDexClassLoader
-import org.autojs.plugin.jvmsource.api.JvmSha256
 import org.autojs.plugin.jvmsource.api.JvmCancellationException
 import org.autojs.plugin.jvmsource.api.JvmSourceContract
 import org.autojs.plugin.jvmsource.api.JvmSourceErrorCode
 import org.autojs.plugin.jvmsource.api.JvmSourceFailurePhase
 import org.autojs.plugin.jvmsource.java.AndroidPrivateDirectoryAnchor
-import org.autojs.plugin.jvmsource.java.DexArtifactValidator
+import org.autojs.plugin.jvmsource.java.DexArtifactPayload
+import org.autojs.plugin.jvmsource.java.DexArtifactSetValidator
+import org.autojs.plugin.jvmsource.java.JavaDexOutputPolicy
 import org.autojs.plugin.jvmsource.java.JavaProviderFailure
-import org.autojs.plugin.jvmsource.java.ValidatedDexArtifact
+import org.autojs.plugin.jvmsource.java.ProviderDexSetIdentity
+import org.autojs.plugin.jvmsource.java.ValidatedDexArtifactSet
 import org.autojs.plugin.jvmsource.java.WorkerDexLoaderKind
 import java.io.Closeable
 import java.io.File
@@ -24,38 +26,48 @@ import java.nio.ByteBuffer
 internal class WorkerDexLoader(private val context: Context) {
     /** Gate 1: consume, bind, and structurally validate the DEX without constructing a ClassLoader. */
     fun validateStructure(
-        descriptor: ParcelFileDescriptor,
-        expectedSizeBytes: Long,
-        expectedSha256: JvmSha256,
+        descriptors: List<ParcelFileDescriptor>,
+        expectedIdentity: ProviderDexSetIdentity,
         expectedClassDescriptors: Set<String>,
         requestMinApi: Int,
         ensureActive: () -> Unit,
-    ): StructurallyValidatedWorkerDex {
-        val bytes = readDex(descriptor, expectedSizeBytes, ensureActive)
-        val artifact = DexArtifactValidator.validate(
-            bytes = bytes,
-            expectedSizeBytes = expectedSizeBytes,
-            expectedSha256 = expectedSha256,
+    ): StructurallyValidatedWorkerDexSet {
+        if (descriptors.size != expectedIdentity.files.size) {
+            throw invalidArtifact("DEX descriptor count differs from its metadata")
+        }
+        val payloads = descriptors.zip(expectedIdentity.files).map { (descriptor, identity) ->
+            DexArtifactPayload(identity, readDex(descriptor, identity.sizeBytes, ensureActive))
+        }
+        val artifacts = DexArtifactSetValidator.validate(
+            payloads = payloads,
+            expectedIdentity = expectedIdentity,
             requestMinApi = requestMinApi,
             deviceApi = Build.VERSION.SDK_INT,
             expectedClassDescriptors = expectedClassDescriptors,
         )
         ensureActive()
-        return StructurallyValidatedWorkerDex(bytes, artifact)
+        return StructurallyValidatedWorkerDexSet(payloads, artifacts)
     }
 
     /** Gate 2a: construct the exact ClassLoader selected by the validated runtime policy. */
     fun createClassLoader(
-        validated: StructurallyValidatedWorkerDex,
+        validated: StructurallyValidatedWorkerDexSet,
         generation: Long,
         requestId: String,
         parent: ClassLoader,
     ): LoadedDex {
         return try {
-            when (validated.artifact.loaderKind) {
+            when (validated.artifacts.loaderKind) {
                 WorkerDexLoaderKind.IN_MEMORY_DEX_CLASS_LOADER -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        loadInMemory(validated, parent)
+                        when {
+                            validated.payloads.size == 1 -> loadSingleInMemory(validated, parent)
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 ->
+                                loadMultipleInMemory(validated, parent)
+                            else -> throw invalidArtifact(
+                                "Android API 26 cannot load a shared multi-DEX in-memory namespace",
+                            )
+                        }
                     } else {
                         throw invalidArtifact("In-memory DEX loading is unavailable on this Android version")
                     }
@@ -117,20 +129,31 @@ internal class WorkerDexLoader(private val context: Context) {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun loadInMemory(validated: StructurallyValidatedWorkerDex, parent: ClassLoader): LoadedDex {
+    private fun loadSingleInMemory(validated: StructurallyValidatedWorkerDexSet, parent: ClassLoader): LoadedDex {
         // ART requires a non-direct buffer to expose its backing array while constructing the
         // in-memory DEX. The validated bytes remain private to this isolated worker.
-        val buffer = ByteBuffer.wrap(validated.bytes)
+        val retainedBytes = validated.payloads.single().bytes
         return LoadedDex(
-            classLoader = InMemoryDexClassLoader(buffer, parent),
-            validatedArtifact = validated.artifact,
+            classLoader = InMemoryDexClassLoader(ByteBuffer.wrap(retainedBytes), parent),
+            validatedArtifacts = validated.artifacts,
             actualLoaderKind = WorkerDexLoaderKind.IN_MEMORY_DEX_CLASS_LOADER,
-            retainedBytes = validated.bytes,
+            retainedBytes = listOf(retainedBytes),
+        )
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O_MR1)
+    private fun loadMultipleInMemory(validated: StructurallyValidatedWorkerDexSet, parent: ClassLoader): LoadedDex {
+        val retainedBytes = validated.payloads.map(DexArtifactPayload::bytes)
+        return LoadedDex(
+            classLoader = InMemoryDexClassLoader(retainedBytes.map(ByteBuffer::wrap).toTypedArray(), parent),
+            validatedArtifacts = validated.artifacts,
+            actualLoaderKind = WorkerDexLoaderKind.IN_MEMORY_DEX_CLASS_LOADER,
+            retainedBytes = retainedBytes,
         )
     }
 
     private fun loadFromPrivateFile(
-        validated: StructurallyValidatedWorkerDex,
+        validated: StructurallyValidatedWorkerDexSet,
         generation: Long,
         requestId: String,
         parent: ClassLoader,
@@ -146,12 +169,18 @@ internal class WorkerDexLoader(private val context: Context) {
         val root = File(base, "request-$requestId-generation-$generation").canonicalFile
         val expectedPrefix = base.path + File.separator
         require(root.path.startsWith(expectedPrefix) && root.mkdir()) { "Unable to allocate worker code cache" }
-        return PrivateDexArtifactPublisher.publish(root, validated.bytes) { dex ->
+        val artifacts = validated.payloads.map { NamedDexBytes(it.identity.name, it.bytes) }
+        return PrivateDexArtifactPublisher.publishSet(root, artifacts) { dexFiles ->
             val optimized = File(root, "optimized")
             if (!optimized.mkdir()) throw IOException("Unable to create worker optimized cache")
             LoadedDex(
-                DexClassLoader(dex.absolutePath, optimized.absolutePath, null, parent),
-                validatedArtifact = validated.artifact,
+                DexClassLoader(
+                    dexFiles.joinToString(File.pathSeparator, transform = File::getAbsolutePath),
+                    optimized.absolutePath,
+                    null,
+                    parent,
+                ),
+                validatedArtifacts = validated.artifacts,
                 actualLoaderKind = WorkerDexLoaderKind.PRIVATE_DEX_CLASS_LOADER,
                 cleanupRoot = root,
             )
@@ -197,6 +226,8 @@ internal class WorkerDexLoader(private val context: Context) {
  * after the read-only write returns; every failure removes the entire request root without
  * following links before the exception escapes.
  */
+internal data class NamedDexBytes(val name: String, val bytes: ByteArray)
+
 internal object PrivateDexArtifactPublisher {
     fun <T> publish(
         root: File,
@@ -204,14 +235,30 @@ internal object PrivateDexArtifactPublisher {
         targetFactory: (File) -> ReadOnlyDexWritePolicy.Target = ::FileReadOnlyDexWriteTarget,
         publish: (File) -> T,
     ): T {
+        return publishSet(
+            root = root,
+            artifacts = listOf(NamedDexBytes("classes.dex", bytes)),
+            targetFactory = targetFactory,
+        ) { files -> publish(files.single()) }
+    }
+
+    fun <T> publishSet(
+        root: File,
+        artifacts: List<NamedDexBytes>,
+        targetFactory: (File) -> ReadOnlyDexWritePolicy.Target = ::FileReadOnlyDexWriteTarget,
+        publish: (List<File>) -> T,
+    ): T {
         val lexicalRoot = root.absoluteFile
         require(root.canonicalFile.path == lexicalRoot.path && root.isDirectory) {
             "Private DEX publication root must be an ordinary directory"
         }
-        val dex = File(lexicalRoot, "classes.dex")
         return try {
-            ReadOnlyDexWritePolicy.write(bytes, targetFactory(dex))
-            publish(dex)
+            JavaDexOutputPolicy.requireCanonicalDexNames(artifacts.map(NamedDexBytes::name))
+            val dexFiles = artifacts.map { File(lexicalRoot, it.name) }
+            artifacts.zip(dexFiles).forEach { (artifact, dex) ->
+                ReadOnlyDexWritePolicy.write(artifact.bytes, targetFactory(dex))
+            }
+            publish(dexFiles)
         } catch (error: Throwable) {
             runCatching { deletePrivateTreeWithoutFollowingLinks(lexicalRoot) }
                 .onFailure(error::addSuppressed)
@@ -226,24 +273,24 @@ internal enum class WorkerDexLoadStage {
     ART_ENTRY_CLASS_LOADED,
 }
 
-internal class StructurallyValidatedWorkerDex internal constructor(
-    internal val bytes: ByteArray,
-    val artifact: ValidatedDexArtifact,
+internal class StructurallyValidatedWorkerDexSet internal constructor(
+    internal val payloads: List<DexArtifactPayload>,
+    val artifacts: ValidatedDexArtifactSet,
 ) {
     val stage: WorkerDexLoadStage = WorkerDexLoadStage.STRUCTURE_VALIDATED
 }
 
 internal class LoadedDex(
     val classLoader: ClassLoader,
-    val validatedArtifact: ValidatedDexArtifact,
+    val validatedArtifacts: ValidatedDexArtifactSet,
     val actualLoaderKind: WorkerDexLoaderKind,
-    @Suppress("unused") private val retainedBytes: ByteArray? = null,
+    @Suppress("unused") private val retainedBytes: List<ByteArray> = emptyList(),
     private val cleanupRoot: File? = null,
 ) : Closeable {
     val stage: WorkerDexLoadStage = WorkerDexLoadStage.ART_CLASS_LOADER_CREATED
 
     init {
-        require(actualLoaderKind == validatedArtifact.loaderKind) {
+        require(actualLoaderKind == validatedArtifacts.loaderKind) {
             "Actual ART ClassLoader branch differs from the validated DEX runtime policy"
         }
     }
