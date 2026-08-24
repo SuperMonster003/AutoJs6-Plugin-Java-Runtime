@@ -39,7 +39,9 @@ class EcjDiagnosticSanitizerTest {
         assertEquals(7, diagnostic.line)
         assertTrue((diagnostic.column ?: 0) > 0)
         assertEquals("ECJ_ERROR", diagnostic.code)
-        assertEquals("Java compilation error", diagnostic.message)
+        assertTrue(diagnostic.message.contains("The method bad() is undefined"))
+        assertTrue(diagnostic.message.contains("<redacted>"))
+        assertFalse(diagnostic.message == "Java compilation error")
         assertFalse(workspace.absolutePath in diagnostic.message)
         assertFalse(androidJar.absolutePath in diagnostic.message)
     }
@@ -76,6 +78,53 @@ class EcjDiagnosticSanitizerTest {
         assertTrue(diagnostic.message.contains("println2"))
         assertTrue(diagnostic.message.contains("undefined for the type PrintStream"))
         assertFalse(diagnostic.message.contains(workspace.absolutePath))
+    }
+
+    @Test
+    fun mixedSensitiveContentRetainsEveryActionableSegment() {
+        val workspace = temporaryFolder.newFolder("provider-private-mixed-root")
+        val source = workspace.resolve("Main.java")
+        val androidJar = workspace.resolve("android.jar")
+        val digest = "a".repeat(64)
+        val raw = """
+            ----------
+            1. ERROR in ${source.absolutePath} (at line 6)
+                    callMissing();
+                    ^^^^^^^^^^^
+            The method callMissing() is undefined for the type Main
+            Provider detail: classpath=${androidJar.absolutePath}
+            Resolver metadata: signer=$digest Binder@42 uid=1000 pid=2000
+            Try declaring callMissing() or correcting the invocation.
+            ----------
+        """.trimIndent()
+
+        val diagnostic = requireNotNull(
+            EcjDiagnosticSanitizer.sanitize(
+                raw = raw,
+                succeeded = false,
+                byteLimit = 2_048,
+                privateFiles = listOf(workspace, androidJar),
+                sourceFile = source,
+                sourceFileName = "Main.java",
+            ),
+        )
+
+        val actionableSegments = listOf(
+            "1. ERROR in Main.java (at line 6)",
+            "callMissing();",
+            "The method callMissing() is undefined for the type Main",
+            "Provider detail: <redacted>",
+            "Resolver metadata: <redacted>",
+            "Try declaring callMissing() or correcting the invocation.",
+        )
+        val retainedSegments = actionableSegments.count(diagnostic.message::contains)
+        assertEquals("Every non-sensitive segment must survive redaction", actionableSegments.size, retainedSegments)
+        assertFalse(diagnostic.message.contains(workspace.absolutePath))
+        assertFalse(diagnostic.message.contains(androidJar.absolutePath))
+        assertFalse(diagnostic.message.contains(digest))
+        listOf("classpath=", "signer=", "Binder@", "uid=", "pid=").forEach {
+            assertFalse(it in diagnostic.message)
+        }
     }
 
     @Test
@@ -130,7 +179,9 @@ class EcjDiagnosticSanitizerTest {
         assertEquals(12, diagnostic.line)
         assertTrue((diagnostic.column ?: 0) > 0)
         assertEquals("ECJ_ERROR", diagnostic.code)
-        assertEquals("Java compilation error", diagnostic.message)
+        assertTrue(diagnostic.message.contains("bad();"))
+        assertTrue(diagnostic.message.contains("<redacted>"))
+        assertFalse(diagnostic.message == "Java compilation error")
         listOf("private", "classpath", "signer", "Binder", "uid", "pid", "component").forEach {
             assertFalse(it in diagnostic.message)
         }

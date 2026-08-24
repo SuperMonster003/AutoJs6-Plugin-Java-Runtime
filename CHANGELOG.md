@@ -14,6 +14,11 @@ with an optional milestone suffix; Android package builds are tracked separately
 - Added cancellation, return-value, compiler-error, and result-limit samples with an automated
   provider pipeline suite verified on API 24 and API 37 loader branches.
 
+### Changed
+
+- Changed ECJ diagnostic redaction to replace sensitive path, digest, Binder, process-identity,
+  and metadata segments while preserving the remaining actionable compiler message.
+
 ## [0.3.0-m5] - 2026-08-25
 
 ### Added

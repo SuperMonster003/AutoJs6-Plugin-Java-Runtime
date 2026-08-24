@@ -27,6 +27,8 @@ internal object EcjDiagnosticSanitizer {
     private val PROCESS_IDENTITY = Regex("(?i)\\b(?:uid|pid)\\s*[=:]\\s*\\d+")
     private val BINDER_REFERENCE = Regex("(?i)\\bBinder@[0-9a-fA-F]+")
     private val SENSITIVE_METADATA = Regex("(?i)\\b(?:component|signer|classpath|uid|pid)\\s*[=:]")
+    private val SENSITIVE_METADATA_LINE_TAIL =
+        Regex("(?i)\\b(?:component|signer|classpath|uid|pid)\\s*[=:][^\\r\\n]*")
     private const val REDACTED = "<redacted>"
     private const val MAX_SOURCE_POSITION = 1_000_000
 
@@ -61,9 +63,8 @@ internal object EcjDiagnosticSanitizer {
             JvmDiagnosticSeverity.INFO -> "ECJ_INFO"
         }
         val redacted = redact(raw, privateFiles, sourceFile, sourceFileName)
-        val message = if (REDACTED in redacted || SENSITIVE_METADATA.containsMatchIn(redacted)) {
-            // Once anything except the compilation-unit path needed redaction, retaining the
-            // surrounding provider-controlled text can still disclose structure or identity.
+        val message = if (SENSITIVE_METADATA.containsMatchIn(redacted)) {
+            // A label surviving the line-tail pass means its value could not be bounded safely.
             fallback(severity)
         } else {
             val bounded = BoundedTextWriter(byteLimit).also { it.write(redacted) }.value()
@@ -108,6 +109,9 @@ internal object EcjDiagnosticSanitizer {
         text = DIGEST_LIKE.replace(text, REDACTED)
         text = PROCESS_IDENTITY.replace(text, REDACTED)
         text = BINDER_REFERENCE.replace(text, REDACTED)
+        // Metadata values can contain arbitrary punctuation and path lists. Redact from the label
+        // through the end of that line, retaining the actionable compiler text around other lines.
+        text = SENSITIVE_METADATA_LINE_TAIL.replace(text, REDACTED)
         return text.trim()
     }
 
