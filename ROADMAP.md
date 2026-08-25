@@ -163,10 +163,15 @@
     ECJ→D8→`DexClassLoader`→ART 执行。宿主仍固定 `Main`，公开端到端放开留给 M9-7；详见
     `docs/arbitrary-entry-class-m8-5.zh-CN.md`。
 
-- [ ] **M8-6 设备证据矩阵制度化** `[设备]`
+- [x] **M8-6 设备证据矩阵制度化** `[设备]`
   - 内容: 新建 `docs/device-evidence.md`: API 24/25 (`DexClassLoader` 路径)、26+ (`InMemoryDexClassLoader`)、
     34/36 (R2 只读落盘) 的证据项清单与最近执行记录; 明确宿主↔插件 Binder 端到端证据位于宿主仓的分工边界。
   - 验收: 矩阵表完整, m8 发版前全部打勾。
+  - 结果: 发布阻断矩阵、P/W/H/R 四层证据边界、失效规则、复现与清理流程已固化；API 24/25/26/36
+    分支、API 24/36 样例和 R4 多 DEX、API 36 R2 精确时序均在锁定 AndroidTest APK 上通过，当前
+    provider 又在 API 24/36 经 AutoJs6 production Activity→Binder 路径各完成一条完整观测。原始
+    JSONL/logcat、APK/源码树摘要和设备 fingerprint 见 `docs/device-evidence.md`；最终 Debug/Release
+    各 140/140 单测、lint、Debug/Release/AndroidTest 离线构建全绿。
 
 ## M9 — 协议协同能力扩展 (全部 `[宿主]`)
 

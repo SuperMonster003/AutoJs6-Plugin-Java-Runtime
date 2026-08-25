@@ -1,0 +1,2 @@
+08-25 12:22:09.547  7608  7621 I JvmSourceR4MultiDex: R4_MULTIDEX_EVIDENCE api=36 loader=IN_MEMORY_DEX_CLASS_LOADER dexFiles=2 dexBytes=2830848 classes=129 direct=true
+08-25 12:22:10.128  7608  7621 I JvmSourceR4MultiDex: R4_MULTIDEX_BINDER_EVIDENCE api=36 loader=IN_MEMORY_DEX_CLASS_LOADER dexFiles=2 dexBytes=2830848 classes=129 workerIsolated=true

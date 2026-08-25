@@ -1,0 +1,2 @@
+08-25 12:22:19.930 24961 24976 I JvmSourceR4MultiDex: R4_MULTIDEX_EVIDENCE api=24 loader=PRIVATE_DEX_CLASS_LOADER dexFiles=2 dexBytes=2830848 classes=129 direct=true
+08-25 12:22:21.527 24961 24976 I JvmSourceR4MultiDex: R4_MULTIDEX_BINDER_EVIDENCE api=24 loader=PRIVATE_DEX_CLASS_LOADER dexFiles=2 dexBytes=2830848 classes=129 workerIsolated=true

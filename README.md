@@ -39,6 +39,9 @@ API 24，不支持的高版本方法会停在编译期。go 决策、精确 API 
 provider 内部的入口类名全链路已通过非 `Main` 简名与包名矩阵，以及 API 24 的真实 ECJ→D8→ART
 验证；这不改变宿主当前固定 `Main` 的公开行为。测试边界与 M9-7 移交条件见
 [M8-5 任意入口类名插件侧证据](docs/arbitrary-entry-class-m8-5.zh-CN.md)。
+M8 发布所需的 API 24/25 `DexClassLoader`、API 26+ `InMemoryDexClassLoader`、API 34/36 R2 只读
+发布时序，以及宿主↔provider Binder 分工和最近一次锁定记录，统一收录于
+[M8 设备证据矩阵](docs/device-evidence.md)。
 
 ## Source example
 

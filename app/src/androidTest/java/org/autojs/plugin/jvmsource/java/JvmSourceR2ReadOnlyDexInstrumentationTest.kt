@@ -36,7 +36,8 @@ class JvmSourceR2ReadOnlyDexInstrumentationTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val arguments = InstrumentationRegistry.getArguments()
         val context = instrumentation.targetContext.applicationContext
-        assertEquals(PROVIDER_PACKAGE, context.packageName)
+        val providerPackage = context.packageName
+        assertEquals(BuildConfig.APPLICATION_ID, providerPackage)
         assertTrue("Readonly evidence requires targetSdk 34+", context.applicationInfo.targetSdkVersion >= 34)
         assertEquals("3.26.0", BuildConfig.ECJ_VERSION)
         assertEquals("8.13.17", BuildConfig.D8_VERSION)
@@ -45,10 +46,10 @@ class JvmSourceR2ReadOnlyDexInstrumentationTest {
         UUID.fromString(canonicalRunId)
         val sourceTreeSha256 = requireSha256(arguments.getString(ARG_SOURCE_TREE), ARG_SOURCE_TREE)
         val hostApkSha256 = installedApkSha256(HOST_PACKAGE)
-        val providerApkSha256 = installedApkSha256(PROVIDER_PACKAGE)
+        val providerApkSha256 = installedApkSha256(providerPackage)
         assertEquals(hostApkSha256, requireSha256(arguments.getString(ARG_HOST_APK), ARG_HOST_APK))
         assertEquals(providerApkSha256, requireSha256(arguments.getString(ARG_PROVIDER_APK), ARG_PROVIDER_APK))
-        assertEquals(currentSignerDigests(HOST_PACKAGE), currentSignerDigests(PROVIDER_PACKAGE))
+        assertEquals(currentSignerDigests(HOST_PACKAGE), currentSignerDigests(providerPackage))
 
         val dexBytes = buildRealDex(context)
         assertTrue(dexBytes.size >= 0x70)
@@ -331,7 +332,6 @@ class JvmSourceR2ReadOnlyDexInstrumentationTest {
     private companion object {
         const val TAG = "JvmSourceR2ReadOnly"
         const val HOST_PACKAGE = "org.autojs.autojs6"
-        const val PROVIDER_PACKAGE = "org.autojs.plugin.jvmsource.java"
         const val ARG_RUN_ID = "r2.readOnly.canonicalRunId"
         const val ARG_SOURCE_TREE = "r2.readOnly.sourceTreeSha256"
         const val ARG_HOST_APK = "r2.readOnly.hostApkSha256"

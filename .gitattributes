@@ -5,6 +5,7 @@
 *.xml text eol=lf
 *.md text eol=lf
 *.jsonl text eol=lf
+docs/device-evidence-data/*.log text eol=lf
 *.ps1 text eol=crlf
 *.sh text eol=lf
 *.aar binary
