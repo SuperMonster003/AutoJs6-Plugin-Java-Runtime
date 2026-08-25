@@ -8,15 +8,19 @@ import java.util.zip.Adler32
 import javax.tools.ToolProvider
 
 internal object CacheTestArtifacts {
-    fun java8MainClass(root: File, packageName: String? = null): ByteArray {
-        val source = root.resolve("Main.java").apply {
+    fun java8EntryClass(
+        root: File,
+        entrySimpleName: String = "Main",
+        packageName: String? = null,
+    ): ByteArray {
+        val source = root.resolve("$entrySimpleName.java").apply {
             writeText(
                 """
                 ${packageName?.let { "package $it;" }.orEmpty()}
                 import org.autojs.plugin.jvmsource.api.AutoJsJvmEntry;
                 import org.autojs.plugin.jvmsource.api.JvmScriptContext;
-                public final class Main implements AutoJsJvmEntry {
-                    public Main() {}
+                public final class $entrySimpleName implements AutoJsJvmEntry {
+                    public $entrySimpleName() {}
                     public Object run(JvmScriptContext context) { return Boolean.TRUE; }
                 }
                 """.trimIndent(),
@@ -41,7 +45,7 @@ internal object CacheTestArtifacts {
         )
         check(exit == 0) { "Unable to create the Java 8 cache test artifact" }
         val packagePath = packageName?.replace('.', File.separatorChar).orEmpty()
-        return output.resolve(packagePath).resolve("Main.class").readBytes()
+        return output.resolve(packagePath).resolve("$entrySimpleName.class").readBytes()
     }
 
     fun minimalDex(descriptor: String = "LMain;"): ByteArray {

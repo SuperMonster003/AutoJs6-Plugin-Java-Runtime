@@ -4,7 +4,7 @@
 > 当前形态 = R1 能力 profile + R2 落盘规则 + R3 缓存/观测 + R4 多 DEX 工件 + M5 能力集。
 >
 > **总体结论**: 插件在"安全与工程严谨度"维度已远超同类水准 (三进程隔离、双侧白名单、DEX 全量结构校验、
-> HMAC 缓存、多层看门狗、137 个单测全绿、零 TODO)。主要的精进空间集中在两条线:
+> HMAC 缓存、多层看门狗、140 个单测全绿、零 TODO)。主要的精进空间集中在两条线:
 > **① 能力面与开发者体验** (宿主桥接仅 2 个方法、运行时诊断极简、Java 8 单源码文件);
 > **② 工程可持续性** (设备证据矩阵、远端仓库/CI 与后续发布流程)。
 > 扩展受 Protocol 1.1 冻结约束, 因此路线分为 **本仓独立可落地** 与 **需宿主协同 (协议升级)** 两轨推进。
@@ -153,10 +153,15 @@
     完整重校验和原行为不变；攻击证据、原始 schema-v1 JSONL 与重新开启条件见
     `docs/cache-persistence-m8-4.zh-CN.md`。
 
-- [ ] **M8-5 任意入口类名 — 插件侧就绪** `[本仓]`
+- [x] **M8-5 任意入口类名 — 插件侧就绪** `[本仓]`
   - 内容: 内部 `entryClassName` 已全链路参数化 (固定 `Main` 是宿主请求侧默认)。补齐非 `Main` 入口
     (含包名组合) 的单测/仪器测试矩阵: `JavaSourcePolicy`、`UserClassJarWriter`、缓存 key、`EntryClassAnalyzer`。端到端放开在 M9-7。
   - 验收: 任意合法"简名+包名"矩阵测试全绿。
+  - 结果: 插件侧就绪，生产实现无需修改。3 种非默认简名 (`ScriptEntry`/`_Entry9`/`$Entry`) ×
+    3 种包布局 (默认包/常规深包/含 `_` 与 `$` 的边界包) 共 9 个组合，经真实 ECJ、入口 ABI 分析、
+    JAR 路径/DEX descriptor 与缓存 key/物化重验全部通过；API 24 另以 3 个代表布局完成
+    ECJ→D8→`DexClassLoader`→ART 执行。宿主仍固定 `Main`，公开端到端放开留给 M9-7；详见
+    `docs/arbitrary-entry-class-m8-5.zh-CN.md`。
 
 - [ ] **M8-6 设备证据矩阵制度化** `[设备]`
   - 内容: 新建 `docs/device-evidence.md`: API 24/25 (`DexClassLoader` 路径)、26+ (`InMemoryDexClassLoader`)、

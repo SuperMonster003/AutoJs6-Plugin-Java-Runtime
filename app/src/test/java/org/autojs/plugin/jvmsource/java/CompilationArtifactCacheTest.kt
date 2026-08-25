@@ -59,8 +59,8 @@ class CompilationArtifactCacheTest {
     }
 
     @Test
-    fun packagedEntrySurvivesPublicationLookupAndMaterialization() {
-        val entryClassName = "com.example.scripts.Main"
+    fun qualifiedNonMainEntrySurvivesPublicationLookupAndMaterialization() {
+        val entryClassName = "com.example.scripts.ScriptEntry"
         val fixture = fixture("packaged-hit", entryClassName = entryClassName)
         val cache = CompilationArtifactCache(fixture.cacheRoot, clockMillis = { 1_000L })
 
@@ -89,7 +89,7 @@ class CompilationArtifactCacheTest {
         )
 
         assertEquals(published.classSummary, materialized.classSummary)
-        assertTrue("Lcom/example/scripts/Main;" in materialized.classSummary.dexDescriptors)
+        assertTrue("Lcom/example/scripts/ScriptEntry;" in materialized.classSummary.dexDescriptors)
     }
 
     @Test
@@ -372,14 +372,16 @@ class CompilationArtifactCacheTest {
         val programJar = artifacts.resolve("program.jar")
         val packageName = entryClassName.substringBeforeLast('.', missingDelimiterValue = "")
             .ifEmpty { null }
-        val main = CacheTestArtifacts.java8MainClass(
+        val entrySimpleName = entryClassName.substringAfterLast('.')
+        val entryClass = CacheTestArtifacts.java8EntryClass(
             root.resolve("compile").apply { check(mkdir()) },
-            packageName,
+            entrySimpleName = entrySimpleName,
+            packageName = packageName,
         )
         val classEntry = entryClassName.replace('.', '/') + ".class"
         JarOutputStream(programJar.outputStream().buffered()).use { output ->
             output.putNextEntry(JarEntry(classEntry).apply { time = 0L })
-            output.write(main)
+            output.write(entryClass)
             output.closeEntry()
         }
         val descriptor = "L${entryClassName.replace('.', '/')};"

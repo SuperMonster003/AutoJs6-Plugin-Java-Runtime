@@ -28,11 +28,30 @@ import java.util.UUID
 class JavaProviderPipelineInstrumentedTest {
     @Test
     fun ecjD8DexValidationAndEntryInvocationRunOnAndroid() {
+        runPipeline(PipelineEntryLayout(simpleName = "Main", packageName = null))
+    }
+
+    @Test
+    fun nonMainSimpleAndPackageLayoutsRunThroughEcjD8AndArt() {
+        listOf(
+            PipelineEntryLayout(simpleName = "ScriptEntry", packageName = null),
+            PipelineEntryLayout(simpleName = "ScriptEntry", packageName = "com.example.scripts"),
+            PipelineEntryLayout(simpleName = "\$Entry9", packageName = "_root.\$generated.p9"),
+        ).forEach(::runPipeline)
+    }
+
+    private fun runPipeline(layout: PipelineEntryLayout) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val environment = JavaProviderEnvironment.get(context)
-        PrivateSessionWorkspace.create(context, "Main.java").use { workspace ->
+        val source = layout.source()
+        val normalizedSource = JavaSourcePolicy.decodeAndValidate(
+            bytes = source.toByteArray(Charsets.UTF_8),
+            sourceFileName = layout.sourceFileName,
+            entryClassName = layout.entryClassName,
+        )
+        PrivateSessionWorkspace.create(context, layout.sourceFileName).use { workspace ->
             FileOutputStream(workspace.sourceFile).use { output ->
-                output.write(SOURCE.toByteArray(Charsets.UTF_8))
+                output.write(normalizedSource.toByteArray(Charsets.UTF_8))
                 output.fd.sync()
             }
 
@@ -42,10 +61,21 @@ class JavaProviderPipelineInstrumentedTest {
                 diagnosticByteLimit = JvmSourceContract.MAX_DIAGNOSTIC_BYTES,
                 ensureActive = {},
             )
-            assertTrue("ECJ must compile the fixed Java 8 entry source: ${ecj.diagnostics}", ecj.succeeded)
+            assertTrue(
+                "ECJ must compile ${layout.entryClassName}: ${ecj.diagnostics}",
+                ecj.succeeded,
+            )
 
-            val classes = UserClassJarWriter.write(workspace.classesDirectory, workspace.programJar)
-            assertEquals(setOf("LMain;"), classes.dexDescriptors)
+            val classes = UserClassJarWriter.write(
+                workspace.classesDirectory,
+                workspace.programJar,
+                layout.entryClassName,
+            )
+            assertEquals(
+                layout.entryClassName,
+                setOf("L${layout.entryClassName.replace('.', '/')};"),
+                classes.dexDescriptors,
+            )
             val dexFiles = D8JavaCompiler(environment.d8RuntimeLibraries).compile(
                 programJar = workspace.programJar,
                 outputDirectory = workspace.d8OutputDirectory,
@@ -87,10 +117,13 @@ class JavaProviderPipelineInstrumentedTest {
                     loaded.validatedArtifacts.version in
                         JvmDexRuntimeProfile.admittedVersions(android.os.Build.VERSION.SDK_INT),
                 )
-                val loadedEntry = WorkerEntryFactory.loadFromArt(loaded.classLoader)
+                val loadedEntry = WorkerEntryFactory.loadFromArt(
+                    loaded.classLoader,
+                    layout.entryClassName,
+                )
                 assertEquals(WorkerDexLoadStage.ART_ENTRY_CLASS_LOADED, loadedEntry.stage)
-                val main = WorkerEntryFactory.instantiate(loadedEntry)
-                assertEquals(true, main.run(NoHostCallsContext))
+                val entry = WorkerEntryFactory.instantiate(loadedEntry)
+                assertEquals(layout.entryClassName, entry.run(NoHostCallsContext))
             }
         }
     }
@@ -117,14 +150,27 @@ class JavaProviderPipelineInstrumentedTest {
         override fun toast(message: String) = error("The internal smoke source must not show toast")
     }
 
-    private companion object {
-        val SOURCE = """
-            public final class Main implements org.autojs.plugin.jvmsource.api.AutoJsJvmEntry {
-                @Override
-                public Object run(org.autojs.plugin.jvmsource.api.JvmScriptContext context) {
-                    return Boolean.TRUE;
-                }
-            }
-        """.trimIndent()
+    private data class PipelineEntryLayout(
+        val simpleName: String,
+        val packageName: String?,
+    ) {
+        val sourceFileName: String = "$simpleName.java"
+        val entryClassName: String = packageName?.let { "$it.$simpleName" } ?: simpleName
+
+        fun source(): String = buildString {
+            packageName?.let { appendLine("package $it;") }
+            appendLine(
+                "public final class $simpleName implements " +
+                    "org.autojs.plugin.jvmsource.api.AutoJsJvmEntry {",
+            )
+            appendLine("    @Override")
+            appendLine(
+                "    public Object run(" +
+                    "org.autojs.plugin.jvmsource.api.JvmScriptContext context) {",
+            )
+            appendLine("        return \"$entryClassName\";")
+            appendLine("    }")
+            append('}')
+        }
     }
 }

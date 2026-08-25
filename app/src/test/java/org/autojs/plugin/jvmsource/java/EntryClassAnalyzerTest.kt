@@ -12,6 +12,7 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.util.jar.JarFile
 
 class EntryClassAnalyzerTest {
     @get:Rule
@@ -32,25 +33,27 @@ class EntryClassAnalyzerTest {
     }
 
     @Test
-    fun acceptsPackagedEntryAndPreservesItsClassPathInJarSummary() {
-        val classes = compile(
-            """
-                package com.example.scripts;
-                import org.autojs.plugin.jvmsource.api.AutoJsJvmEntry;
-                import org.autojs.plugin.jvmsource.api.JvmScriptContext;
-                public final class Main implements AutoJsJvmEntry {
-                    public Object run(JvmScriptContext context) { return null; }
-                }
-            """.trimIndent(),
-            "packaged",
-        )
-        val jar = temporaryFolder.root.resolve("packaged.jar")
+    fun analyzerWriterAndValidatorAcceptEveryNonMainEntryLayoutInTheR1Matrix() {
+        JAVA_NON_MAIN_ENTRY_LAYOUT_CASES.forEachIndexed { index, layout ->
+            val classes = compile(
+                source = layout.source(),
+                name = "matrix-$index",
+                sourceFileName = layout.sourceFileName,
+            )
+            val jar = temporaryFolder.root.resolve("matrix-$index.jar")
 
-        val summary = UserClassJarWriter.write(classes, jar, "com.example.scripts.Main")
-        val (_, validated) = UserClassJarValidator.validate(jar, "com.example.scripts.Main")
+            val summary = UserClassJarWriter.write(classes, jar, layout.entryClassName)
+            val (_, validated) = UserClassJarValidator.validate(jar, layout.entryClassName)
 
-        assertEquals(summary, validated)
-        assertTrue("Lcom/example/scripts/Main;" in summary.dexDescriptors)
+            assertEquals(layout.entryClassName, summary, validated)
+            assertEquals(layout.entryClassName, setOf(layout.dexDescriptor), summary.dexDescriptors)
+            JarFile(jar).use { archive ->
+                assertTrue(
+                    layout.entryClassName,
+                    archive.getJarEntry("${layout.internalName}.class") != null,
+                )
+            }
+        }
     }
 
     @Test
@@ -99,9 +102,13 @@ class EntryClassAnalyzerTest {
         assertEquals(code, failure.code)
     }
 
-    private fun compile(source: String, name: String = "valid"): File {
+    private fun compile(
+        source: String,
+        name: String = "valid",
+        sourceFileName: String = "Main.java",
+    ): File {
         val root = temporaryFolder.newFolder(name)
-        val sourceFile = root.resolve("Main.java").apply { writeText(source) }
+        val sourceFile = root.resolve(sourceFileName).apply { writeText(source) }
         val classes = root.resolve("classes").apply { mkdir() }
         val diagnostics = StringWriter()
         val entryApiLocation = File(

@@ -36,6 +36,9 @@ API 24，不支持的高版本方法会停在编译期。go 决策、精确 API 
 编译缓存跨进程 Keystore key 原型虽在 API 24 把重启命中从 0/5 提到 5/5，却因同 UID 用户 worker 也能
 使用该 alias 而未通过安全 gate；最终继续使用 compiler 进程 epoch key。攻击证据、已回退原型数据和
 重新开启条件见 [M8-4 缓存持久化评估](docs/cache-persistence-m8-4.zh-CN.md)。
+provider 内部的入口类名全链路已通过非 `Main` 简名与包名矩阵，以及 API 24 的真实 ECJ→D8→ART
+验证；这不改变宿主当前固定 `Main` 的公开行为。测试边界与 M9-7 移交条件见
+[M8-5 任意入口类名插件侧证据](docs/arbitrary-entry-class-m8-5.zh-CN.md)。
 
 ## Source example
 

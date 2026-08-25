@@ -20,6 +20,25 @@ class CompilationArtifactCacheKeyTest {
     }
 
     @Test
+    fun bindsSourceFileAndQualifiedEntryLayoutsIndependentlyAcrossTheR1Matrix() {
+        val base = provenance()
+        assertNotEquals(key(base), key(base.copy(sourceFileName = "Alternate.java")))
+        assertNotEquals(key(base), key(base.copy(entryClassName = "com.example.Main")))
+
+        val matrixKeys = JAVA_NON_MAIN_ENTRY_LAYOUT_CASES.map { layout ->
+            key(
+                base.copy(
+                    sourceFileName = layout.sourceFileName,
+                    entryClassName = layout.entryClassName,
+                ),
+            )
+        }
+
+        assertEquals(JAVA_NON_MAIN_ENTRY_LAYOUT_CASES.size, matrixKeys.toSet().size)
+        assertTrue(matrixKeys.none { it == key(base) })
+    }
+
+    @Test
     fun invalidatesForToolchainProtocolProviderRuntimeAndAbiDrift() {
         val base = provenance()
         val variants = listOf(

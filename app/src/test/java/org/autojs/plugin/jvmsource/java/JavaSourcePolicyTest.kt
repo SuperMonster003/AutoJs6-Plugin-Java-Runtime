@@ -1,5 +1,7 @@
 package org.autojs.plugin.jvmsource.java
 
+import org.autojs.plugin.jvmsource.api.JvmSourceErrorCode
+import org.autojs.plugin.jvmsource.api.JvmSourceFailurePhase
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
@@ -38,6 +40,23 @@ class JavaSourcePolicyTest {
     }
 
     @Test
+    fun acceptsEveryNonMainSimpleAndPackageLayoutInTheR1Matrix() {
+        JAVA_NON_MAIN_ENTRY_LAYOUT_CASES.forEach { layout ->
+            val source = layout.source()
+
+            assertEquals(
+                layout.entryClassName,
+                source,
+                JavaSourcePolicy.decodeAndValidate(
+                    source.toByteArray(),
+                    sourceFileName = layout.sourceFileName,
+                    entryClassName = layout.entryClassName,
+                ),
+            )
+        }
+    }
+
+    @Test
     fun stripsOnlyAnInitialUtf8Bom() {
         val source = "\uFEFFpublic final class Main {}"
 
@@ -65,6 +84,31 @@ class JavaSourcePolicyTest {
                 sourceFileName = "Main.java",
                 entryClassName = "claimed.Main",
             )
+        }
+    }
+
+    @Test
+    fun rejectsMalformedOrMismatchedNonMainRequestLayoutsBeforeCompilation() {
+        val valid = JavaEntryLayoutTestCase("ScriptEntry", "com.example.scripts")
+        val invalidRequests = listOf(
+            "Main.java" to valid.entryClassName,
+            valid.sourceFileName to "claimed.${valid.simpleName}",
+            "9Entry.java" to "9Entry",
+            "Script-Entry.java" to "com.example.Script-Entry",
+            valid.sourceFileName to "com..${valid.simpleName}",
+            valid.sourceFileName to "café.${valid.simpleName}",
+        )
+
+        invalidRequests.forEach { (sourceFileName, entryClassName) ->
+            val failure = assertThrows(JavaProviderFailure::class.java) {
+                JavaSourcePolicy.decodeAndValidate(
+                    valid.source().toByteArray(),
+                    sourceFileName = sourceFileName,
+                    entryClassName = entryClassName,
+                )
+            }
+            assertEquals(JvmSourceErrorCode.INVALID_REQUEST, failure.code)
+            assertEquals(JvmSourceFailurePhase.INPUT, failure.phase)
         }
     }
 

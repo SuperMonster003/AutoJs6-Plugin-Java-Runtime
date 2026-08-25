@@ -34,7 +34,7 @@ class UserClassJarValidatorTest {
     }
 
     private fun writeJar(destination: File, includeExtra: Boolean = false): File {
-        val main = CacheTestArtifacts.java8MainClass(temporaryFolder.newFolder("compile-${destination.name}"))
+        val main = CacheTestArtifacts.java8EntryClass(temporaryFolder.newFolder("compile-${destination.name}"))
         JarOutputStream(destination.outputStream().buffered()).use { output ->
             output.putNextEntry(JarEntry("Main.class").apply { time = 0L })
             output.write(main)
