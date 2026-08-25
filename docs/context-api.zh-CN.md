@@ -1,7 +1,7 @@
 # Java Context API 与运行边界
 
-本文适用于 AutoJs6 Java Runtime Plugin <code>0.4.0-m9</code>、JVM Source Protocol
-<code>1.2</code>、Entry API <code>3</code>，描述当前 Java 能力 profile 与 R4 DEX 工件 profile
+本文适用于 AutoJs6 Java Runtime Plugin <code>0.5.0-m9</code>、JVM Source Protocol
+<code>1.3</code>、Entry API <code>4</code>，描述当前 Java 能力 profile 与 R4 DEX 工件 profile
 的用户可见行为。
 协议升级或后续 profile 可能扩展这些能力，但不会放宽当前请求已经协商出的边界。
 
@@ -25,7 +25,8 @@ public final class Main implements AutoJsJvmEntry {
 
 入口方法可以返回受支持的 JSON profile 值，也可以返回 <code>null</code>。完整能力样例见
 [samples/m5-capabilities.java](../samples/m5-capabilities.java)；剪贴板读写样例见
-[samples/capability-set-2-clipboard.java](../samples/capability-set-2-clipboard.java)。
+[samples/capability-set-2-clipboard.java](../samples/capability-set-2-clipboard.java)；宿主参数样例见
+[samples/script-args.java](../samples/script-args.java)。
 
 ## 源码形态
 
@@ -48,7 +49,7 @@ public final class Main implements AutoJsJvmEntry {
 - 当前 R4 D8 profile 接受 1 至 4 个严格连续命名的工件：<code>classes.dex</code>、
   <code>classes2.dex</code>、<code>classes3.dex</code>、<code>classes4.dex</code>。不允许缺号、别名、重排或
   第 5 个 DEX；所有 DEX 的总量仍受同一个 32 MiB 上限约束。该集合只在 provider 的编译器与隔离
-  worker 之间传递，不改变宿主侧 Protocol 1.2 请求形态。
+  worker 之间传递，不改变宿主侧 Protocol 1.3 请求形态。
 - Android API 26 的公开 <code>InMemoryDexClassLoader</code> 只有单 buffer 构造器，因此该版本继续只接受
   一个 <code>classes.dex</code>；API 24/25 和 API 27+ 才能安全共享 2 至 4 个 DEX 的同一 class namespace。
 
@@ -74,6 +75,7 @@ API 24 返回 <code>2024-03-01:CORE</code>。
 |---|---|---|
 | <code>app()</code> | 返回 <code>JvmAppApi</code> 视图。 | 需要 <code>APP_LAUNCH</code> 才能调用其中的方法。 |
 | <code>app().launch(String packageName)</code> | 请求宿主启动指定包，返回宿主给出的 boolean 结果。 | 包名必须至少包含两个以点分隔的合法段，例如 <code>com.example.app</code>；wire 方法固定为 <code>app.launch</code>。宿主拒绝、响应畸形或 10 秒内无响应会令脚本失败。 |
+| <code>args()</code> | 返回宿主在本次执行开始前冻结的 <code>Map&lt;String, Object&gt;</code> 参数快照；没有参数时返回空 Map。 | Entry API 4；不需要 capability，也不会产生 host call。Map、嵌套 Map 与 List 均不可修改。 |
 | <code>clipboard()</code> | 返回 <code>JvmClipboardApi</code> 视图。 | 读与写使用两个独立 capability；获得其中一个不会隐式获得另一个。Android 10+ 调用时 AutoJs6 必须有 resumed 前台 Activity。 |
 | <code>clipboard().getText()</code> | 返回宿主当前纯文本剪贴板；不存在文本时返回空字符串。 | 需要 <code>CLIPBOARD_READ</code>；wire 方法固定为 <code>clipboard.get</code>，请求只接受精确 <code>{}</code>。 |
 | <code>clipboard().setText(String text)</code> | 用给定纯文本替换宿主剪贴板。 | 需要 <code>CLIPBOARD_WRITE</code>；wire 方法固定为 <code>clipboard.set</code>；允许空字符串，文本最多 16 KiB UTF-8。 |
@@ -87,6 +89,34 @@ API 24 返回 <code>2024-03-01:CORE</code>。
 | <code>cancellation().throwIfCancellationRequested()</code> | 已取消时抛出 <code>JvmCancellationException</code>。 | 建议在每个有界工作单元之间调用。 |
 | <code>isCancellationRequested()</code> | Context 上的便利方法，等价于 cancellation 视图的同名方法。 | 自 Entry API 2 起提供的默认方法。 |
 | <code>throwIfCancellationRequested()</code> | Context 上的便利方法，等价于 cancellation 视图的同名方法。 | 自 Entry API 2 起提供的默认方法。 |
+
+### 脚本参数 profile
+
+AutoJs6 把 <code>ExecutionConfig.arguments</code> 在 provider 绑定之前编码成一个确定性 JSON object；对象
+key 按字符串自然顺序排列，随后作为 Protocol 1.3 请求字段传入 worker。参数值只允许以下形态：
+
+- <code>null</code>、<code>Boolean</code>；
+- <code>Byte</code>/<code>Short</code>/<code>Integer</code>/<code>Long</code>/<code>BigInteger</code>；
+- 有限的 <code>Float</code>/<code>Double</code> 与合法 <code>BigDecimal</code>；
+- <code>Character</code>/<code>CharSequence</code>；
+- key 全为 <code>String</code> 的 <code>Map</code>、<code>Iterable</code> 与任意 Java 数组，元素递归遵守本表。
+
+解码后，整数在 <code>Long</code> 范围内以 <code>Long</code> 暴露，更大的整数为 <code>BigInteger</code>；
+小数或指数形式为 <code>BigDecimal</code>。根对象、嵌套对象和数组分别以深层不可变的 Java
+<code>Map</code>/<code>List</code> 暴露；脚本不能借参数引用修改宿主原对象，宿主在开始执行后再修改原
+集合也不会改变已发出的快照。
+
+整个 JSON 最多 65,536 UTF-8 bytes，容器嵌套最多 64 层，数字文本最多 256 字符。引用环、非字符串
+Map key、NaN/无穷、非配对 surrogate、普通 POJO、Android/宿主对象与其他未列类型会在绑定 provider
+之前拒绝，并映射为稳定错误 <code>JVM_SOURCE_INVALID_ARGUMENTS</code> 与恢复动作
+<code>FIX_INVOCATION</code>。外部 Android <code>Intent</code> 不会自动作为 JVM 参数暴露；调用方必须通过
+显式 <code>ExecutionConfig.setArgument</code> 提供 JSON profile 值。参数内容不会进入请求
+<code>toString()</code>、公开错误或观测记录。
+
+旧 Protocol 1.2 请求没有参数字段，当前解码器把它解释为空对象；使用旧式
+<code>run(JvmScriptContext)</code> 且不调用 <code>args()</code> 的源码可以原样针对 Entry API 4 编译运行。
+完整的 wire/ABI 决策与设备证据见
+[M9-2 脚本入参实现与证据](script-arguments-m9-2.zh-CN.md)。
 
 Android 10 起，平台只允许获得输入焦点的应用或少数系统角色访问剪贴板。宿主因此在执行
 <code>clipboard.get/set</code> 前检查 AutoJs6 是否仍有 resumed Activity；真正后台状态会在触碰系统
@@ -215,7 +245,7 @@ return result;
 ## 诊断与隐私
 
 - ECJ 诊断在回传前会限制总字节数和消息长度；私有绝对路径、摘要、uid/pid、Binder 引用和其他敏感元数据会按片段替换为 <code>&lt;redacted&gt;</code>，其余可操作的编译器原文会保留。
-- 一个源码包含多处 ECJ 问题时，provider 会按编译器顺序分别回传多条诊断；每条仍使用 Protocol 1.2 的单诊断 frame，所有 frame 共用 64 KiB 总 wire 预算。
+- 一个源码包含多处 ECJ 问题时，provider 会按编译器顺序分别回传多条诊断；每条仍使用 Protocol 1.3 的单诊断 frame，所有 frame 共用 64 KiB 总 wire 预算。
 - 编译错误包含可安全确认的源码文件名、行和列。诊断预算耗尽时，后续诊断可能不再出现。
 - 运行时异常当前只回传通用的 <code>JAVA_RUNTIME_EXCEPTION</code>、源码行号与列 1；不会回传异常 message、任意类名或完整堆栈。
 - 错误消息是稳定的公开摘要，不应依赖内部异常文本进行程序逻辑判断；应使用 error code 与 phase。

@@ -175,7 +175,7 @@
 
 ## M9 — 协议协同能力扩展 (全部 `[宿主]`)
 
-> 前置: 与宿主商定 Protocol 1.2 (或 2.0) + Entry API 3 的增量; 按 `protocol/README.md` 流程
+> 前置: 从已落地的 Protocol 1.2 / Entry API 3 继续协商增量; 按 `protocol/README.md` 流程
 > 同步刷新三个 AAR + `protocol-artifacts.lock.json`; 提升 `REQUIRED_HOST_VERSION_CODE` 与
 > `plugin_protocol_api_min/max`; 每个新能力遵守既有安全四件套 — **默认拒绝、双侧硬编码白名单、payload 上限、脱敏**。
 
@@ -192,10 +192,18 @@
     后台静默拒绝问题已通过宿主 resumed-Activity guard fail closed。设计、哈希和原始 JSONL/logcat 见
     `docs/capability-set-2-m9-1.zh-CN.md`。
 
-- [ ] **M9-2 脚本入参 (Entry API 3)**
+- [x] **M9-2 脚本入参 (Entry API 4)** `[设备]`
   - 内容: 目前入口 `run(JvmScriptContext)` 无法接收宿主参数。新增 `context.args()` 返回 JSON profile 值
-    (随 `openSession` request 携带, 复用 64KB/深度 64 限制)。保持 Entry API 2 无参入口向后兼容。
-  - 验收: AAR 更新; 双版本入口兼容测试; 样例演示参数往返。
+    (随 `openSession` request 携带, 复用 64KB/深度 64 限制)。保持 Entry API 2/3 无参入口向后兼容。
+  - 验收: AAR 更新; 双版本入口兼容测试; 样例演示参数往返。M9-1 已使用 Entry API 3，因此本项
+    实际版本锁定为 Protocol 1.3 / Entry API 4；`run(JvmScriptContext)` 方法签名不变。
+  - 结果: 宿主在 provider discovery/bind 前把 `ExecutionConfig.arguments` 冻结成确定性、64 KiB、深度 64
+    的 JSON object，worker 以深层只读 `Map`/`List` 暴露；无效类型、环、非有限数和 Android/host 对象
+    稳定映射为 `JVM_SOURCE_INVALID_ARGUMENTS` / `FIX_INVOCATION` 且零 bind。1.2 缺字段兼容为空对象，
+    1.3 的 tag 17 为 reader-required，旧 reader 不会静默丢参。最终 AAR 锁指向干净宿主 commit
+    `abb64bdd620c33bf9c7ce64c7fc0011237d0365f`；provider Debug/Release 各 147/147 单测、lint 与三类
+    APK 全绿，API 24/28 样例各 9/9，API 36 production 三进程参数往返 1/1 且 bridge 调用为 0。设计、
+    工件哈希和原始证据见 `docs/script-arguments-m9-2.zh-CN.md`。
 
 - [ ] **M9-3 运行时异常类名回传**
   - 内容: 目前运行时错误仅回传一个行号 (无异常类/message)。在 line-only 基础上增加脱敏类名:

@@ -10,15 +10,15 @@ process. The compiler and worker never run inside the AutoJs6 process.
 
 - Application ID: `io.github.supermonster003.autojs6.plugin.java.runtime`
 - Minimum Android API: 24
-- Required AutoJs6 version code: 5277
-- JVM source protocol: 1.2
-- Entry API: 3 (`AutoJsJvmEntry.run(JvmScriptContext)`)
+- Required AutoJs6 version code: 5278
+- JVM source protocol: 1.3
+- Entry API: 4 (`AutoJsJvmEntry.run(JvmScriptContext)`; `context.args()` added)
 - Current source shape: one `.java` file, entry simple name `Main`, optional package/imports
 
 ## 中文使用说明
 
 当前版本接受严格 UTF-8 的单文件 Java 8 源码，入口简单名固定为 <code>Main</code>，并通过
-<code>JvmScriptContext</code> 提供启动应用、剪贴板读写、stdout/stderr、可取消休眠和 toast 能力。返回值只接受
+<code>JvmScriptContext</code> 提供只读脚本参数、启动应用、剪贴板读写、stdout/stderr、可取消休眠和 toast 能力。返回值只接受
 有界 JSON profile；源码、输出、诊断、返回值和会话时间均有硬上限。完整的方法说明、类型表、限额与
 错误码见 [Java Context API 与运行边界](docs/context-api.zh-CN.md)。
 
@@ -45,6 +45,9 @@ M8 发布所需的 API 24/25 `DexClassLoader`、API 26+ `InMemoryDexClassLoader`
 Protocol 1.2 / Entry API 3 的 Capability Set 2 已把剪贴板读写拆成两项独立授权，并在 API 24/28
 provider 设备链路与 API 36 AutoJs6 生产 Binder 路径完成验证；wire、安全边界和原始记录见
 [M9-1 剪贴板能力实现与证据](docs/capability-set-2-m9-1.zh-CN.md)。
+Protocol 1.3 / Entry API 4 通过 <code>context.args()</code> 暴露宿主在执行配置中提供的有界、深层只读
+JSON profile 快照；空参数的既有 Java 入口无需改动。类型边界、兼容策略和生产 Binder 证据见
+[M9-2 脚本入参实现与证据](docs/script-arguments-m9-2.zh-CN.md)。
 
 ## Source example
 
@@ -75,16 +78,22 @@ the restoring [Capability Set 2 clipboard sample](samples/capability-set-2-clipb
 Android 10 and later, AutoJs6 must have a resumed foreground activity when either clipboard method
 is called; background calls fail before the system clipboard is touched.
 
-More samples cover controlled `java.time`/enhanced Stream desugaring, cancellation, every supported
-return-value family, sanitized compiler errors, and result-size rejection. Their expected output and API 24/API 37 device evidence are recorded in
-the [sample guide](samples/README.zh-CN.md).
+Protocol 1.3 / Entry API 4 additionally exposes the deterministic host execution-argument snapshot
+through `context.args()`. The [script arguments sample](samples/script-args.java) reads nested maps,
+lists, booleans, numbers, strings, and null without issuing a host call. Existing sources that only
+implement `run(JvmScriptContext)` remain source compatible.
+
+More samples cover script arguments, controlled `java.time`/enhanced Stream desugaring,
+cancellation, every supported return-value family, sanitized compiler errors, and result-size
+rejection. Their expected output and current API 24/API 28 device evidence are recorded in the
+[sample guide](samples/README.zh-CN.md).
 
 ## Versioning
 
-`VERSION_NAME` follows SemVer with an optional milestone suffix (currently `0.4.0-m9`), while
+`VERSION_NAME` follows SemVer with an optional milestone suffix (currently `0.5.0-m9`), while
 `VERSION_BUILD` is a positive, monotonically increasing Android package version. Release metadata
-declares engine `jvm-source`, provider ID `ecj-java`, variant `java-ecj-d8`, Protocol 1.2, and
-required host version code 5277 for schema-v2 official-index generation.
+declares engine `jvm-source`, provider ID `ecj-java`, variant `java-ecj-d8`, Protocol 1.3, and
+required host version code 5278 for schema-v2 official-index generation.
 
 ## Local build
 
