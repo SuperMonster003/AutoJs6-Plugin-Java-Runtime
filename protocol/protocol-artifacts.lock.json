@@ -2,24 +2,24 @@
   "schemaVersion": 1,
   "status": "host-clean-snapshot",
   "sourceRepository": "AutoJs6",
-  "sourceRevision": "d21c69a2523a529ce6e2cd5d7dc3ced49cbaf74d",
+  "sourceRevision": "b87d9827cbe7725839b1728ca7e4ab2daf306352",
   "sourceDirty": false,
-  "snapshotDate": "2026-08-22",
+  "snapshotDate": "2026-08-25",
   "artifacts": [
     {
       "file": "common-plugin-api.aar",
       "sourceModule": ":plugin-api:common-plugin-api",
-      "sha256": "d745bb24d6a6995e68ebea27d592faec162f0bad4f9bf70cb038a480ad8c6df2"
+      "sha256": "c526f4fd0adbf38b36a7bf54f9931385e6cc20050d6ea8fb741c60496af635d5"
     },
     {
       "file": "protocol-wire-api.aar",
       "sourceModule": ":plugin-api:protocol-wire-api",
-      "sha256": "a850d2d649638e9131b68a0a3806c950e6be8aa0fa5c5f1e7a575c9260ebf202"
+      "sha256": "e044dd3cc9bed84e844174e0963b57a1f67902cf021ccb42d1031d3511ce46da"
     },
     {
       "file": "jvm-source-api.aar",
       "sourceModule": ":plugin-api:jvm-source-api",
-      "sha256": "87615dc0d7f678e13d6823fd1d4ad226dc5f04a2599ae93700882577d7bb7e2e"
+      "sha256": "5ff4a4d6e72c0db17744a679ad9702e2aafc36084cefa491b8022191e0502a9d"
     }
   ]
 }

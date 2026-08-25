@@ -5,6 +5,8 @@ import org.autojs.plugin.jvmsource.api.IJvmHostBridge
 import org.autojs.plugin.jvmsource.api.IJvmHostBridgeCallback
 import org.autojs.plugin.jvmsource.api.JvmAppApi
 import org.autojs.plugin.jvmsource.api.JvmCancellation
+import org.autojs.plugin.jvmsource.api.JvmClipboardApi
+import org.autojs.plugin.jvmsource.api.JvmClipboardPayload
 import org.autojs.plugin.jvmsource.api.JvmConsoleApi
 import org.autojs.plugin.jvmsource.api.JvmHostCall
 import org.autojs.plugin.jvmsource.api.JvmHostResponse
@@ -60,8 +62,34 @@ internal class RemoteJvmScriptContext(
             stderr.println(message)
         }
     }
+    private val clipboardApi = object : JvmClipboardApi {
+        override fun getText(): String {
+            workerCancellation.throwIfCancellationRequested()
+            requireCapability(JvmScriptCapability.CLIPBOARD_READ)
+            val response = dispatch(METHOD_CLIPBOARD_GET, JvmClipboardPayload.GET_REQUEST_JSON)
+            if (!response.succeeded) {
+                throw IllegalStateException(response.errorMessage ?: "Host rejected clipboard.get")
+            }
+            return runCatching {
+                JvmClipboardPayload.decodeText(requireNotNull(response.payloadJson))
+            }.getOrElse { error ->
+                throw IllegalStateException("Host returned an invalid clipboard.get response", error)
+            }
+        }
+
+        override fun setText(text: String) {
+            workerCancellation.throwIfCancellationRequested()
+            requireCapability(JvmScriptCapability.CLIPBOARD_WRITE)
+            val response = dispatch(METHOD_CLIPBOARD_SET, JvmClipboardPayload.encodeText(text))
+            if (!response.succeeded || response.payloadJson != "true") {
+                throw IllegalStateException(response.errorMessage ?: "Host rejected clipboard.set")
+            }
+        }
+    }
 
     override fun app(): JvmAppApi = appApi
+
+    override fun clipboard(): JvmClipboardApi = clipboardApi
 
     override fun console(): JvmConsoleApi = consoleApi
 
@@ -91,6 +119,7 @@ internal class RemoteJvmScriptContext(
     }
 
     private fun dispatch(method: String, payloadJson: String): JvmHostResponse {
+        require(method in SUPPORTED_HOST_METHODS) { "$method is outside the worker allowlist" }
         require(method in request.allowedHostCalls) { "$method is not allowed" }
         val call = JvmHostCall(
             requestId = request.requestId,
@@ -153,10 +182,18 @@ internal class RemoteJvmScriptContext(
 
     private companion object {
         const val METHOD_APP_LAUNCH = "app.launch"
+        const val METHOD_CLIPBOARD_GET = "clipboard.get"
+        const val METHOD_CLIPBOARD_SET = "clipboard.set"
         const val METHOD_TOAST_SHOW = "toast.show"
         const val HOST_CALL_TIMEOUT_MILLIS = 10_000L
         val PACKAGE_NAME = Regex(
             "[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+",
+        )
+        val SUPPORTED_HOST_METHODS = setOf(
+            METHOD_APP_LAUNCH,
+            METHOD_CLIPBOARD_GET,
+            METHOD_CLIPBOARD_SET,
+            METHOD_TOAST_SHOW,
         )
     }
 }

@@ -179,12 +179,18 @@
 > 同步刷新三个 AAR + `protocol-artifacts.lock.json`; 提升 `REQUIRED_HOST_VERSION_CODE` 与
 > `plugin_protocol_api_min/max`; 每个新能力遵守既有安全四件套 — **默认拒绝、双侧硬编码白名单、payload 上限、脱敏**。
 
-- [ ] **M9-1 能力集 2 (Capability Set 2)** `[设备]`
+- [x] **M9-1 能力集 2 (Capability Set 2)** `[设备]`
   - 内容: 当前仅 4 能力 (APP_LAUNCH/CONSOLE_STREAM/SLEEP/TOAST)、2 个宿主方法 (`app.launch`/`toast.show`)。
     候选新增 (与宿主逐项谈判): `clipboard.get/set`、`device.info` (只读脱敏子集)、`notice.show`、`vibrate`、
     受限文件通道 (宿主授权目录内, 路径白名单)。每项含: 枚举 + wire 方法名 + `SessionHostBridgeProxy` 与
     `RemoteJvmScriptContext` 双侧白名单 + 规范 payload 编解码器 + 上限。
   - 验收: 每能力具备: 双侧白名单测试、payload 边界测试、未授权调用被拒证据、真机样例。
+  - 结果: 选择 `clipboard.get/set`，以独立 `CLIPBOARD_READ` / `CLIPBOARD_WRITE` 落地 Protocol 1.2、
+    Entry API 3、16 KiB 规范 UTF-8 payload、双侧硬编码方法/响应白名单和稳定脱敏错误。最终 Debug/Release
+    各 146/146 单测、lint 0 error、三类 APK 离线构建全绿；API 24 模拟器与 API 28 Sony 真机样例均
+    8/8，API 36 又经 AutoJs6 production Activity→Binder 路径实际写入、回读并恢复。Android 10+
+    后台静默拒绝问题已通过宿主 resumed-Activity guard fail closed。设计、哈希和原始 JSONL/logcat 见
+    `docs/capability-set-2-m9-1.zh-CN.md`。
 
 - [ ] **M9-2 脚本入参 (Entry API 3)**
   - 内容: 目前入口 `run(JvmScriptContext)` 无法接收宿主参数。新增 `context.args()` 返回 JSON profile 值

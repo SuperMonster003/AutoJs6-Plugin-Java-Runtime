@@ -9,7 +9,6 @@ import org.autojs.plugin.jvmsource.api.JvmSourceCodec
 import org.autojs.plugin.jvmsource.api.JvmSourceContract
 import org.autojs.plugin.jvmsource.api.JvmSourceRequest
 import org.autojs.plugin.jvmsource.api.JvmSourceValidation
-import org.autojs.plugin.jvmsource.api.JvmToastPayload
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -56,10 +55,11 @@ internal class SessionHostBridgeProxy(
             return
         }
         if (call.requestId != request.requestId || call.method !in request.allowedHostCalls ||
-            call.method !in SUPPORTED_METHODS || !seenCallIds.add(call.callId) ||
-            !validPayload(call)
+            call.method !in JavaHostCapabilityWirePolicy.supportedMethods ||
+            !seenCallIds.add(call.callId) ||
+            !JavaHostCapabilityWirePolicy.acceptsRequest(call.method, call.payloadJson)
         ) {
-            respondFailure(workerCallback, call, "HOST_CALL_REJECTED", "Host call is outside the R1 allowlist")
+            respondFailure(workerCallback, call, "HOST_CALL_REJECTED", "Host call is outside the provider allowlist")
             onViolation()
             return
         }
@@ -75,8 +75,15 @@ internal class SessionHostBridgeProxy(
                     JvmSourceCodec.decodeHostResponse(encodedResponse).also { value ->
                         JvmSourceValidation.validateHostResponse(value)
                         require(value.requestId == call.requestId && value.callId == call.callId)
+                        JavaHostCapabilityWirePolicy.validateResponse(call.method, value)
                     }
                 } catch (_: Throwable) {
+                    respondFailure(
+                        workerCallback,
+                        call,
+                        "HOST_RESPONSE_REJECTED",
+                        "Host response is outside the provider wire profile",
+                    )
                     onViolation()
                     return
                 }
@@ -148,18 +155,4 @@ internal class SessionHostBridgeProxy(
         runCatching { callback.onResponse(JvmSourceCodec.encodeHostResponse(response)) }
     }
 
-    private fun validPayload(call: JvmHostCall): Boolean = when (call.method) {
-        METHOD_APP_LAUNCH -> APP_LAUNCH_PAYLOAD.matches(call.payloadJson)
-        METHOD_TOAST_SHOW -> runCatching { JvmToastPayload.decode(call.payloadJson) }.isSuccess
-        else -> false
-    }
-
-    private companion object {
-        const val METHOD_APP_LAUNCH = "app.launch"
-        const val METHOD_TOAST_SHOW = "toast.show"
-        val SUPPORTED_METHODS = setOf(METHOD_APP_LAUNCH, METHOD_TOAST_SHOW)
-        val APP_LAUNCH_PAYLOAD = Regex(
-            "\\{\\\"packageName\\\":\\\"[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+\\\"\\}",
-        )
-    }
 }

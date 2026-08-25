@@ -6,6 +6,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.autojs.plugin.jvmsource.api.AutoJsJvmEntry
 import org.autojs.plugin.jvmsource.api.JvmAppApi
 import org.autojs.plugin.jvmsource.api.JvmCancellation
+import org.autojs.plugin.jvmsource.api.JvmClipboardApi
 import org.autojs.plugin.jvmsource.api.JvmConsoleApi
 import org.autojs.plugin.jvmsource.api.JvmDexRuntimeProfile
 import org.autojs.plugin.jvmsource.api.JvmScriptContext
@@ -138,8 +139,15 @@ class JavaProviderPipelineInstrumentedTest {
 
             override fun throwIfCancellationRequested() = Unit
         }
+        private val clipboard = object : JvmClipboardApi {
+            override fun getText(): String = error("The internal smoke source must not read clipboard")
+
+            override fun setText(text: String) = error("The internal smoke source must not write clipboard")
+        }
 
         override fun app(): JvmAppApi = app
+
+        override fun clipboard(): JvmClipboardApi = clipboard
 
         override fun console(): JvmConsoleApi = error("The internal smoke source must not use console")
 

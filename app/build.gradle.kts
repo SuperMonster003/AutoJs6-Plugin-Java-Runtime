@@ -60,6 +60,7 @@ val entryApiClassEntries = linkedSetOf(
     "org/autojs/plugin/jvmsource/api/JvmScriptContext.class",
     "org/autojs/plugin/jvmsource/api/JvmScriptContext\$DefaultImpls.class",
     "org/autojs/plugin/jvmsource/api/JvmAppApi.class",
+    "org/autojs/plugin/jvmsource/api/JvmClipboardApi.class",
     "org/autojs/plugin/jvmsource/api/JvmConsoleApi.class",
     "org/autojs/plugin/jvmsource/api/JvmCancellation.class",
     "org/autojs/plugin/jvmsource/api/JvmCancellationException.class",
@@ -123,14 +124,14 @@ android {
         resValue("string", "plugin_id", "ecj-java")
         resValue("string", "plugin_engine", "jvm-source")
         resValue("string", "plugin_variant", "java-ecj-d8")
-        resValue("string", "plugin_requires_host_version", "5276")
+        resValue("string", "plugin_requires_host_version", "5277")
         resValue(
             "string",
             "plugin_runtime_component",
             "io.github.supermonster003.autojs6.plugin.java.runtime/org.autojs.plugin.jvmsource.java.service.JavaSourceCompilerService"
         )
-        resValue("string", "plugin_protocol_api_min", "1.1")
-        resValue("string", "plugin_protocol_api_max", "1.1")
+        resValue("string", "plugin_protocol_api_min", "1.2")
+        resValue("string", "plugin_protocol_api_max", "1.2")
         resValue("string", "plugin_backend", "ecj-d8")
         resValue("string", "plugin_task", "jvm-source")
     }
@@ -241,7 +242,7 @@ val verifyPinnedInputs = tasks.register("verifyPinnedInputs") {
     inputs.files(protocolArtifacts)
 
     doLast {
-        check(versions["REQUIRED_HOST_VERSION_CODE"] == "5276") {
+        check(versions["REQUIRED_HOST_VERSION_CODE"] == "5277") {
             "plugin_requires_host_version must stay aligned with REQUIRED_HOST_VERSION_CODE"
         }
         expectedPinnedDependencies.forEach { (label, pin) ->

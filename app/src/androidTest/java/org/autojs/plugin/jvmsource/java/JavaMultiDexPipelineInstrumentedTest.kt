@@ -23,6 +23,7 @@ import org.autojs.plugin.jvmsource.api.IJvmHostBridge
 import org.autojs.plugin.jvmsource.api.IJvmHostBridgeCallback
 import org.autojs.plugin.jvmsource.api.JvmAppApi
 import org.autojs.plugin.jvmsource.api.JvmCancellation
+import org.autojs.plugin.jvmsource.api.JvmClipboardApi
 import org.autojs.plugin.jvmsource.api.JvmConsoleApi
 import org.autojs.plugin.jvmsource.api.JvmProtocolVersion
 import org.autojs.plugin.jvmsource.api.JvmRequestId
@@ -347,8 +348,13 @@ class JavaMultiDexPipelineInstrumentedTest {
             override fun isCancellationRequested(): Boolean = false
             override fun throwIfCancellationRequested() = Unit
         }
+        private val clipboard = object : JvmClipboardApi {
+            override fun getText(): String = error("Multidex fixture must not read clipboard")
+            override fun setText(text: String) = error("Multidex fixture must not write clipboard")
+        }
 
         override fun app(): JvmAppApi = app
+        override fun clipboard(): JvmClipboardApi = clipboard
         override fun console(): JvmConsoleApi = error("Multidex fixture must not use console")
         override fun cancellation(): JvmCancellation = cancellation
         override fun sleep(millis: Long) = error("Multidex fixture must not sleep")

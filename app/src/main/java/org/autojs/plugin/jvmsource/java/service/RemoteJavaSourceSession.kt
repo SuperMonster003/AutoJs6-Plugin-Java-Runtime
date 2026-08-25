@@ -436,7 +436,7 @@ internal class RemoteJavaSourceSession(
         if (request.language != JvmSourceLanguage.JAVA ||
             request.sourceFileName != "$entrySimpleName.java" ||
             request.minApi != JvmSourceContract.MIN_ANDROID_API ||
-            request.allowedHostCalls.any { it !in SUPPORTED_HOST_METHODS } ||
+            request.allowedHostCalls.any { it !in JavaHostCapabilityWirePolicy.supportedMethods } ||
             request.grantedCapabilities.any { it !in capabilities.scriptCapabilities }
         ) {
             throw JavaProviderFailure(
@@ -587,7 +587,7 @@ internal class RemoteJavaSourceSession(
         val encoded = diagnostics.mapNotNull(::encodeAndReserveDiagnostic)
         if (encoded.isEmpty()) return
         // One lane task avoids exhausting the bounded callback queue when ECJ reports many errors,
-        // while the synchronous Binder calls still deliver one Protocol 1.1 frame per diagnostic.
+        // while the synchronous Binder calls still deliver one negotiated protocol frame per diagnostic.
         dispatchCallback {
             encoded.forEach(callback::onDiagnostic)
         }
@@ -1402,9 +1402,6 @@ internal class RemoteJavaSourceSession(
     private class SessionStopped : RuntimeException()
 
     private companion object {
-        const val METHOD_APP_LAUNCH = "app.launch"
-        const val METHOD_TOAST_SHOW = "toast.show"
-        val SUPPORTED_HOST_METHODS = setOf(METHOD_APP_LAUNCH, METHOD_TOAST_SHOW)
         const val WORKER_CANCEL_GRACE_MILLIS = 500L
         const val WORKER_RETIREMENT_ACK_TIMEOUT_MILLIS = 500L
         const val COMPILER_CANCEL_GRACE_MILLIS = 2_000L

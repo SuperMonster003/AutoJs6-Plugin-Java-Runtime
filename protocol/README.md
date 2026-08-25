@@ -11,5 +11,5 @@ artifact. The Gradle `verifyPinnedInputs` task checks the complete file/module s
 artifacts, and verifies every digest before compilation or assembly.
 
 The current snapshot records `sourceDirty=false` and points to the host commit that finalized
-Protocol 1.1 and Entry API 2. Refresh all three AARs and their lock together whenever the host
+Protocol 1.2 and Entry API 3. Refresh all three AARs and their lock together whenever the host
 protocol source changes.

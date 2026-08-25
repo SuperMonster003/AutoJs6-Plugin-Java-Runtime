@@ -10,15 +10,15 @@ process. The compiler and worker never run inside the AutoJs6 process.
 
 - Application ID: `io.github.supermonster003.autojs6.plugin.java.runtime`
 - Minimum Android API: 24
-- Required AutoJs6 version code: 5276
-- JVM source protocol: 1.1
-- Entry API: 2 (`AutoJsJvmEntry.run(JvmScriptContext)`)
+- Required AutoJs6 version code: 5277
+- JVM source protocol: 1.2
+- Entry API: 3 (`AutoJsJvmEntry.run(JvmScriptContext)`)
 - Current source shape: one `.java` file, entry simple name `Main`, optional package/imports
 
 ## 中文使用说明
 
 当前版本接受严格 UTF-8 的单文件 Java 8 源码，入口简单名固定为 <code>Main</code>，并通过
-<code>JvmScriptContext</code> 提供启动应用、stdout/stderr、可取消休眠和 toast 能力。返回值只接受
+<code>JvmScriptContext</code> 提供启动应用、剪贴板读写、stdout/stderr、可取消休眠和 toast 能力。返回值只接受
 有界 JSON profile；源码、输出、诊断、返回值和会话时间均有硬上限。完整的方法说明、类型表、限额与
 错误码见 [Java Context API 与运行边界](docs/context-api.zh-CN.md)。
 
@@ -42,6 +42,9 @@ provider 内部的入口类名全链路已通过非 `Main` 简名与包名矩阵
 M8 发布所需的 API 24/25 `DexClassLoader`、API 26+ `InMemoryDexClassLoader`、API 34/36 R2 只读
 发布时序，以及宿主↔provider Binder 分工和最近一次锁定记录，统一收录于
 [M8 设备证据矩阵](docs/device-evidence.md)。
+Protocol 1.2 / Entry API 3 的 Capability Set 2 已把剪贴板读写拆成两项独立授权，并在 API 24/28
+provider 设备链路与 API 36 AutoJs6 生产 Binder 路径完成验证；wire、安全边界和原始记录见
+[M9-1 剪贴板能力实现与证据](docs/capability-set-2-m9-1.zh-CN.md)。
 
 ## Source example
 
@@ -66,7 +69,11 @@ public final class Main implements AutoJsJvmEntry {
 ```
 
 `console().log/error` is streamed line by line while the worker is running. `sleep` is interrupted by
-session cancellation, and `toast` is an explicitly granted host bridge capability.
+session cancellation, and `toast` is an explicitly granted host bridge capability. Protocol 1.2 /
+Entry API 3 additionally exposes independently granted `clipboard.read` and `clipboard.write` via
+the restoring [Capability Set 2 clipboard sample](samples/capability-set-2-clipboard.java). On
+Android 10 and later, AutoJs6 must have a resumed foreground activity when either clipboard method
+is called; background calls fail before the system clipboard is touched.
 
 More samples cover controlled `java.time`/enhanced Stream desugaring, cancellation, every supported
 return-value family, sanitized compiler errors, and result-size rejection. Their expected output and API 24/API 37 device evidence are recorded in
@@ -74,10 +81,10 @@ the [sample guide](samples/README.zh-CN.md).
 
 ## Versioning
 
-`VERSION_NAME` follows SemVer with an optional milestone suffix (currently `0.3.0-m5`), while
+`VERSION_NAME` follows SemVer with an optional milestone suffix (currently `0.4.0-m9`), while
 `VERSION_BUILD` is a positive, monotonically increasing Android package version. Release metadata
-declares engine `jvm-source`, provider ID `ecj-java`, variant `java-ecj-d8`, Protocol 1.1, and
-required host version code 5276 for schema-v2 official-index generation.
+declares engine `jvm-source`, provider ID `ecj-java`, variant `java-ecj-d8`, Protocol 1.2, and
+required host version code 5277 for schema-v2 official-index generation.
 
 ## Local build
 

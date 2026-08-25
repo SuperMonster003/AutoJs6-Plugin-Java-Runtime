@@ -1,6 +1,7 @@
 package org.autojs.plugin.jvmsource.java
 
 import android.os.ParcelFileDescriptor
+import android.os.Process
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.autojs.plugin.jvmsource.api.AutoJsJvmEntry
@@ -10,13 +11,18 @@ import org.autojs.plugin.jvmsource.api.JvmAppApi
 import org.autojs.plugin.jvmsource.api.JvmCancellation
 import org.autojs.plugin.jvmsource.api.JvmCancellationException
 import org.autojs.plugin.jvmsource.api.JvmCancellationReason
+import org.autojs.plugin.jvmsource.api.JvmClipboardApi
+import org.autojs.plugin.jvmsource.api.JvmClipboardPayload
 import org.autojs.plugin.jvmsource.api.JvmConsoleApi
+import org.autojs.plugin.jvmsource.api.JvmHostCall
+import org.autojs.plugin.jvmsource.api.JvmHostResponse
 import org.autojs.plugin.jvmsource.api.JvmProtocolVersion
 import org.autojs.plugin.jvmsource.api.JvmRequestId
 import org.autojs.plugin.jvmsource.api.JvmScriptCapability
 import org.autojs.plugin.jvmsource.api.JvmScriptContext
 import org.autojs.plugin.jvmsource.api.JvmSha256
 import org.autojs.plugin.jvmsource.api.JvmSourceContract
+import org.autojs.plugin.jvmsource.api.JvmSourceCodec
 import org.autojs.plugin.jvmsource.api.JvmSourceErrorCode
 import org.autojs.plugin.jvmsource.api.JvmSourceLanguage
 import org.autojs.plugin.jvmsource.api.JvmSourceRequest
@@ -63,6 +69,68 @@ class JavaSampleLibraryInstrumentedTest {
         withCompiledEntry(CORE_LIBRARY_DESUGARING_SAMPLE) { entry, _ ->
             assertEquals("2024-03-01:CORE", entry.run(NoCallsContext))
         }
+    }
+
+    @Test
+    fun clipboardCapabilitySet2SampleRunsThroughArtAndRestoresHostText() {
+        withCompiledEntry(CLIPBOARD_SAMPLE) { entry, sourceBytes ->
+            val stdout = ByteArrayOutputStream()
+            val bridge = ClipboardHostBridge("device-before")
+            val context = RemoteJvmScriptContext(
+                request = request(
+                    sourceBytes,
+                    listOf(
+                        JvmScriptCapability.CLIPBOARD_READ,
+                        JvmScriptCapability.CLIPBOARD_WRITE,
+                        JvmScriptCapability.CONSOLE_STREAM,
+                    ),
+                ),
+                bridge = bridge,
+                workerCancellation = WorkerCancellation(),
+                expectedCompilerPid = Process.myPid(),
+                expectedCompilerUid = Process.myUid(),
+                stdout = PrintStream(stdout, true, Charsets.UTF_8.name()),
+                stderr = PrintStream(ByteArrayOutputStream(), true, Charsets.UTF_8.name()),
+            )
+
+            assertEquals(
+                "{\"before\":\"device-before\",\"written\":\"M9 clipboard 你好\",\"restored\":true}",
+                WorkerJsonValue.encode(entry.run(context)),
+            )
+            assertEquals("device-before", bridge.text)
+            assertEquals(
+                listOf("clipboard.get", "clipboard.set", "clipboard.get", "clipboard.set", "clipboard.get"),
+                bridge.calls.map(JvmHostCall::method),
+            )
+            assertEquals(
+                "clipboard round-trip: M9 clipboard 你好; restored=true${System.lineSeparator()}",
+                stdout.toString(Charsets.UTF_8.name()),
+            )
+        }
+    }
+
+    @Test
+    fun clipboardReadAndWriteRemainDefaultDeniedOnDevice() {
+        val sourceBytes = "class Main".toByteArray()
+        val bridge = ClipboardHostBridge("private")
+        fun context(capabilities: List<JvmScriptCapability>) = RemoteJvmScriptContext(
+            request = request(sourceBytes, capabilities),
+            bridge = bridge,
+            workerCancellation = WorkerCancellation(),
+            expectedCompilerPid = Process.myPid(),
+            expectedCompilerUid = Process.myUid(),
+            stdout = PrintStream(ByteArrayOutputStream()),
+            stderr = PrintStream(ByteArrayOutputStream()),
+        )
+
+        assertThrows(IllegalArgumentException::class.java) {
+            context(listOf(JvmScriptCapability.CLIPBOARD_WRITE)).clipboard().getText()
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            context(listOf(JvmScriptCapability.CLIPBOARD_READ)).clipboard().setText("blocked")
+        }
+        assertTrue(bridge.calls.isEmpty())
+        assertEquals("private", bridge.text)
     }
 
     @Test
@@ -251,7 +319,7 @@ class JavaSampleLibraryInstrumentedTest {
             maxStdoutBytes = JvmSourceContract.MAX_STDOUT_BYTES,
             maxStderrBytes = JvmSourceContract.MAX_STDERR_BYTES,
             diagnosticByteLimit = JvmSourceContract.MAX_DIAGNOSTIC_BYTES,
-            allowedHostCalls = emptyList(),
+            allowedHostCalls = capabilities.mapNotNull(JvmScriptCapability::hostMethod),
             grantedCapabilities = capabilities,
         )
 
@@ -277,8 +345,15 @@ class JavaSampleLibraryInstrumentedTest {
 
             override fun throwIfCancellationRequested() = Unit
         }
+        private val clipboardApi = object : JvmClipboardApi {
+            override fun getText(): String = kotlin.error("Unexpected clipboard.get")
+
+            override fun setText(text: String): Unit = kotlin.error("Unexpected clipboard.set")
+        }
 
         override fun app(): JvmAppApi = appApi
+
+        override fun clipboard(): JvmClipboardApi = clipboardApi
 
         override fun console(): JvmConsoleApi = consoleApi
 
@@ -287,6 +362,30 @@ class JavaSampleLibraryInstrumentedTest {
         override fun sleep(millis: Long): Unit = kotlin.error("Unexpected sleep")
 
         override fun toast(message: String): Unit = kotlin.error("Unexpected toast")
+    }
+
+    private class ClipboardHostBridge(initialText: String) : IJvmHostBridge.Stub() {
+        var text: String = initialText
+        val calls = mutableListOf<JvmHostCall>()
+
+        override fun dispatch(request: ByteArray?, callback: IJvmHostBridgeCallback?) {
+            val call = JvmSourceCodec.decodeHostCall(requireNotNull(request))
+            calls += call
+            val response = when (call.method) {
+                "clipboard.get" -> {
+                    JvmClipboardPayload.validateGetRequest(call.payloadJson)
+                    JvmHostResponse(call.requestId, call.callId, true, JvmClipboardPayload.encodeText(text))
+                }
+                "clipboard.set" -> {
+                    text = JvmClipboardPayload.decodeText(call.payloadJson)
+                    JvmHostResponse(call.requestId, call.callId, true, "true")
+                }
+                else -> error("Unexpected host method ${call.method}")
+            }
+            requireNotNull(callback).onResponse(JvmSourceCodec.encodeHostResponse(response))
+        }
+
+        override fun destroy(reason: ByteArray?) = Unit
     }
 
     private class LineSignalingOutputStream : ByteArrayOutputStream() {
@@ -309,6 +408,7 @@ class JavaSampleLibraryInstrumentedTest {
 
     private companion object {
         const val CANCELLATION_SAMPLE = "cancellation-sleep.java"
+        const val CLIPBOARD_SAMPLE = "capability-set-2-clipboard.java"
         const val CORE_LIBRARY_DESUGARING_SAMPLE = "core-library-desugaring.java"
         const val RETURN_VALUES_SAMPLE = "return-values.java"
         const val COMPILE_ERROR_SAMPLE = "compile-error.java"
