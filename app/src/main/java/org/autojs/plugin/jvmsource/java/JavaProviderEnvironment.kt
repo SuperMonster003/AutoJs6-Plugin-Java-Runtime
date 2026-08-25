@@ -40,22 +40,25 @@ internal class JavaProviderEnvironment private constructor(
             val compilerComponent = ComponentName(context, JavaSourceCompilerService::class.java)
             val providerDebuggable =
                 context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
-            val cacheEnablement = CompilationCacheEnablementPolicy.evaluate(
+            val cachePolicyDecision = CompilationCacheEnablementPolicy.evaluate(
                 providerDebuggable = providerDebuggable,
                 compilerNonDumpable = CompilerProcessMemoryIsolation.wasNonDumpableEnforced(),
             )
             val installedIdentity = ProviderInstalledIdentityResolver.resolve(context, compilerComponent)
-            val compilationCache = if (cacheEnablement == CompilationCacheEnablement.ENABLED) {
+            val cacheProvisioning = CompilationCacheAuthenticatorProvisioning.provision(
+                cachePolicyDecision,
+                AndroidCompilationCacheAuthenticatorProvider::loadOrCreate,
+            )
+            val compilationCache = cacheProvisioning.authenticator?.let { authenticator ->
                 CompilationArtifactCache(
                     File(
                         AndroidPrivateDirectoryAnchor.codeCache(context),
                         "jvm-source-java-artifact-cache-v1",
                     ),
+                    authenticator = authenticator,
                     fileWriter = AndroidCompilationCacheFileWriter,
                     treeCleaner = AndroidCompilationCacheTreeCleaner,
                 )
-            } else {
-                null
             }
             return JavaProviderEnvironment(
                 compilerClasspath,
@@ -63,7 +66,7 @@ internal class JavaProviderEnvironment private constructor(
                 compilerClasspath.fingerprint,
                 compilationCache,
                 compilationCache?.let { CompilationCacheOperationLane() },
-                cacheEnablement,
+                cacheProvisioning.enablement,
                 CompilationCacheTelemetry(),
                 JavaProviderLocalObservationExporterFactory.create(
                     debugBuild = BuildConfig.DEBUG,

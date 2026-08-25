@@ -3,7 +3,7 @@ package org.autojs.plugin.jvmsource.java.service
 import android.system.Os
 import android.system.OsConstants
 
-/** Fail-closed process-epoch secret boundary for the compiler-only cache HMAC key. */
+/** Defense in depth for compiler-only use of the installation-scoped cache HMAC key. */
 internal object CompilerProcessMemoryIsolation {
     @Volatile
     private var nonDumpableEnforced = false
