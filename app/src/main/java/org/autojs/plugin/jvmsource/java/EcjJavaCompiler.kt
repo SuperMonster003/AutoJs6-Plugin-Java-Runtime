@@ -62,7 +62,8 @@ internal class EcjJavaCompiler(private val classpath: CompilerClasspath) {
             "encoding=UTF-8",
             "debug=lines,vars,source",
             "classpath=entry-api-only",
-            "bootclasspath=controlled-android-stubs",
+            "bootclasspath=controlled-core-library-stubs-plus-api-24-android",
+            "core-library-visible=java-time-api-26-and-supported-stream-2.1.5",
         )
     }
 }

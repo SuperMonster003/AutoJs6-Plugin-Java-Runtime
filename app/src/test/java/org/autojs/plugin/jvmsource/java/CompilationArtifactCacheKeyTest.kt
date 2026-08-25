@@ -28,6 +28,7 @@ class CompilationArtifactCacheKeyTest {
             base.copy(sourceCompilerVersion = "3.43.0"),
             base.copy(sourceCompilerOptions = base.sourceCompilerOptions + "warnings=error"),
             base.copy(d8Version = "8.14.0"),
+            base.copy(d8Options = base.d8Options + "core-library-desugaring=disabled"),
             base.copy(minApi = 25),
             base.copy(runtimeLibraryFingerprint = hash("runtime-2")),
             base.copy(toolchainFingerprint = hash("toolchain-2")),

@@ -59,6 +59,29 @@ class JavaSampleLibraryInstrumentedTest {
     }
 
     @Test
+    fun coreLibraryDesugaringSampleRunsJavaTimeAndEnhancedStreamThroughArt() {
+        withCompiledEntry(CORE_LIBRARY_DESUGARING_SAMPLE) { entry, _ ->
+            assertEquals("2024-03-01:CORE", entry.run(NoCallsContext))
+        }
+    }
+
+    @Test
+    fun unsupportedStreamOfNullableStaysOutsideTheCompileTimeProfile() {
+        PrivateSessionWorkspace.create(targetContext, "Main.java").use { workspace ->
+            writeSource(workspace, UNSUPPORTED_STREAM_SOURCE.toByteArray(Charsets.UTF_8))
+            val ecj = EcjJavaCompiler(environment.compilerClasspath).compile(
+                sourceFile = workspace.sourceFile,
+                outputDirectory = workspace.classesDirectory,
+                diagnosticByteLimit = JvmSourceContract.MAX_DIAGNOSTIC_BYTES,
+                ensureActive = {},
+            )
+
+            assertFalse("Unsupported Stream.ofNullable unexpectedly compiled", ecj.succeeded)
+            assertTrue(ecj.diagnostics.contains("ofNullable"))
+        }
+    }
+
+    @Test
     fun cancellationSampleSleepIsInterruptedBeforeUnexpectedCompletion() {
         withCompiledEntry(CANCELLATION_SAMPLE) { entry, sourceBytes ->
             val stdout = LineSignalingOutputStream()
@@ -125,8 +148,7 @@ class JavaSampleLibraryInstrumentedTest {
                     workspace.classesDirectory,
                     workspace.programJar,
                     workspace.d8OutputDirectory,
-                    environment.compilerClasspath.androidJar,
-                    environment.compilerClasspath.entryApiJar,
+                    *environment.compilerClasspath.installedFiles.toTypedArray(),
                 ),
                 sourceFile = workspace.sourceFile,
                 sourceFileName = "Main.java",
@@ -287,9 +309,22 @@ class JavaSampleLibraryInstrumentedTest {
 
     private companion object {
         const val CANCELLATION_SAMPLE = "cancellation-sleep.java"
+        const val CORE_LIBRARY_DESUGARING_SAMPLE = "core-library-desugaring.java"
         const val RETURN_VALUES_SAMPLE = "return-values.java"
         const val COMPILE_ERROR_SAMPLE = "compile-error.java"
         const val RESULT_LIMIT_SAMPLE = "limit-result-json.java"
+        val UNSUPPORTED_STREAM_SOURCE = """
+            import java.util.stream.Stream;
+            import org.autojs.plugin.jvmsource.api.AutoJsJvmEntry;
+            import org.autojs.plugin.jvmsource.api.JvmScriptContext;
+
+            public final class Main implements AutoJsJvmEntry {
+                @Override
+                public Object run(JvmScriptContext context) {
+                    return Stream.ofNullable("unsupported").toList();
+                }
+            }
+        """.trimIndent()
         const val EXPECTED_RETURN_JSON =
             "{\"nullValue\":null,\"boolean\":true,\"integers\":[1,2,3,4,12345678901234567890]," +
                 "\"decimals\":[1.25,2.5,3.75],\"text\":\"hello\",\"character\":\"中\"," +

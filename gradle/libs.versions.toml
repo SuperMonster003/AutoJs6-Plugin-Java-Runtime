@@ -12,6 +12,7 @@ xz = "1.12"
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
 apache-commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
 desugar-jdk-libs-nio = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugar-jdk-libs-nio" }
+desugar-jdk-libs-configuration-nio = { module = "com.android.tools:desugar_jdk_libs_configuration_nio", version.ref = "desugar-jdk-libs-nio" }
 ecj = { module = "org.eclipse.jdt:ecj", version.ref = "ecj" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 r8 = { module = "com.android.tools:r8", version.ref = "r8" }

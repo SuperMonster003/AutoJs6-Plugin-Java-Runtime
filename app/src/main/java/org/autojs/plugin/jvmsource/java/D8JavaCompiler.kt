@@ -53,6 +53,8 @@ internal class D8JavaCompiler(private val runtimeLibraries: D8RuntimeLibraries) 
             add("--lib")
             add(library.absolutePath)
         }
+        add("--desugared-lib")
+        add(runtimeLibraries.desugaredLibraryConfiguration.absolutePath)
         add(programJar.absolutePath)
     }.toTypedArray()
 
@@ -63,6 +65,9 @@ internal class D8JavaCompiler(private val runtimeLibraries: D8RuntimeLibraries) 
             .setOutput(outputDirectory.toPath(), OutputMode.DexIndexed)
             .setMode(CompilationMode.DEBUG)
             .setMinApiLevel(minApi)
+            .addDesugaredLibraryConfiguration(
+                runtimeLibraries.desugaredLibraryConfiguration.readText(Charsets.UTF_8),
+            )
         runtimeLibraries.files.forEach { builder.addLibraryFiles(it.toPath()) }
         D8.run(builder.build())
     }
@@ -80,6 +85,8 @@ internal class D8JavaCompiler(private val runtimeLibraries: D8RuntimeLibraries) 
             "output=dex-indexed",
             "min-api=$minApi",
             "libraries=controlled-runtime",
+            "core-library-desugaring=desugar_jdk_libs_configuration_nio-2.1.5",
+            "d8-java-library-stubs=api-30",
             "single-program-jar=true",
             "dex-output-profile=r4-contiguous",
             "max-dex-files=${JavaDexOutputPolicy.MAX_DEX_FILES}",

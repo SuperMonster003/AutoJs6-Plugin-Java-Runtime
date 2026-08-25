@@ -10,18 +10,26 @@ import java.util.UUID
 internal data class CompilerClasspath(
     val androidJar: File,
     val entryApiJar: File,
+    val coreLibraryStubsJar: File,
+    val d8JavaApiStubsJar: File,
+    val desugaredLibraryConfiguration: File,
     val identities: List<ProviderFileIdentity>,
     val fingerprint: JvmSha256,
 ) {
     val ecjClasspath: String = entryApiJar.absolutePath
-    val ecjBootClasspath: String = androidJar.absolutePath
+    val ecjBootClasspath: String =
+        coreLibraryStubsJar.absolutePath + File.pathSeparator + androidJar.absolutePath
+    val installedFiles: List<File> = listOf(
+        androidJar,
+        entryApiJar,
+        coreLibraryStubsJar,
+        d8JavaApiStubsJar,
+        desugaredLibraryConfiguration,
+    )
 
     fun verifyInstalled() {
         try {
-            val actual = listOf(
-                ProviderDigests.file(androidJar, MAX_ASSET_BYTES),
-                ProviderDigests.file(entryApiJar, MAX_ASSET_BYTES),
-            )
+            val actual = installedFiles.map { ProviderDigests.file(it, MAX_ASSET_BYTES) }
             require(actual == identities && ProviderDigests.combine(COMPILER_CLASSPATH_DOMAIN, actual) == fingerprint)
         } catch (error: Throwable) {
             throw JavaProviderFailure(
@@ -37,6 +45,9 @@ internal data class CompilerClasspath(
         private const val ASSET_ROOT = "compiler-classpath"
         private const val ANDROID_JAR = "android.jar"
         private const val ENTRY_API_JAR = "entry-api.jar"
+        private const val CORE_LIBRARY_STUBS_JAR = "core-library-stubs.jar"
+        private const val D8_JAVA_API_STUBS_JAR = "d8-java-api30-stubs.jar"
+        private const val DESUGARED_LIBRARY_CONFIGURATION = "desugar.json"
         internal const val MAX_ASSET_BYTES = 64L * 1024L * 1024L
 
         fun install(context: Context): CompilerClasspath {
@@ -51,13 +62,24 @@ internal data class CompilerClasspath(
             }
             val androidJar = installAsset(context, root, ANDROID_JAR)
             val entryApiJar = installAsset(context, root, ENTRY_API_JAR)
-            val identities = listOf(
-                ProviderDigests.file(androidJar, MAX_ASSET_BYTES),
-                ProviderDigests.file(entryApiJar, MAX_ASSET_BYTES),
+            val coreLibraryStubsJar = installAsset(context, root, CORE_LIBRARY_STUBS_JAR)
+            val d8JavaApiStubsJar = installAsset(context, root, D8_JAVA_API_STUBS_JAR)
+            val desugaredLibraryConfiguration =
+                installAsset(context, root, DESUGARED_LIBRARY_CONFIGURATION)
+            val installedFiles = listOf(
+                androidJar,
+                entryApiJar,
+                coreLibraryStubsJar,
+                d8JavaApiStubsJar,
+                desugaredLibraryConfiguration,
             )
+            val identities = installedFiles.map { ProviderDigests.file(it, MAX_ASSET_BYTES) }
             return CompilerClasspath(
                 androidJar = androidJar,
                 entryApiJar = entryApiJar,
+                coreLibraryStubsJar = coreLibraryStubsJar,
+                d8JavaApiStubsJar = d8JavaApiStubsJar,
+                desugaredLibraryConfiguration = desugaredLibraryConfiguration,
                 identities = identities.toList(),
                 fingerprint = ProviderDigests.combine(COMPILER_CLASSPATH_DOMAIN, identities),
             )
@@ -103,6 +125,6 @@ internal data class CompilerClasspath(
             }
         }
 
-        internal const val COMPILER_CLASSPATH_DOMAIN = "org.autojs.jvm-source.compiler-classpath.v1"
+        internal const val COMPILER_CLASSPATH_DOMAIN = "org.autojs.jvm-source.compiler-classpath.v2"
     }
 }
