@@ -221,7 +221,7 @@ class CompilationArtifactCacheTest {
         val cache = CompilationArtifactCache(
             fixture.cacheRoot,
             clockMillis = { 1_000L },
-            authenticator = CompilationCacheAuthenticators.hmacSha256(ByteArray(32) { 1 }),
+            authenticationKey = ByteArray(32) { 1 },
         )
         val published = cache.publish(
             fixture.key,
@@ -249,12 +249,12 @@ class CompilationArtifactCacheTest {
     }
 
     @Test
-    fun rotatedAuthenticationKeyRejectsOldEntries() {
-        val fixture = fixture("rotated-key")
+    fun newCompilerProcessEpochRejectsOldEntries() {
+        val fixture = fixture("process-epoch")
         val first = CompilationArtifactCache(
             fixture.cacheRoot,
             clockMillis = { 1_000L },
-            authenticator = CompilationCacheAuthenticators.hmacSha256(ByteArray(32) { 1 }),
+            authenticationKey = ByteArray(32) { 1 },
         )
         first.publish(
             fixture.key,
@@ -271,51 +271,10 @@ class CompilationArtifactCacheTest {
         val restarted = CompilationArtifactCache(
             fixture.cacheRoot,
             clockMillis = { 1_001L },
-            authenticator = CompilationCacheAuthenticators.hmacSha256(ByteArray(32) { 2 }),
+            authenticationKey = ByteArray(32) { 2 },
         )
         assertNull(restarted.lookup(fixture.key, 24, 24))
         assertTrue(fixture.cacheRoot.list().orEmpty().isEmpty())
-    }
-
-    @Test
-    fun samePersistentAuthenticationKeySurvivesCacheRecreationAndMaterialization() {
-        val fixture = fixture("persistent-key")
-        val keyBytes = ByteArray(32) { 7 }
-        val firstProcess = CompilationArtifactCache(
-            fixture.cacheRoot,
-            clockMillis = { 1_000L },
-            authenticator = CompilationCacheAuthenticators.hmacSha256(keyBytes),
-        )
-        firstProcess.publish(
-            fixture.key,
-            fixture.programJar,
-            fixture.dexFile,
-            fixture.summary,
-            fixture.classIdentity,
-            fixture.dexIdentity,
-            24,
-            24,
-            ensureActive = {},
-        )
-
-        val restartedProcess = CompilationArtifactCache(
-            fixture.cacheRoot,
-            clockMillis = { 1_001L },
-            authenticator = CompilationCacheAuthenticators.hmacSha256(keyBytes.copyOf()),
-        )
-        val hit = checkNotNull(restartedProcess.lookup(fixture.key, 24, 24))
-        val destination = temporaryFolder.newFolder("persistent-key-materialized")
-        val materialized = restartedProcess.materialize(
-            cached = hit,
-            destinationProgramJar = destination.resolve("program.jar"),
-            destinationDexFile = destination.resolve("classes.dex"),
-            requestMinApi = 24,
-            deviceApi = 24,
-            ensureActive = {},
-        )
-
-        assertEquals(fixture.classIdentity, materialized.classIdentity)
-        assertEquals(fixture.dexIdentity, materialized.dexIdentity)
     }
 
     @Test
@@ -381,7 +340,7 @@ class CompilationArtifactCacheTest {
             fixture.cacheRoot,
             clockMillis = { 1_000L },
             maximumEntries = 1,
-            authenticator = CompilationCacheAuthenticators.hmacSha256(ByteArray(32) { 1 }),
+            authenticationKey = ByteArray(32) { 1 },
         )
         val authentic = cache.publish(
             fixture.key,

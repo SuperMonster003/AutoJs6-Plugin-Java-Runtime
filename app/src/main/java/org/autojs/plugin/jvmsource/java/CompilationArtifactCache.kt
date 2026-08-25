@@ -10,7 +10,10 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import java.security.MessageDigest
+import java.security.SecureRandom
 import java.util.UUID
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 internal data class CachedCompilationArtifacts(
     val cacheKey: CompilationArtifactCacheKey,
@@ -66,12 +69,15 @@ internal class CompilationArtifactCache internal constructor(
     private val ttlMillis: Long = DEFAULT_TTL_MILLIS,
     private val maximumBytes: Long = DEFAULT_MAXIMUM_BYTES,
     private val maximumEntries: Int = DEFAULT_MAXIMUM_ENTRIES,
-    private val authenticator: CompilationCacheAuthenticator = CompilationCacheAuthenticators.processEpoch(),
+    authenticationKey: ByteArray = newAuthenticationKey(),
     private val fileWriter: CompilationCacheFileWriter = JvmCompilationCacheFileWriter,
     private val treeCleaner: CompilationCacheTreeCleaner = JvmCompilationCacheTreeCleaner,
 ) {
+    private val authenticationKey = authenticationKey.copyOf()
+
     init {
         require(ttlMillis > 0L && maximumBytes > 0L && maximumEntries > 0)
+        require(this.authenticationKey.size >= AUTHENTICATION_KEY_BYTES)
     }
 
     @Synchronized
@@ -566,11 +572,14 @@ internal class CompilationArtifactCache internal constructor(
         require(SHA256_HEX.matches(encoded)) { "Compilation cache completion authenticator is invalid" }
         val expected = encoded.hexToBytes()
         require(MessageDigest.isEqual(expected, manifestHmac(manifestBytes))) {
-            "Compilation cache manifest authentication failed for this installation key"
+            "Compilation cache manifest authentication failed for this compiler-process epoch"
         }
     }
 
-    private fun manifestHmac(bytes: ByteArray): ByteArray = authenticator.authenticate(bytes)
+    private fun manifestHmac(bytes: ByteArray): ByteArray = Mac.getInstance(HMAC_ALGORITHM).run {
+        init(SecretKeySpec(authenticationKey, HMAC_ALGORITHM))
+        doFinal(bytes)
+    }
 
     private fun ByteArray.toHex(): String = joinToString("") { byte ->
         "%02x".format(byte.toInt() and 0xff)
@@ -721,6 +730,8 @@ internal class CompilationArtifactCache internal constructor(
         private const val MANIFEST_MAGIC = 0x414a5343
         private const val MANIFEST_SCHEMA = 2
         private const val PUBLICATION_COMPLETE = "complete"
+        private const val HMAC_ALGORITHM = "HmacSHA256"
+        private const val AUTHENTICATION_KEY_BYTES = 32
         private const val MAX_MANIFEST_BYTES = 64L * 1024L
         internal const val DEFAULT_TTL_MILLIS = 24L * 60L * 60L * 1_000L
         internal const val DEFAULT_MAXIMUM_BYTES = 128L * 1024L * 1024L
@@ -736,5 +747,8 @@ internal class CompilationArtifactCache internal constructor(
         private val REQUIRED_ENTRY_FILES = setOf(PROGRAM_JAR, MANIFEST, COMPLETE)
         private val ALLOWED_DEX_FILES = JavaDexOutputPolicy.expectedDexNames(JavaDexOutputPolicy.MAX_DEX_FILES)
         private val ALLOWED_ENTRY_FILES = REQUIRED_ENTRY_FILES + ALLOWED_DEX_FILES
+        private fun newAuthenticationKey(): ByteArray = ByteArray(AUTHENTICATION_KEY_BYTES).also {
+            SecureRandom().nextBytes(it)
+        }
     }
 }
