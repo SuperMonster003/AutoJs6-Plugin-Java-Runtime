@@ -15,6 +15,7 @@ interface IJavaExecutionCallback {
     // Provider-internal, bounded numeric/enum telemetry. Not part of external Protocol V1.
     void onObservation(long generation, in byte[] observation);
 
-    // A validated requested-entry/inner-class stack frame only; no text, class, path, UID or PID.
-    void onRuntimeDiagnostic(long generation, int line);
+    // A validated requested-entry/inner-class frame plus a bounded java/javax/UserException name;
+    // no Throwable message, stack, path, provider/user package, UID or PID.
+    void onRuntimeDiagnostic(long generation, int line, String exceptionClassName);
 }

@@ -253,6 +253,20 @@ class JavaSampleLibraryInstrumentedTest {
     }
 
     @Test
+    fun runtimeExceptionSampleProjectsOnlyThePlatformClassAndRequestedSourceLine() {
+        withCompiledEntry(RUNTIME_EXCEPTION_SAMPLE) { entry, _ ->
+            val failure = assertThrows(IllegalStateException::class.java) {
+                entry.run(NoCallsContext)
+            }
+
+            val diagnostic = JavaRuntimeDiagnosticPolicy.extract(failure)
+
+            assertEquals(JavaRuntimeDiagnostic(7, "java.lang.IllegalStateException"), diagnostic)
+            assertFalse(diagnostic.toString().contains("M9-3 secret must never cross"))
+        }
+    }
+
+    @Test
     fun resultLimitSampleRunsButIsRejectedByTheJsonBudget() {
         withCompiledEntry(RESULT_LIMIT_SAMPLE) { entry, _ ->
             val error = assertThrows(JavaProviderFailure::class.java) {
@@ -442,6 +456,7 @@ class JavaSampleLibraryInstrumentedTest {
         const val SCRIPT_ARGS_SAMPLE = "script-args.java"
         const val COMPILE_ERROR_SAMPLE = "compile-error.java"
         const val RESULT_LIMIT_SAMPLE = "limit-result-json.java"
+        const val RUNTIME_EXCEPTION_SAMPLE = "runtime-exception.java"
         const val SCRIPT_ARGS_JSON =
             "{\"enabled\":true,\"name\":\"AutoJs6\",\"nested\":{\"count\":3}," +
                 "\"nullable\":null,\"tags\":[\"java\",\"m9\"]}"

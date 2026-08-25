@@ -249,12 +249,20 @@ internal class JavaWorkerTask(
             finishFailed(error.code, error.phase)
         } catch (error: Throwable) {
             closeOutputChannels()
-            JavaRuntimeDiagnosticPolicy.sourceLine(
-                error,
-                request.entryClassName,
-                request.sourceFileName,
-            )?.let { line ->
-                runCatching { callback.onRuntimeDiagnostic(generation, line) }
+            runCatching {
+                JavaRuntimeDiagnosticPolicy.extract(
+                    error,
+                    request.entryClassName,
+                    request.sourceFileName,
+                )
+            }.getOrNull()?.let { diagnostic ->
+                runCatching {
+                    callback.onRuntimeDiagnostic(
+                        generation,
+                        diagnostic.sourceLine,
+                        diagnostic.exceptionClassName,
+                    )
+                }
             }
             finishFailed(
                 if (error is ClassNotFoundException || error is LinkageError) {

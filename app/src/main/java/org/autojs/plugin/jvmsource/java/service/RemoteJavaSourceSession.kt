@@ -57,6 +57,7 @@ import org.autojs.plugin.jvmsource.java.JavaProviderObservedPhase
 import org.autojs.plugin.jvmsource.java.JavaProviderObservedProcess
 import org.autojs.plugin.jvmsource.java.JavaProviderResourceProbe
 import org.autojs.plugin.jvmsource.java.JavaProviderRuntime
+import org.autojs.plugin.jvmsource.java.JavaRuntimeDiagnosticPolicy
 import org.autojs.plugin.jvmsource.java.JavaSourcePolicy
 import org.autojs.plugin.jvmsource.java.PrivateSessionWorkspace
 import org.autojs.plugin.jvmsource.java.ProviderInstalledIdentityDecision
@@ -594,6 +595,7 @@ internal class RemoteJavaSourceSession(
     }
 
     private fun encodeAndReserveDiagnostic(diagnostic: JvmSourceDiagnostic): ByteArray? {
+        JvmSourceValidation.validateDiagnosticAgainst(diagnostic, request)
         while (true) {
             val emitted = diagnosticBytesEmitted.get()
             val remaining = request.diagnosticByteLimit - emitted
@@ -841,24 +843,38 @@ internal class RemoteJavaSourceSession(
             JavaProviderObservationRegistry.publishWorker(value)
         }
 
-        override fun onRuntimeDiagnostic(callbackGeneration: Long, line: Int) {
+        override fun onRuntimeDiagnostic(
+            callbackGeneration: Long,
+            line: Int,
+            exceptionClassName: String?,
+        ) {
             requireObservedTerminalCaller(callbackGeneration) ?: return
+            val safeExceptionClassName = exceptionClassName?.takeIf { value ->
+                value == JavaRuntimeDiagnosticPolicy.sanitizeExceptionClassName(value)
+            } ?: return workerProtocolViolation()
             if (line !in 1..MAX_SOURCE_POSITION || !runtimeDiagnosticLine.compareAndSet(null, line)) {
                 return workerProtocolViolation()
             }
-            emitDiagnostic(
-                JvmSourceDiagnostic(
-                    requestId = request.requestId,
-                    severity = JvmDiagnosticSeverity.ERROR,
-                    code = "JAVA_RUNTIME_EXCEPTION",
-                    message = "Java execution failed",
-                    sourceFileName = request.sourceFileName,
-                    line = line,
-                    // Protocol V1 requires line and column together. Column 1 is the safe line-only
-                    // baseline and is not inferred from exception text.
-                    column = 1,
-                ),
+            val diagnostic = JvmSourceDiagnostic(
+                requestId = request.requestId,
+                severity = JvmDiagnosticSeverity.ERROR,
+                code = "JAVA_RUNTIME_EXCEPTION",
+                message = "Java execution failed",
+                sourceFileName = request.sourceFileName,
+                line = line,
+                // Protocol V1 requires line and column together. Column 1 is the safe line-only
+                // baseline and is not inferred from exception text.
+                column = 1,
+                runtimeExceptionClassName = safeExceptionClassName.takeIf {
+                    request.protocolVersion >= JvmSourceContract.RUNTIME_EXCEPTION_CLASS_PROTOCOL_VERSION
+                },
             )
+            try {
+                JvmSourceValidation.validateDiagnosticAgainst(diagnostic, request)
+            } catch (_: Throwable) {
+                return workerProtocolViolation()
+            }
+            emitDiagnostic(diagnostic)
         }
     }
 

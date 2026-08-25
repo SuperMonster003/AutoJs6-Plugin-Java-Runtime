@@ -252,7 +252,11 @@ class JavaMultiDexPipelineInstrumentedTest {
                 observationLatch.countDown()
             }
 
-            override fun onRuntimeDiagnostic(callbackGeneration: Long, line: Int) {
+            override fun onRuntimeDiagnostic(
+                callbackGeneration: Long,
+                line: Int,
+                exceptionClassName: String?,
+            ) {
                 callbackFailure.compareAndSet(null, "Unexpected runtime diagnostic at line $line")
             }
         }
