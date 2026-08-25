@@ -129,11 +129,18 @@
     129-class fixture 在 API 24 与 API 36 均产出 2 个 DEX，并通过直接加载及一次性 `:worker` Binder
     执行；详见 `docs/multidex-r4.zh-CN.md`。
 
-- [ ] **M8-3 用户代码 core library desugaring** `[评估]` `[设备]`
+- [x] **M8-3 用户代码 core library desugaring** `[评估]` `[设备]`
   - 内容: 目前 `desugar_jdk_libs_nio` 仅服务插件自身, 用户代码 D8 无 `--desugared-lib`。分两步评估:
     (a) 维持 API 24 编译 stub 下接入 desugared-lib 的实际收益; (b) 评估提升 ECJ bootclasspath stub 版本
     (24→更高, 解锁 `java.time` 等) 带来的"编译可见但运行时缺类"风险与缓解 (D8 警告面/文档告知)。
   - 验收: go/no-go 决策记录; 若 go: `java.time`/Stream 增强样例在 API 24 真机通过, 缓存 key 随 D8 选项自动失效验证。
+  - 结果: **受控 go**。完整 ECJ 平台边界仍为 API 24，只额外生成 API 26 `java.time` 与经裁剪的
+    增强 `Stream` stub；API 30 `java/**` stub 仅供 D8 解析，不对源码可见。用户 D8 的 CLI/builder
+    两路径接入固定 `desugar.json`，Release L8 禁止裁剪/优化/改名并检查动态链接所需描述符。API 24
+    正向 `java.time` + 三参数 `Stream.iterate(...).toList()`、负向 `Stream.ofNullable` 与既有样例
+    共 6/6 通过；工具链
+    指纹、ECJ/D8 options 和缓存 key 自动失效测试已覆盖。整体抬高 Android stub 判定 no-go；详见
+    `docs/core-library-desugaring.zh-CN.md`。
 
 - [ ] **M8-4 编译缓存跨进程持久化** `[评估]`
   - 内容: 缓存 HMAC 密钥为进程 epoch 级 (进程重启即全部失效, 防篡改设计)。评估 Android Keystore 托管 HMAC 密钥方案,

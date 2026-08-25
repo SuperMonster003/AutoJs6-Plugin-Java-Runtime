@@ -30,6 +30,9 @@ worker 并行预绑定的交错测量、no-go 决策与重新开启条件见
 总量 32 MiB 内、最多 4 个连续命名的 DEX；API 26 因平台只有单 buffer 内存 loader 而继续限制为
 单 DEX。集合完整性、缓存迁移和 API 24/36 双加载路径证据见
 [R4 多 DEX 实现与验证](docs/multidex-r4.zh-CN.md)。
+用户代码现以受控方式支持 API 24 上的 `java.time` 与若干增强 Stream API；完整 Android 编译边界仍为
+API 24，不支持的高版本方法会停在编译期。go 决策、精确 API 面、Release L8 约束和设备证据见
+[M8-3 core library desugaring](docs/core-library-desugaring.zh-CN.md)。
 
 ## Source example
 
@@ -56,8 +59,8 @@ public final class Main implements AutoJsJvmEntry {
 `console().log/error` is streamed line by line while the worker is running. `sleep` is interrupted by
 session cancellation, and `toast` is an explicitly granted host bridge capability.
 
-More samples cover cancellation, every supported return-value family, sanitized compiler errors,
-and result-size rejection. Their expected output and API 24/API 37 device evidence are recorded in
+More samples cover controlled `java.time`/enhanced Stream desugaring, cancellation, every supported
+return-value family, sanitized compiler errors, and result-size rejection. Their expected output and API 24/API 37 device evidence are recorded in
 the [sample guide](samples/README.zh-CN.md).
 
 ## Versioning

@@ -30,13 +30,18 @@ public final class Main implements AutoJsJvmEntry {
 
 当前 profile 对源码有以下硬性约束：
 
-- 一次请求只接受一个 Java 源文件。一个文件内可以声明辅助类、内部类和 lambda，但不能提交多文件源码包。
+- 一次请求只接受一个 Java 源文件。一个文件内可以声明辅助类和内部类，但不能提交多文件源码包。
 - 入口类的简单名固定为 <code>Main</code>。宿主侧脚本文件名可以任意；传入编译器的逻辑编译单元名必须与入口简单名一致，即 <code>Main.java</code>。
 - 可以省略 <code>package</code>，也可以使用合法包名。使用包名时，入口仍是该包中的 <code>Main</code>。
 - <code>Main</code> 必须是 public、非 abstract、非 interface，必须实现 <code>AutoJsJvmEntry</code>，并具有 public 无参构造器。
 - 编译结果中必须恰好有一个具体类实现 <code>AutoJsJvmEntry</code>；存在第二个具体实现时会以入口歧义拒绝。
 - 入口签名为 <code>public Object run(JvmScriptContext context) throws Exception</code>。可以省略 <code>throws Exception</code>，也可以使用协变返回类型。
-- ECJ 使用 <code>-source 8 -target 8</code>、UTF-8 和禁用注解处理器。Java 8 指语言级别；编译类库来自受控的 Android API 24 stub 与 Entry API，并不等同于完整桌面 JDK 8 类库。
+- ECJ 使用 <code>-source 8 -target 8</code>、UTF-8 和禁用注解处理器。Java 8 指语言级别；完整 Android
+  平台面仍来自受控的 API 24 stub，另有窄化的 <code>java.time</code>/增强 Stream core-library stub 与
+  Entry API，并不等同于完整桌面 JDK 8 类库或高版本 Android SDK。
+- Lambda 语法能通过源码词法策略，但当前 API 24 编译 stub 不含 ECJ 生成 lambda class 所需的
+  <code>java.lang.invoke</code> 类型，因此不属于已验证的可运行 profile；请使用匿名类。这里不会为了
+  lambda 整体开放 API 26 的 invoke 表面，以免制造可编译但 API 24 运行时缺类的新漏洞。
 - 输入必须是严格 UTF-8；仅允许文件开头存在一个 UTF-8 BOM，插件会在编译前移除它。畸形 UTF-8 和 NUL 字符会被拒绝。
 - 源码任何位置都禁止 Java Unicode escape 形式 <code>&#92;uXXXX</code>，包括注释、字符串和字符字面量。这避免词法检查结果被 Java 编译器的 Unicode 预处理重新解释。
 - 当前 R4 D8 profile 接受 1 至 4 个严格连续命名的工件：<code>classes.dex</code>、
@@ -45,6 +50,20 @@ public final class Main implements AutoJsJvmEntry {
   worker 之间传递，不改变宿主侧 Protocol 1.1 请求形态。
 - Android API 26 的公开 <code>InMemoryDexClassLoader</code> 只有单 buffer 构造器，因此该版本继续只接受
   一个 <code>classes.dex</code>；API 24/25 和 API 27+ 才能安全共享 2 至 4 个 DEX 的同一 class namespace。
+
+### 受控 core library desugaring
+
+当前额外支持 API 26 的 <code>java.time</code> 表面，以及设备证据确认可承接的增强 Stream
+三参数 <code>iterate</code> 和 <code>toList</code>。例如
+[core-library-desugaring.java](../samples/core-library-desugaring.java) 可在
+API 24 返回 <code>2024-03-01:CORE</code>。
+
+这不是把 bootclasspath 整体提高到 API 26+：高版本 Android framework API、完整
+<code>java.nio.file</code>、<code>Stream.ofNullable</code>、<code>takeWhile</code>、
+<code>dropWhile</code> 和 <code>mapMulti*</code> 均不属于当前编译 profile。这些方法会在 ECJ 阶段
+失败，而不会编译成功后留到旧设备抛缺方法异常。具体 go/no-go
+证据、D8 配置与 Release 运行库策略见
+[M8-3 评估记录](core-library-desugaring.zh-CN.md)。
 
 ## JvmScriptContext API
 

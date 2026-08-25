@@ -22,6 +22,9 @@ with an optional milestone suffix; Android package builds are tracked separately
   `classesN.dex` files, strict per-file and cross-file validation, and API 24/API 36 direct-loader
   plus disposable-worker device evidence using a generated 65,536-method fixture. API 26 remains
   single-DEX because its public in-memory loader has no multi-buffer constructor.
+- Added controlled user-code core library desugaring for API 26 `java.time` and supported enhanced
+  Stream methods while retaining API 24 as the complete Android framework compilation boundary;
+  the positive `java.time`/`Stream.toList()` sample and unsupported-method compile gate pass on API 24.
 
 ### Changed
 
@@ -40,6 +43,9 @@ with an optional milestone suffix; Android package builds are tracked separately
   arrays, while preserving the external Protocol 1.1 surface and legacy single-DEX result identity.
 - Changed compilation-cache manifests to schema 2 and the implementation revision to `r4-cache-v3`;
   multi-DEX entries are authenticated, materialized, revalidated, and invalidated as one unit.
+- Changed compiler/runtime identity to bind the core-library compile stub, D8-only Java API 30 stub,
+  and pinned desugar configuration; Release L8 output is complete and name-stable for dynamic user
+  DEX, with build-time descriptor assertions for `LocalDate` and enhanced Stream dispatch.
 
 ## [0.3.0-m5] - 2026-08-25
 
