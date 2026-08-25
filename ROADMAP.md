@@ -142,10 +142,16 @@
     指纹、ECJ/D8 options 和缓存 key 自动失效测试已覆盖。整体抬高 Android stub 判定 no-go；详见
     `docs/core-library-desugaring.zh-CN.md`。
 
-- [ ] **M8-4 编译缓存跨进程持久化** `[评估]`
+- [x] **M8-4 编译缓存跨进程持久化** `[评估]`
   - 内容: 缓存 HMAC 密钥为进程 epoch 级 (进程重启即全部失效, 防篡改设计)。评估 Android Keystore 托管 HMAC 密钥方案,
     保留全部重校验路径 (materialize 后仍重新验 JAR/DEX 摘要), 过安全评审 gate。
   - 验收: 决策记录; 若 go: 进程重启后缓存命中率提升的观测数据 (M7-4 通道)。
+  - 结果: **安全 gate no-go，保持进程 epoch key**。Keystore 原型在 API 24 生产 Binder 路径把 5 次
+    compiler 重启命中从 0/5 提到 5/5，但普通 R1 用户 Java 随后在同 UID 的一次性 `:worker` 中成功加载
+    并使用生产 HMAC alias。不可导出不等于同 UID 不可使用，持久 key 会破坏 compiler-only secret
+    boundary；简单 API denylist 也不足以替代 UID 隔离。原型与临时 benchmark build type 已全部回退，
+    完整重校验和原行为不变；攻击证据、原始 schema-v1 JSONL 与重新开启条件见
+    `docs/cache-persistence-m8-4.zh-CN.md`。
 
 - [ ] **M8-5 任意入口类名 — 插件侧就绪** `[本仓]`
   - 内容: 内部 `entryClassName` 已全链路参数化 (固定 `Main` 是宿主请求侧默认)。补齐非 `Main` 入口

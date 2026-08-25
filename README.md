@@ -33,6 +33,9 @@ worker 并行预绑定的交错测量、no-go 决策与重新开启条件见
 用户代码现以受控方式支持 API 24 上的 `java.time` 与若干增强 Stream API；完整 Android 编译边界仍为
 API 24，不支持的高版本方法会停在编译期。go 决策、精确 API 面、Release L8 约束和设备证据见
 [M8-3 core library desugaring](docs/core-library-desugaring.zh-CN.md)。
+编译缓存跨进程 Keystore key 原型虽在 API 24 把重启命中从 0/5 提到 5/5，却因同 UID 用户 worker 也能
+使用该 alias 而未通过安全 gate；最终继续使用 compiler 进程 epoch key。攻击证据、已回退原型数据和
+重新开启条件见 [M8-4 缓存持久化评估](docs/cache-persistence-m8-4.zh-CN.md)。
 
 ## Source example
 

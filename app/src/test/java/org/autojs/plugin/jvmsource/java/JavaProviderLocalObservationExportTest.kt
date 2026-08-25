@@ -45,7 +45,7 @@ class JavaProviderLocalObservationExportTest {
     }
 
     @Test
-    fun releaseAndMismatchedBuildConfigurationsExportNothingAndCreateNoArtifacts() {
+    fun releaseAndNonDebuggableConfigurationsExportNothingAndCreateNoArtifacts() {
         val releaseFiles = temporaryFolder.newFolder("release-files")
         val releaseExporter = JavaProviderLocalObservationExporterFactory.create(
             debugBuild = false,
@@ -58,34 +58,11 @@ class JavaProviderLocalObservationExportTest {
             providerDebuggable = false,
             filesDirectory = nonDebuggableFiles,
         )
-        val debuggableBenchmarkFiles = temporaryFolder.newFolder("debuggable-benchmark-files")
-        val debuggableBenchmarkExporter = JavaProviderLocalObservationExporterFactory.create(
-            debugBuild = false,
-            cachePersistenceBenchmarkBuild = true,
-            providerDebuggable = true,
-            filesDirectory = debuggableBenchmarkFiles,
-        )
 
         assertFalse(releaseExporter.export(completeRecord()))
         assertFalse(nonDebuggableExporter.export(completeRecord()))
-        assertFalse(debuggableBenchmarkExporter.export(completeRecord()))
         assertTrue(releaseFiles.listFiles().orEmpty().isEmpty())
         assertTrue(nonDebuggableFiles.listFiles().orEmpty().isEmpty())
-        assertTrue(debuggableBenchmarkFiles.listFiles().orEmpty().isEmpty())
-    }
-
-    @Test
-    fun nonDebuggableCachePersistenceBenchmarkCanWriteTheBoundedLocalSchema() {
-        val filesDirectory = temporaryFolder.newFolder("cache-benchmark-files")
-        val exporter = JavaProviderLocalObservationExporterFactory.create(
-            debugBuild = false,
-            cachePersistenceBenchmarkBuild = true,
-            providerDebuggable = false,
-            filesDirectory = filesDirectory,
-        )
-
-        assertTrue(exporter.export(completeRecord()))
-        assertEquals(1, outputFile(filesDirectory).readLines().size)
     }
 
     @Test
@@ -93,14 +70,12 @@ class JavaProviderLocalObservationExportTest {
         val filesDirectory = temporaryFolder.newFolder("active-build-files")
         val exporter = JavaProviderLocalObservationExporterFactory.create(
             debugBuild = BuildConfig.DEBUG,
-            cachePersistenceBenchmarkBuild = BuildConfig.CACHE_PERSISTENCE_BENCHMARK,
             providerDebuggable = BuildConfig.DEBUG,
             filesDirectory = filesDirectory,
         )
-        val expectedEnabled = BuildConfig.DEBUG || BuildConfig.CACHE_PERSISTENCE_BENCHMARK
 
-        assertEquals(expectedEnabled, exporter.export(completeRecord()))
-        assertEquals(expectedEnabled, outputFile(filesDirectory).isFile)
+        assertEquals(BuildConfig.DEBUG, exporter.export(completeRecord()))
+        assertEquals(BuildConfig.DEBUG, outputFile(filesDirectory).isFile)
     }
 
     @Test

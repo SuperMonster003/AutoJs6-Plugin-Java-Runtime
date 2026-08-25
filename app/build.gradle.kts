@@ -118,7 +118,6 @@ android {
         )
         buildConfigField("String", "ECJ_VERSION", "\"$ecjVersion\"")
         buildConfigField("String", "D8_VERSION", "\"$d8Version\"")
-        buildConfigField("boolean", "CACHE_PERSISTENCE_BENCHMARK", "false")
         // Literal schema-v2 release metadata is intentionally kept parser-friendly for
         // AutoJs6-Official-Plugins-Index. Keep the host version in sync with version.properties.
         resValue("string", "plugin_id", "ecj-java")
@@ -168,16 +167,6 @@ android {
                 "proguard-rules.pro",
             )
             signingConfig = signingConfigs.getByName("hostAligned")
-        }
-        create("benchmark") {
-            initWith(getByName("debug"))
-            // M8-4 needs cache-enabled process-restart evidence without weakening either the
-            // debuggable Debug profile or the zero-export Release profile.
-            isDebuggable = false
-            isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("hostAligned")
-            matchingFallbacks += listOf("debug")
-            buildConfigField("boolean", "CACHE_PERSISTENCE_BENCHMARK", "true")
         }
     }
 

@@ -15,11 +15,10 @@ AutoJs6 宿主、外部 Binder 回调、网络或 logcat 发送观测数据；�
 同一组单测会分别编译并运行在 Debug 和 Release unit-test variant 中；Release variant 使用真实的
 `BuildConfig.DEBUG=false` 断言零文件副作用。
 
-M8-4 另有一个不可发布的 `benchmark` build type：它固定为 **non-debuggable**，从而不放宽缓存启用
-策略；只在该 build type 中用独立的 `CACHE_PERSISTENCE_BENCHMARK=true` 字面量开启同一私有 JSONL。
-factory 同时要求 `DEBUG=false`、benchmark 字面量为真且实际 APK non-debuggable，配置互相矛盾时仍
-fail closed。标准 Debug/Release 的上述双门禁和 Release 零导出断言保持不变。由于 benchmark APK
-不能 `run-as`，证据只在 userdebug AVD 上通过 `adb root` 从私有目录读取，不用于用户设备或发布包。
+M8-4 评估期间曾临时使用 non-debuggable benchmark build type 采集 cache-enabled 对照；同 UID worker
+可使用 Keystore alias 的攻击证据使候选 no-go 后，该 build type 与全部原型代码均已移除。当前源码只有
+上述 Debug 双门禁与 Release no-op 两种正式行为；历史证据见
+[`cache-persistence-m8-4.zh-CN.md`](cache-persistence-m8-4.zh-CN.md)。
 
 ## 取数
 
@@ -118,7 +117,9 @@ UID/PID、组件名或 Binder 标识。
 现有安全策略只在“非 debuggable 且编译器已设为 non-dumpable”时启用带进程 epoch HMAC 的编译缓存。
 因此标准 Debug APK 的真实设备记录会把每次查找记为 `MISS/CACHE_DISABLED`，`hits` 预期为零；本地 schema
 仍完整导出命中、未命中、发布和原因计数，其组合与序列化由单测覆盖。不要为了采集非零命中数而放宽
-缓存安全条件。后续若需要测量真实缓存命中，应先为受控 benchmark variant 形成单独的安全决策。
+缓存安全条件。M8-4 的临时 Keystore 候选虽完成 0/5 → 5/5 的进程重启对照，最终因同 UID worker
+key-access 反证而 no-go；方法、原始 JSONL 和剩余风险见
+[`cache-persistence-m8-4.zh-CN.md`](cache-persistence-m8-4.zh-CN.md)。
 
 ## M7-5 计算口径
 
