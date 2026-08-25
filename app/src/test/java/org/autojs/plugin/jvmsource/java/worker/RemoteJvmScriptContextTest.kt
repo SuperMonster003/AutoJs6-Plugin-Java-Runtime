@@ -124,14 +124,35 @@ class RemoteJvmScriptContextTest {
         assertThrows(IllegalArgumentException::class.java) { context.toast("not granted") }
     }
 
+    @Test
+    fun exposesADeeplyImmutableRequestArgumentSnapshotWithoutHostDispatch() {
+        val context = context(
+            capabilities = emptyList(),
+            argsJson = "{\"count\":2,\"nested\":{\"items\":[\"before\",null]}}",
+        )
+
+        assertEquals(2L, context.args()["count"])
+        val nested = context.args()["nested"] as Map<*, *>
+        assertEquals(listOf("before", null), nested["items"])
+        assertThrows(UnsupportedOperationException::class.java) {
+            @Suppress("UNCHECKED_CAST")
+            (context.args() as MutableMap<String, Any?>)["later"] = true
+        }
+        assertThrows(UnsupportedOperationException::class.java) {
+            @Suppress("UNCHECKED_CAST")
+            ((nested["items"] as List<Any?>) as MutableList<Any?>).add("later")
+        }
+    }
+
     private fun context(
         capabilities: List<JvmScriptCapability>,
+        argsJson: String = "{}",
         cancellation: WorkerCancellation = WorkerCancellation(),
         stdout: ByteArrayOutputStream = ByteArrayOutputStream(),
         stderr: ByteArrayOutputStream = ByteArrayOutputStream(),
         bridge: IJvmHostBridge = unexpectedBridge(),
     ): RemoteJvmScriptContext = RemoteJvmScriptContext(
-        request = request(capabilities),
+        request = request(capabilities, argsJson),
         bridge = bridge,
         workerCancellation = cancellation,
         expectedCompilerPid = 0,
@@ -158,7 +179,10 @@ class RemoteJvmScriptContextTest {
         override fun destroy(reason: ByteArray?) = Unit
     }
 
-    private fun request(capabilities: List<JvmScriptCapability>): JvmSourceRequest {
+    private fun request(
+        capabilities: List<JvmScriptCapability>,
+        argsJson: String,
+    ): JvmSourceRequest {
         val source = "class Main".toByteArray()
         return JvmSourceRequest(
             requestId = JvmRequestId.fromUuid(UUID.randomUUID()),
@@ -167,6 +191,7 @@ class RemoteJvmScriptContextTest {
                 JvmSourceContract.PROTOCOL_MINOR,
             ),
             language = JvmSourceLanguage.JAVA,
+            argsJson = argsJson,
             sourceFileName = "Main.java",
             sourceSizeBytes = source.size.toLong(),
             sourceSha256 = JvmSha256.digest(source),

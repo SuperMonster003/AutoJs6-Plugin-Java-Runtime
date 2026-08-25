@@ -354,6 +354,7 @@ class JavaMultiDexPipelineInstrumentedTest {
         }
 
         override fun app(): JvmAppApi = app
+        override fun args(): Map<String, Any?> = emptyMap()
         override fun clipboard(): JvmClipboardApi = clipboard
         override fun console(): JvmConsoleApi = error("Multidex fixture must not use console")
         override fun cancellation(): JvmCancellation = cancellation

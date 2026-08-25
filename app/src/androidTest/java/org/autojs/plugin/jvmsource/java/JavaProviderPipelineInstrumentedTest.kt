@@ -147,6 +147,8 @@ class JavaProviderPipelineInstrumentedTest {
 
         override fun app(): JvmAppApi = app
 
+        override fun args(): Map<String, Any?> = emptyMap()
+
         override fun clipboard(): JvmClipboardApi = clipboard
 
         override fun console(): JvmConsoleApi = error("The internal smoke source must not use console")

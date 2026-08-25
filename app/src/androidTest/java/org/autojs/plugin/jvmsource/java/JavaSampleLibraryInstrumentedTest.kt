@@ -58,9 +58,30 @@ class JavaSampleLibraryInstrumentedTest {
     private val environment by lazy { JavaProviderEnvironment.get(targetContext) }
 
     @Test
-    fun returnValuesSampleRunsThroughArtAndEncodesTheDocumentedJson() {
+    fun legacyNoArgsReturnValuesSampleStillCompilesAgainstEntryApi4AndRunsThroughArt() {
         withCompiledEntry(RETURN_VALUES_SAMPLE) { entry, _ ->
             assertEquals(EXPECTED_RETURN_JSON, WorkerJsonValue.encode(entry.run(NoCallsContext)))
+        }
+    }
+
+    @Test
+    fun scriptArgumentsSampleReadsTheProtocol13SnapshotThroughEntryApi4() {
+        withCompiledEntry(SCRIPT_ARGS_SAMPLE) { entry, sourceBytes ->
+            val context = RemoteJvmScriptContext(
+                request = request(
+                    source = sourceBytes,
+                    capabilities = emptyList(),
+                    argsJson = SCRIPT_ARGS_JSON,
+                ),
+                bridge = RejectingHostBridge,
+                workerCancellation = WorkerCancellation(),
+                expectedCompilerPid = Process.myPid(),
+                expectedCompilerUid = Process.myUid(),
+                stdout = PrintStream(ByteArrayOutputStream()),
+                stderr = PrintStream(ByteArrayOutputStream()),
+            )
+
+            assertEquals(EXPECTED_SCRIPT_ARGS_RESULT_JSON, WorkerJsonValue.encode(entry.run(context)))
         }
     }
 
@@ -301,7 +322,11 @@ class JavaSampleLibraryInstrumentedTest {
         }
     }
 
-    private fun request(source: ByteArray, capabilities: List<JvmScriptCapability>) =
+    private fun request(
+        source: ByteArray,
+        capabilities: List<JvmScriptCapability>,
+        argsJson: String = "{}",
+    ) =
         JvmSourceRequest(
             requestId = JvmRequestId.fromUuid(UUID.randomUUID()),
             protocolVersion = JvmProtocolVersion(
@@ -309,6 +334,7 @@ class JavaSampleLibraryInstrumentedTest {
                 JvmSourceContract.PROTOCOL_MINOR,
             ),
             language = JvmSourceLanguage.JAVA,
+            argsJson = argsJson,
             sourceFileName = "Main.java",
             sourceSizeBytes = source.size.toLong(),
             sourceSha256 = JvmSha256.digest(source),
@@ -352,6 +378,8 @@ class JavaSampleLibraryInstrumentedTest {
         }
 
         override fun app(): JvmAppApi = appApi
+
+        override fun args(): Map<String, Any?> = emptyMap()
 
         override fun clipboard(): JvmClipboardApi = clipboardApi
 
@@ -411,8 +439,15 @@ class JavaSampleLibraryInstrumentedTest {
         const val CLIPBOARD_SAMPLE = "capability-set-2-clipboard.java"
         const val CORE_LIBRARY_DESUGARING_SAMPLE = "core-library-desugaring.java"
         const val RETURN_VALUES_SAMPLE = "return-values.java"
+        const val SCRIPT_ARGS_SAMPLE = "script-args.java"
         const val COMPILE_ERROR_SAMPLE = "compile-error.java"
         const val RESULT_LIMIT_SAMPLE = "limit-result-json.java"
+        const val SCRIPT_ARGS_JSON =
+            "{\"enabled\":true,\"name\":\"AutoJs6\",\"nested\":{\"count\":3}," +
+                "\"nullable\":null,\"tags\":[\"java\",\"m9\"]}"
+        const val EXPECTED_SCRIPT_ARGS_RESULT_JSON =
+            "{\"name\":\"AutoJs6\",\"enabled\":true,\"count\":3,\"firstTag\":\"java\"," +
+                "\"tagCount\":2,\"nullValue\":null}"
         val UNSUPPORTED_STREAM_SOURCE = """
             import java.util.stream.Stream;
             import org.autojs.plugin.jvmsource.api.AutoJsJvmEntry;

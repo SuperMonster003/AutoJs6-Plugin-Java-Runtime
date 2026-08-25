@@ -10,6 +10,7 @@ import org.autojs.plugin.jvmsource.api.JvmClipboardPayload
 import org.autojs.plugin.jvmsource.api.JvmConsoleApi
 import org.autojs.plugin.jvmsource.api.JvmHostCall
 import org.autojs.plugin.jvmsource.api.JvmHostResponse
+import org.autojs.plugin.jvmsource.api.JvmJsonArguments
 import org.autojs.plugin.jvmsource.api.JvmScriptContext
 import org.autojs.plugin.jvmsource.api.JvmScriptCapability
 import org.autojs.plugin.jvmsource.api.JvmSourceCodec
@@ -33,6 +34,7 @@ internal class RemoteJvmScriptContext(
     private val stderr: PrintStream,
 ) : JvmScriptContext {
     private val callIds = AtomicLong(0L)
+    private val argumentSnapshot = JvmJsonArguments.decode(request.argsJson)
     private val appApi = object : JvmAppApi {
         override fun launch(packageName: String): Boolean {
             workerCancellation.throwIfCancellationRequested()
@@ -88,6 +90,8 @@ internal class RemoteJvmScriptContext(
     }
 
     override fun app(): JvmAppApi = appApi
+
+    override fun args(): Map<String, Any?> = argumentSnapshot
 
     override fun clipboard(): JvmClipboardApi = clipboardApi
 
