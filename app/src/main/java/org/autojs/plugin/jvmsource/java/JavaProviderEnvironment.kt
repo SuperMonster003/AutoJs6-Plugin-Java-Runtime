@@ -67,6 +67,7 @@ internal class JavaProviderEnvironment private constructor(
                 CompilationCacheTelemetry(),
                 JavaProviderLocalObservationExporterFactory.create(
                     debugBuild = BuildConfig.DEBUG,
+                    cachePersistenceBenchmarkBuild = BuildConfig.CACHE_PERSISTENCE_BENCHMARK,
                     providerDebuggable = providerDebuggable,
                     filesDirectory = context.filesDir,
                 ),

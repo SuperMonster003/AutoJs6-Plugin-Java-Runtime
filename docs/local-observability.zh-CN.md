@@ -2,7 +2,7 @@
 
 ## 边界与用途
 
-本通道为 M7-5 性能基线和 M9-4 协议设计积累设备证据。它不修改 Protocol 1.1，不向
+本通道为 M7-5 性能基线、M8-4 缓存重启对照和 M9-4 协议设计积累设备证据。它不修改 Protocol 1.1，不向
 AutoJs6 宿主、外部 Binder 回调、网络或 logcat 发送观测数据；编译器进程只在一次会话完成清理后，
 向插件自己的私有目录追加一行 JSON。
 
@@ -14,6 +14,12 @@ AutoJs6 宿主、外部 Binder 回调、网络或 logcat 发送观测数据；�
 任一条件不成立时，环境安装的是显式 no-op exporter。该路径不会创建目录、打开文件或写入字节。
 同一组单测会分别编译并运行在 Debug 和 Release unit-test variant 中；Release variant 使用真实的
 `BuildConfig.DEBUG=false` 断言零文件副作用。
+
+M8-4 另有一个不可发布的 `benchmark` build type：它固定为 **non-debuggable**，从而不放宽缓存启用
+策略；只在该 build type 中用独立的 `CACHE_PERSISTENCE_BENCHMARK=true` 字面量开启同一私有 JSONL。
+factory 同时要求 `DEBUG=false`、benchmark 字面量为真且实际 APK non-debuggable，配置互相矛盾时仍
+fail closed。标准 Debug/Release 的上述双门禁和 Release 零导出断言保持不变。由于 benchmark APK
+不能 `run-as`，证据只在 userdebug AVD 上通过 `adb root` 从私有目录读取，不用于用户设备或发布包。
 
 ## 取数
 

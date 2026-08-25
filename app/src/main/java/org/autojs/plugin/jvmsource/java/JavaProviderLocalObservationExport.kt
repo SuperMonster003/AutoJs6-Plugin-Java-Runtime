@@ -91,12 +91,17 @@ internal object JavaProviderLocalObservationExporterFactory {
 
     fun create(
         debugBuild: Boolean,
+        cachePersistenceBenchmarkBuild: Boolean = false,
         providerDebuggable: Boolean,
         filesDirectory: File,
         maxFileBytes: Long = DEFAULT_MAX_FILE_BYTES,
     ): JavaProviderLocalObservationExporter {
         require(maxFileBytes > 0L)
-        return if (debugBuild && providerDebuggable) {
+        val admittedDebugBuild =
+            debugBuild && !cachePersistenceBenchmarkBuild && providerDebuggable
+        val admittedCacheBenchmarkBuild =
+            !debugBuild && cachePersistenceBenchmarkBuild && !providerDebuggable
+        return if (admittedDebugBuild || admittedCacheBenchmarkBuild) {
             JsonLinesJavaProviderLocalObservationExporter(
                 directory = File(filesDirectory, DIRECTORY_NAME),
                 maxFileBytes = maxFileBytes,
