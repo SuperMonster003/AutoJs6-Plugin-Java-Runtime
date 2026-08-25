@@ -10,8 +10,8 @@ process. The compiler and worker never run inside the AutoJs6 process.
 
 - Application ID: `io.github.supermonster003.autojs6.plugin.java.runtime`
 - Minimum Android API: 24
-- Required AutoJs6 version code: 5278
-- JVM source protocol: 1.3
+- Required AutoJs6 version code: 5279
+- JVM source protocol: 1.4
 - Entry API: 4 (`AutoJsJvmEntry.run(JvmScriptContext)`; `context.args()` added)
 - Current source shape: one `.java` file, entry simple name `Main`, optional package/imports
 
@@ -48,6 +48,10 @@ provider 设备链路与 API 36 AutoJs6 生产 Binder 路径完成验证；wire�
 Protocol 1.3 / Entry API 4 通过 <code>context.args()</code> 暴露宿主在执行配置中提供的有界、深层只读
 JSON profile 快照；空参数的既有 Java 入口无需改动。类型边界、兼容策略和生产 Binder 证据见
 [M9-2 脚本入参实现与证据](docs/script-arguments-m9-2.zh-CN.md)。
+Protocol 1.4 保持 Entry API 4，并把 Java 运行失败投影为安全的“源码行 + 异常类名”：
+<code>java.*</code>/<code>javax.*</code> 原样，其余类统一显示为 <code>UserException</code>，异常
+message 与 stack 不跨边界。Wire 兼容、双侧脱敏和设备证据见
+[M9-3 运行时异常类名实现与证据](docs/runtime-exception-class-m9-3.zh-CN.md)。
 
 ## Source example
 
@@ -83,17 +87,23 @@ through `context.args()`. The [script arguments sample](samples/script-args.java
 lists, booleans, numbers, strings, and null without issuing a host call. Existing sources that only
 implement `run(JvmScriptContext)` remain source compatible.
 
+Protocol 1.4 keeps Entry API 4 and adds a required-for-reader class-name field to located Java
+runtime diagnostics. Platform `java.*`/`javax.*` names remain visible, while every other namespace
+is projected to `UserException`; exception messages and stacks never cross the provider boundary.
+The intentional [runtime exception sample](samples/runtime-exception.java) demonstrates the exact
+user-visible class-and-line shape.
+
 More samples cover script arguments, controlled `java.time`/enhanced Stream desugaring,
-cancellation, every supported return-value family, sanitized compiler errors, and result-size
+cancellation, every supported return-value family, sanitized compiler/runtime errors, and result-size
 rejection. Their expected output and current API 24/API 28 device evidence are recorded in the
 [sample guide](samples/README.zh-CN.md).
 
 ## Versioning
 
-`VERSION_NAME` follows SemVer with an optional milestone suffix (currently `0.5.0-m9`), while
+`VERSION_NAME` follows SemVer with an optional milestone suffix (currently `0.6.0-m9`), while
 `VERSION_BUILD` is a positive, monotonically increasing Android package version. Release metadata
-declares engine `jvm-source`, provider ID `ecj-java`, variant `java-ecj-d8`, Protocol 1.3, and
-required host version code 5278 for schema-v2 official-index generation.
+declares engine `jvm-source`, provider ID `ecj-java`, variant `java-ecj-d8`, Protocol 1.4, and
+required host version code 5279 for schema-v2 official-index generation.
 
 ## Local build
 

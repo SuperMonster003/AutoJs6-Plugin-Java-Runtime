@@ -205,10 +205,16 @@
     APK 全绿，API 24/28 样例各 9/9，API 36 production 三进程参数往返 1/1 且 bridge 调用为 0。设计、
     工件哈希和原始证据见 `docs/script-arguments-m9-2.zh-CN.md`。
 
-- [ ] **M9-3 运行时异常类名回传**
+- [x] **M9-3 运行时异常类名回传** `[设备]`
   - 内容: 目前运行时错误仅回传一个行号 (无异常类/message)。在 line-only 基础上增加脱敏类名:
     `java.*`/`javax.*` 白名单原样, 其余归一 (如 `UserException`), message 仍不回传。
   - 验收: 协议字段落定; 脱敏审查通过; 样例可见"类名+行号"。
+  - 结果: Protocol 1.4 / Entry API 4 以 reader-required diagnostic tag 8 返回最多 255-byte 的安全类名；
+    Provider 有界提取并归一用户命名空间，Host 关联 request 再验证且以独立白名单和固定 message 投影。
+    最终 AAR 锁指向 Host commit `a859a15a0517112c374f6637fc7b3d10a06d5450`；Provider Debug/Release
+    各 149/149 单测、lint 与三类 APK 全绿，API 24/28 样例各 10/10，API 36 最终 Host/Provider 制品的
+    production Binder selector 1/1 且秘密异常 message 不可见。设计、工件哈希和原始 marker 见
+    `docs/runtime-exception-class-m9-3.zh-CN.md`。
 
 - [ ] **M9-4 观测数据导出协议化**
   - 内容: 兑现 `JavaProviderObservationPolicy` 的"future negotiated protocol": 以 M7-4/5 积累的字段与

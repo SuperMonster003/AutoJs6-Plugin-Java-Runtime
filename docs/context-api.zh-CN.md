@@ -1,7 +1,7 @@
 # Java Context API 与运行边界
 
-本文适用于 AutoJs6 Java Runtime Plugin <code>0.5.0-m9</code>、JVM Source Protocol
-<code>1.3</code>、Entry API <code>4</code>，描述当前 Java 能力 profile 与 R4 DEX 工件 profile
+本文适用于 AutoJs6 Java Runtime Plugin <code>0.6.0-m9</code>、JVM Source Protocol
+<code>1.4</code>、Entry API <code>4</code>，描述当前 Java 能力 profile 与 R4 DEX 工件 profile
 的用户可见行为。
 协议升级或后续 profile 可能扩展这些能力，但不会放宽当前请求已经协商出的边界。
 
@@ -26,7 +26,8 @@ public final class Main implements AutoJsJvmEntry {
 入口方法可以返回受支持的 JSON profile 值，也可以返回 <code>null</code>。完整能力样例见
 [samples/m5-capabilities.java](../samples/m5-capabilities.java)；剪贴板读写样例见
 [samples/capability-set-2-clipboard.java](../samples/capability-set-2-clipboard.java)；宿主参数样例见
-[samples/script-args.java](../samples/script-args.java)。
+[samples/script-args.java](../samples/script-args.java)；运行时异常投影样例见
+[samples/runtime-exception.java](../samples/runtime-exception.java)。
 
 ## 源码形态
 
@@ -49,7 +50,7 @@ public final class Main implements AutoJsJvmEntry {
 - 当前 R4 D8 profile 接受 1 至 4 个严格连续命名的工件：<code>classes.dex</code>、
   <code>classes2.dex</code>、<code>classes3.dex</code>、<code>classes4.dex</code>。不允许缺号、别名、重排或
   第 5 个 DEX；所有 DEX 的总量仍受同一个 32 MiB 上限约束。该集合只在 provider 的编译器与隔离
-  worker 之间传递，不改变宿主侧 Protocol 1.3 请求形态。
+  worker 之间传递，不改变宿主侧单源码请求形态。
 - Android API 26 的公开 <code>InMemoryDexClassLoader</code> 只有单 buffer 构造器，因此该版本继续只接受
   一个 <code>classes.dex</code>；API 24/25 和 API 27+ 才能安全共享 2 至 4 个 DEX 的同一 class namespace。
 
@@ -245,7 +246,10 @@ return result;
 ## 诊断与隐私
 
 - ECJ 诊断在回传前会限制总字节数和消息长度；私有绝对路径、摘要、uid/pid、Binder 引用和其他敏感元数据会按片段替换为 <code>&lt;redacted&gt;</code>，其余可操作的编译器原文会保留。
-- 一个源码包含多处 ECJ 问题时，provider 会按编译器顺序分别回传多条诊断；每条仍使用 Protocol 1.3 的单诊断 frame，所有 frame 共用 64 KiB 总 wire 预算。
+- 一个源码包含多处 ECJ 问题时，provider 会按编译器顺序分别回传多条诊断；每条仍使用 Protocol 1.4 的单诊断 frame，所有 frame 共用 64 KiB 总 wire 预算。
 - 编译错误包含可安全确认的源码文件名、行和列。诊断预算耗尽时，后续诊断可能不再出现。
-- 运行时异常当前只回传通用的 <code>JAVA_RUNTIME_EXCEPTION</code>、源码行号与列 1；不会回传异常 message、任意类名或完整堆栈。
+- Java 运行时异常回传通用的 <code>JAVA_RUNTIME_EXCEPTION</code>、安全源码位置与脱敏类名；
+  <code>java.*</code>/<code>javax.*</code> 原样，其余精确归一为 <code>UserException</code>。异常 message、
+  完整堆栈、绝对路径、provider/user package、UID/PID 均不回传；详见
+  [M9-3 运行时异常类名实现与证据](runtime-exception-class-m9-3.zh-CN.md)。
 - 错误消息是稳定的公开摘要，不应依赖内部异常文本进行程序逻辑判断；应使用 error code 与 phase。

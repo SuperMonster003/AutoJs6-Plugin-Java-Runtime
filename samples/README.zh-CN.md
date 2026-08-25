@@ -12,6 +12,7 @@
 | [cancellation-sleep.java](cancellation-sleep.java) | 取消中断 <code>sleep</code> | 看到 <code>cancellation sample: sleeping</code> 后停止脚本；会话以 <code>REQUESTED</code> 取消，绝不能输出 <code>unexpected completion</code>。不手动停止时会由默认 30 秒超时取消。 |
 | [return-values.java](return-values.java) | 支持类型、嵌套 Map/Iterable/数组 | 成功，返回下方的确定性 JSON。 |
 | [compile-error.java](compile-error.java) | 编译诊断的文件名、行列和原文可用性 | 失败码 <code>COMPILATION_FAILED</code>，诊断码 <code>ECJ_ERROR</code>，定位 <code>Main.java:7</code>，消息包含 <code>missingSymbol</code> 且不含 provider 私有绝对路径。 |
+| [runtime-exception.java](runtime-exception.java) | M9-3 运行时异常类名与行号 | 以 <code>EXECUTION_FAILED</code> 结束，公开诊断精确显示 <code>Main.java:7:1: JAVA_RUNTIME_EXCEPTION [java.lang.IllegalStateException]: Java execution failed</code>；源码中的秘密 message 与完整 stack 不回传。用户自定义异常类统一显示为 <code>UserException</code>。 |
 | [limit-result-json.java](limit-result-json.java) | 64 KiB 返回值边界 | 入口成功运行，但 JSON 字符串连同引号超过 65,536 bytes，最终以 <code>EXECUTION_FAILED</code> 拒绝。 |
 
 <code>return-values.java</code> 的预期 JSON：
@@ -42,10 +43,12 @@
 <code>JavaSampleLibraryInstrumentedTest</code> 将这些文件作为测试 APK asset，并在 Android
 设备上运行真实 provider 内部流水线。参数样例同时验证旧无参数源码和 Entry API 4 源码可在同一 AAR
 下编译、经 ART 执行；剪贴板样例还会经过 Worker Context 的规范 wire 调用，并验证读写
-权限各自默认拒绝。它不伪装成宿主 Binder 端到端证据；API 36 的独立 AutoJs6 production
+权限各自默认拒绝；运行时异常样例还验证 ART 产生的真实类名和请求源码行会经过 provider
+独立脱敏器。它不伪装成宿主 Binder 端到端证据；API 36 的独立 AutoJs6 production
 Activity→Binder→worker 记录见
 [M9-1 剪贴板能力实现与证据](../docs/capability-set-2-m9-1.zh-CN.md)；参数生产链路记录见
-[M9-2 脚本入参实现与证据](../docs/script-arguments-m9-2.zh-CN.md)。宿主规范测试的代码所有权仍在
+[M9-2 脚本入参实现与证据](../docs/script-arguments-m9-2.zh-CN.md)；运行时异常生产链路记录见
+[M9-3 运行时异常类名实现与证据](../docs/runtime-exception-class-m9-3.zh-CN.md)。宿主规范测试的代码所有权仍在
 AutoJs6 宿主仓。
 
 ~~~powershell
@@ -59,6 +62,8 @@ adb -s <serial> shell am instrument -w -r -e class org.autojs.plugin.jvmsource.j
 
 | 日期 | 设备/API/ABI | Provider APK | 结果 |
 |---|---|---|---|
+| 2026-08-26（M9-3） | Sony G8441 真机，Android 9 / API 28 / arm64-v8a，fingerprint <code>Sony/G8441/G8441:9/47.2.A.4.45/3677320370:user/release-keys</code> | SHA-256 <code>240AACD93A7B4F07601B0FC020DDB3920934E4C02F18E9ABC53BDD821E47F48C</code>；AndroidTest SHA-256 <code>0A63CBB72978C1146ED53E4E571C1D2891233AD4F11755662A7CC68051DD769A</code> | 10/10 通过，9.434 s；新增真实 ART 运行异常投影，精确验证平台类名与请求源码行，秘密 message 不进入诊断对象。 |
+| 2026-08-26（M9-3） | Android Emulator，Android 7.0 / API 24 / x86，fingerprint <code>google/sdk_google_phone_x86/generic_x86:7.0/NYC/6696031:userdebug/dev-keys</code> | 与上一行相同的最终 Provider/AndroidTest APK | 10/10 通过，6.682 s；同一最终 APK 覆盖私有 <code>DexClassLoader</code> 路径。 |
 | 2026-08-25（M9-2） | Sony G8441 真机，Android 9 / API 28 / arm64-v8a，fingerprint <code>Sony/G8441/G8441:9/47.2.A.4.45/3677320370:user/release-keys</code> | SHA-256 <code>9AACBD90F06AAD9F4A754080835420D192721D3D79ABC3AE06131F4651D1A1E7</code>；AndroidTest SHA-256 <code>1D1639E95FF01472CB1669ADC714361F3320DB0DF6990175227C73A4F247DD88</code> | 9/9 通过，8.911 s；新增 Protocol 1.3 参数快照往返，并确认既有无参数源码可针对 Entry API 4 原样编译执行。 |
 | 2026-08-25（M9-2） | Android Emulator，Android 7.0 / API 24 / x86，fingerprint <code>google/sdk_google_phone_x86/generic_x86:7.0/NYC/6696031:userdebug/dev-keys</code> | SHA-256 <code>9AACBD90F06AAD9F4A754080835420D192721D3D79ABC3AE06131F4651D1A1E7</code>；AndroidTest SHA-256 <code>1D1639E95FF01472CB1669ADC714361F3320DB0DF6990175227C73A4F247DD88</code> | 9/9 通过，4.244 s；同一最终 APK 覆盖私有 <code>DexClassLoader</code> 路径。 |
 | 2026-08-25（M9-1） | Sony G8441 真机，Android 9 / API 28 / arm64-v8a，fingerprint <code>Sony/G8441/G8441:9/47.2.A.4.45/3677320370:user/release-keys</code> | SHA-256 <code>B5D29A9D87F5B715748BC452F3DDA10951349FEF26B2B4180CC9EB9FAF2DB72B</code>；AndroidTest SHA-256 <code>A2764EC265AC8FEA22D1AA7D3E6A9CCEAFA2CB6C1DD61DA0340A20D29C0C6B2C</code> | 8/8 通过，8.062 s；新增剪贴板实际 ART 往返/恢复，以及读写独立默认拒绝且零 dispatch。测试后仅卸载本轮新增的 provider/test，既有 AutoJs6 未改动。 |
