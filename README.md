@@ -73,6 +73,11 @@ M9-7 不增加 wire 字段或改变 Entry API；Host 通过
 接收入口简名，并在绑定 provider 前使用共享策略生成规范源码名与全限定入口。合法名称 profile、默认兼容、
 非 <code>Main</code> 样例与 production Binder 证据见
 [M9-7 任意入口类名端到端证据](docs/arbitrary-entry-class-m9-7.zh-CN.md)。
+M9-8 评估后继续保留每个 Provider 进程一个活动会话和第二会话立即 <code>BUSY</code>：单槽同时是
+compiler hard-kill、一次性 worker、cache lane、callback lane 与观测归属的隔离边界。当前 Host 每次脚本
+都会创建独立 host 实例，不能在实例内安全伪装成全局队列；交互入口只显示稳定的稍后重试提示，不自动重放
+可能已有外部副作用的 Java 入口。完整连锁分析、短期 BUSY 指引和未来有界协调器门槛见
+[M9-8 会话并发模型评估](docs/session-concurrency-m9-8.zh-CN.md)。
 
 ## Source example
 

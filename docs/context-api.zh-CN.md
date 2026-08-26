@@ -221,6 +221,12 @@ M9-6 已决定不提高正式默认值或 120 秒协议上限，也不允许现�
 三进程看门狗与未来独立长任务模式的评估见
 [M9-6 超时上限评估](timeout-limit-m9-6.zh-CN.md)。
 
+并发上限 1 也是正式隔离语义，不只是吞吐配置。M9-8 决定不在当前 Protocol 中放开大于 1，也不在每次
+脚本独立创建的 Host 实例内加入透明队列。收到 <code>BUSY</code> 时，交互调用应提示用户等待当前 JVM
+脚本结束后重试；不得对所有 <code>retryable=true</code> 结果自动重放，也不得紧循环轮询。Provider
+compiler/cache/callback/observation/worker 的连锁约束，以及未来 Host 进程级有界协调器的 deadline、
+取消和公平性门槛见 [M9-8 会话并发模型评估](session-concurrency-m9-8.zh-CN.md)。
+
 ## 终态观测
 
 自 Protocol 1.5 起（当前为 1.6），成功、错误与取消终态都会在 compiler/worker 清理完成后携带同一类

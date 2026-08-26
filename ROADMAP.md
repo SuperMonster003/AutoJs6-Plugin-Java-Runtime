@@ -268,10 +268,20 @@
     Provider Debug/Release 各 163 项单测、Lint、pinned-input 与双仓 APK/AAR 构建全绿；完整实现、制品
     摘要、设备 marker 和清理记录见 `docs/arbitrary-entry-class-m9-7.zh-CN.md`。
 
-- [ ] **M9-8 会话并发模型评估** `[评估]`
+- [x] **M9-8 会话并发模型评估** `[评估]`
   - 内容: `MAX_CONCURRENT_SESSIONS=1` 且第二会话立即 `BUSY`。评估宿主侧排队 vs 协议放开 >1 的语义
     (连锁: `SingleActiveSessionGate`、缓存单槽 lane、观测单槽、worker 进程模型)。
   - 验收: 决策文档 (含连锁影响分析); 短期可先落地宿主侧排队重试指引。
+  - 结果: **No-go**；保留 Protocol 1.6 每 Provider 进程一个活动会话、第二会话立即返回可重试
+    `BUSY`，不在 `RemoteJvmSourceHost` 内加入透明队列或轮询。审计确认单槽同时约束 process-global
+    gate、单线程 compiler、无 pending queue 的 cache lane、单槽观测、共享 64 项 callback lane、
+    单个一次性 `:worker` 与 compiler hard-kill；只提高常量会产生 deadline 排队、观测覆盖、cache
+    竞争和跨会话误杀。Host 每次脚本都会创建独立 engine/host，现有 gate 不是进程级协调器；未来若有
+    真实 BUSY/延迟数据，先探索按精确 Provider 身份分区、deadline 从 enqueue 起算、取消优先的
+    `1 active + 1 pending` Host 有界 FIFO。短期仅对精确 `BUSY` 提示用户稍后重试，不自动重放可能已有
+    外部副作用的 Java 入口。Provider 聚焦 28/28、Debug/Release 各 163/163，Host 聚焦 42/42、shared
+    边界 16/16，pinned-input、Debug lint 与 APK gate 全绿；无 runtime/AAR/设备行为变化。完整连锁分析、
+    重试规则与重开条件见 `docs/session-concurrency-m9-8.zh-CN.md`。
 
 ## M10 — 远期探索
 
