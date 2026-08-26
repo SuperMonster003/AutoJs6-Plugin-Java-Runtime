@@ -28,6 +28,7 @@ import org.autojs.plugin.jvmsource.api.JvmSourceError
 import org.autojs.plugin.jvmsource.api.JvmSourceErrorCode
 import org.autojs.plugin.jvmsource.api.JvmSourceFailurePhase
 import org.autojs.plugin.jvmsource.api.JvmSourceLanguage
+import org.autojs.plugin.jvmsource.api.JvmSourceObservation
 import org.autojs.plugin.jvmsource.api.JvmSourceRequest
 import org.autojs.plugin.jvmsource.api.JvmSourceResult
 import org.autojs.plugin.jvmsource.api.JvmSourceStarted
@@ -53,6 +54,7 @@ import org.autojs.plugin.jvmsource.java.JavaProviderObservation
 import org.autojs.plugin.jvmsource.java.JavaProviderObservationCodec
 import org.autojs.plugin.jvmsource.java.JavaProviderObservationCollector
 import org.autojs.plugin.jvmsource.java.JavaProviderObservationRegistry
+import org.autojs.plugin.jvmsource.java.JavaProviderProtocolObservationPolicy
 import org.autojs.plugin.jvmsource.java.JavaProviderObservedPhase
 import org.autojs.plugin.jvmsource.java.JavaProviderObservedProcess
 import org.autojs.plugin.jvmsource.java.JavaProviderResourceProbe
@@ -122,6 +124,7 @@ internal class RemoteJavaSourceSession(
     private val cancellationReason = AtomicReference<JvmCancellationReason?>()
     private val cacheObservation = AtomicReference<CompilationCacheRequestObservation?>()
     private val workerPerformanceObservation = AtomicReference<JavaProviderObservation?>()
+    private val protocolObservation = AtomicReference<JvmSourceObservation?>()
     private val runtimeDiagnosticLine = AtomicReference<Int?>()
     private val terminalDelivery = ProviderTerminalDeliveryBarrier<() -> Unit>(termination)
     private val createdAtMillis = SystemClock.elapsedRealtime()
@@ -766,7 +769,8 @@ internal class RemoteJavaSourceSession(
                 workerResult.dexArtifactSha256 != compiled.dexIdentity.sha256 ||
                 workerResult.dexVersion !in JvmDexRuntimeProfile.admittedVersions(runtimeApi) ||
                 workerResult.loaderKind != expectedRuntimeLoader ||
-                workerResult.compilationElapsedMillis != compiled.compilationElapsedMillis
+                workerResult.compilationElapsedMillis != compiled.compilationElapsedMillis ||
+                workerResult.observation != null
             ) {
                 return workerProtocolViolation()
             }
@@ -800,7 +804,10 @@ internal class RemoteJavaSourceSession(
             requireObservedTerminalCaller(callbackGeneration) ?: return
             val error = try {
                 require(encodedError != null)
-                JvmSourceCodec.decodeError(encodedError).also { require(it.requestId == request.requestId) }
+                JvmSourceCodec.decodeError(encodedError).also {
+                    require(it.requestId == request.requestId)
+                    require(it.observation == null)
+                }
             } catch (_: Throwable) {
                 return workerProtocolViolation()
             }
@@ -817,6 +824,7 @@ internal class RemoteJavaSourceSession(
                 require(encodedCancellation != null)
                 JvmSourceCodec.decodeCancellation(encodedCancellation).also {
                     require(it.requestId == request.requestId)
+                    require(it.observation == null)
                 }
             } catch (_: Throwable) {
                 return workerProtocolViolation()
@@ -920,10 +928,13 @@ internal class RemoteJavaSourceSession(
     }
 
     private fun finishCompleted(result: JvmSourceResult) {
-        val payload = JvmSourceCodec.encodeResult(result)
         if (!terminalDelivery.commitExternal(
                 outcome = JavaSessionTerminationPolicy.Outcome.SUCCESS,
-                terminal = { callback.onCompleted(payload) },
+                terminal = {
+                    callback.onCompleted(
+                        JvmSourceCodec.encodeResult(result.copy(observation = terminalProtocolObservation())),
+                    )
+                },
             )
         ) return
         publishSuccessfulCompilationToCache()
@@ -983,18 +994,20 @@ internal class RemoteJavaSourceSession(
         retryable: Boolean = false,
     ) {
         emitStarted()
-        val payload = JvmSourceCodec.encodeError(
-            JvmSourceError(
-                requestId = request.requestId,
-                code = code,
-                phase = phase,
-                message = publicMessage(code),
-                retryable = retryable,
-            ),
+        val terminal = JvmSourceError(
+            requestId = request.requestId,
+            code = code,
+            phase = phase,
+            message = publicMessage(code),
+            retryable = retryable,
         )
         if (!terminalDelivery.commitExternal(
                 outcome = terminalOutcome(code, phase),
-                terminal = { callback.onFailed(payload) },
+                terminal = {
+                    callback.onFailed(
+                        JvmSourceCodec.encodeError(terminal.copy(observation = terminalProtocolObservation())),
+                    )
+                },
             )
         ) return
         timeoutFuture?.cancel(false)
@@ -1006,12 +1019,16 @@ internal class RemoteJavaSourceSession(
         phase: JvmSourceFailurePhase = currentPhase(),
     ) {
         emitStarted()
-        val payload = JvmSourceCodec.encodeCancellation(
-            JvmSourceCancellation(request.requestId, reason, phase, elapsedMillis()),
-        )
+        val terminal = JvmSourceCancellation(request.requestId, reason, phase, elapsedMillis())
         if (!terminalDelivery.commitExternal(
                 outcome = JavaSessionTerminationPolicy.Outcome.CANCELLED,
-                terminal = { callback.onCancelled(payload) },
+                terminal = {
+                    callback.onCancelled(
+                        JvmSourceCodec.encodeCancellation(
+                            terminal.copy(observation = terminalProtocolObservation()),
+                        ),
+                    )
+                },
             )
         ) return
         timeoutFuture?.cancel(false)
@@ -1360,17 +1377,36 @@ internal class RemoteJavaSourceSession(
             ),
         )
         val compilerObservation = performanceObservation.snapshot()
+        val workerObservation = workerPerformanceObservation.get()
+        val sessionElapsedMillis = elapsedMillis()
+        val startupDurationMillis = workerStartupDurationMillis.get()
+        protocolObservation.set(
+            JavaProviderProtocolObservationPolicy.compose(
+                requestId = request.requestId,
+                compiler = compilerObservation,
+                worker = workerObservation,
+                sessionElapsedMillis = sessionElapsedMillis,
+                workerStartupDurationMillis = startupDurationMillis,
+            ),
+        )
         JavaProviderObservationRegistry.publishCompiler(compilerObservation)
         runCatching {
             environment.localObservationExporter.export(
                 JavaProviderLocalObservationRecord.compose(
                     compiler = compilerObservation,
-                    worker = workerPerformanceObservation.get(),
-                    sessionElapsedMillis = elapsedMillis(),
-                    workerStartupDurationMillis = workerStartupDurationMillis.get(),
+                    worker = workerObservation,
+                    sessionElapsedMillis = sessionElapsedMillis,
+                    workerStartupDurationMillis = startupDurationMillis,
                     cacheTelemetry = environment.compilationCacheTelemetry.snapshot(),
                 ),
             )
+        }
+    }
+
+    private fun terminalProtocolObservation(): JvmSourceObservation? {
+        if (request.protocolVersion < JvmSourceContract.OBSERVATION_PROTOCOL_VERSION) return null
+        return checkNotNull(protocolObservation.get()) {
+            "Protocol observation was not published before terminal delivery"
         }
     }
 

@@ -124,14 +124,14 @@ android {
         resValue("string", "plugin_id", "ecj-java")
         resValue("string", "plugin_engine", "jvm-source")
         resValue("string", "plugin_variant", "java-ecj-d8")
-        resValue("string", "plugin_requires_host_version", "5279")
+        resValue("string", "plugin_requires_host_version", "5280")
         resValue(
             "string",
             "plugin_runtime_component",
             "io.github.supermonster003.autojs6.plugin.java.runtime/org.autojs.plugin.jvmsource.java.service.JavaSourceCompilerService"
         )
-        resValue("string", "plugin_protocol_api_min", "1.4")
-        resValue("string", "plugin_protocol_api_max", "1.4")
+        resValue("string", "plugin_protocol_api_min", "1.5")
+        resValue("string", "plugin_protocol_api_max", "1.5")
         resValue("string", "plugin_backend", "ecj-d8")
         resValue("string", "plugin_task", "jvm-source")
     }
@@ -242,7 +242,7 @@ val verifyPinnedInputs = tasks.register("verifyPinnedInputs") {
     inputs.files(protocolArtifacts)
 
     doLast {
-        check(versions["REQUIRED_HOST_VERSION_CODE"] == "5279") {
+        check(versions["REQUIRED_HOST_VERSION_CODE"] == "5280") {
             "plugin_requires_host_version must stay aligned with REQUIRED_HOST_VERSION_CODE"
         }
         expectedPinnedDependencies.forEach { (label, pin) ->

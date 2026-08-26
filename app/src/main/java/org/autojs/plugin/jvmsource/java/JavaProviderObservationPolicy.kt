@@ -43,7 +43,7 @@ internal enum class JavaProviderCacheMissReason(val wireCode: Int) {
 
 /**
  * A bounded, path-free resource sample. Null means the platform probe was unavailable; zero is a
- * real observation. Protocol V1 does not export this model.
+ * real observation. Protocol 1.5 exports only an independently validated projection of this model.
  */
 internal data class JavaProviderResourceObservation(
     val process: JavaProviderObservedProcess,
@@ -74,8 +74,8 @@ internal data class JavaProviderObservation(
 /**
  * Source-deployed R3 collection policy. It records only coarse numeric counters and durations;
  * request IDs, paths, package/component names, signatures, Binder values, UIDs and PIDs are not
- * representable. Protocol export still needs future negotiation and runtime/performance evidence;
- * the debug-only private JSONL channel accepts only a bounded projection of this model.
+ * representable. Protocol 1.5 exports an independently bounded terminal projection; the private
+ * JSONL channel remains debug-only and additionally contains local cumulative cache telemetry.
  */
 internal class JavaProviderObservationCollector(
     private val startProfile: JavaProviderStartProfile,
@@ -131,7 +131,7 @@ internal class JavaProviderObservationCollector(
     )
 }
 
-/** One bounded last-snapshot slot per provider process; no observation crosses Protocol V1. */
+/** One bounded last-snapshot slot per provider process. */
 internal object JavaProviderObservationRegistry {
     private val compilerCompleted = AtomicBoolean(false)
     private val lastCompiler = AtomicReference<JavaProviderObservation?>()

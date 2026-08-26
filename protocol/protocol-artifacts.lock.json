@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "status": "host-clean-snapshot",
   "sourceRepository": "AutoJs6",
-  "sourceRevision": "a859a15a0517112c374f6637fc7b3d10a06d5450",
+  "sourceRevision": "22bf823288d8b7b8f12acd71fa4f8e149ee03954",
   "sourceDirty": false,
-  "snapshotDate": "2026-08-25",
+  "snapshotDate": "2026-08-26",
   "artifacts": [
     {
       "file": "common-plugin-api.aar",
@@ -19,7 +19,7 @@
     {
       "file": "jvm-source-api.aar",
       "sourceModule": ":plugin-api:jvm-source-api",
-      "sha256": "f5c3d9b61ad5c3541782bc579f061afb627ce8d2c59e67d5ae0acb401c9ea92e"
+      "sha256": "97006eb8a892d617939a5f49586a19a91ed05baaf6c59d75c46f6faf18fc81b3"
     }
   ]
 }
