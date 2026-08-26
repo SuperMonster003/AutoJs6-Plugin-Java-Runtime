@@ -285,10 +285,17 @@
 
 ## M10 — 远期探索
 
-- [ ] **M10-1 ECJ 升级 spike** `[评估]` `[网络]`
+- [x] **M10-1 ECJ 升级 spike — 直接升级 no-go** `[评估]` `[网络]`
   - 内容: ECJ 钉在 3.26.0 (配套自建 `javax.lang.model.SourceVersion` 桩强制 pre-JDK-12 路径, 属 ART 运行约束)。
     时间盒 (≤2 天) 验证更新 ECJ (lint 提示已有 3.42.0) 经 D8 desugar 后能否在 ART 上运行, 从而解锁 `-source 11/17`。
   - 验收: go/no-go 记录 (含失败根因); 若 go: 语言级别提升进入下一里程碑正式项。
+  - 结果: **直接升级 no-go，继续固定 ECJ 3.26.0 / Java 8**。精确候选 3.42.0 在 API 24 因
+    `InputStream.readAllBytes()` 缺失失败，在 API 35 因 Android 不提供 `Runtime.Version` 失败；测试日
+    Maven Central 最新 3.46.0 在 API 24/25/28/35 得到同类结论，AGP/core library desugaring 未改写
+    ECJ 自身调用。边界版本 3.33.0 虽在 API 35 将 Java 8/11/17 三项完整送过 ECJ→D8→ART，却同样
+    无法运行于 API 24。实验代码仅保留在隔离提交 `baf8ec71489ea2287c269142015bf3e2be6cd99f`；正式
+    运行时、协议、缓存和发布依赖均未改变。版本/API 矩阵、工件摘要、根因与 Android-targeted ECJ fork
+    的重开门槛见 `docs/ecj-upgrade-m10-1.zh-CN.md`。
 
 - [ ] **M10-2 R8/D8 补丁位升级评估** `[评估]` `[网络]`
   - 内容: 8.13.17 → 8.13.22 (lint 提示)。评估变更日志, 升级后跑全量单测 + 设备矩阵; 缓存 key 含 D8 版本会自动失效, 验证该路径。

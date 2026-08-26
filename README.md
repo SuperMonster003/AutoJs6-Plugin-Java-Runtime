@@ -78,6 +78,12 @@ compiler hard-kill、一次性 worker、cache lane、callback lane 与观测归�
 都会创建独立 host 实例，不能在实例内安全伪装成全局队列；交互入口只显示稳定的稍后重试提示，不自动重放
 可能已有外部副作用的 Java 入口。完整连锁分析、短期 BUSY 指引和未来有界协调器门槛见
 [M9-8 会话并发模型评估](docs/session-concurrency-m9-8.zh-CN.md)。
+M10-1 对 Roadmap 候选 ECJ 3.42.0、测试日最新 3.46.0 与边界版本 3.33.0 完成 ART spike 后判定
+直接升级 no-go：API 24–28 缺少新版 ECJ 直接调用的 <code>InputStream.readAllBytes()</code>，而
+3.42/3.46 即使在 API 35 仍因 Android 不提供 <code>Runtime.Version</code> 而无法进入编译。隔离实验
+同时证明 3.33 在 API 35 可将 Java 11/17 源码完整送过 D8 与 ART，但它不满足 minSdk 24，不能发布。
+正式线继续固定 ECJ 3.26.0 与 Java 8；版本矩阵、工件摘要、失败根因和未来 Android-targeted fork 的
+重开条件见 [M10-1 ECJ 升级评估](docs/ecj-upgrade-m10-1.zh-CN.md)。
 
 ## Source example
 
