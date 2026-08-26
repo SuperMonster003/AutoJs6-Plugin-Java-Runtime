@@ -11,7 +11,8 @@ import java.io.IOException
 internal object EntryClassAnalyzer {
     private const val CLASS_MAGIC = 0xcafebabe.toInt()
     private const val MIN_CLASS_VERSION = 45
-    private const val JAVA_8_CLASS_VERSION = 52
+    // M10-1 spike only: let Java 11/17 class files reach D8 and ART.
+    private const val MAX_SPIKE_CLASS_VERSION = 61
     private const val ACC_PUBLIC = 0x0001
     private const val ACC_INTERFACE = 0x0200
     private const val ACC_ABSTRACT = 0x0400
@@ -138,8 +139,8 @@ internal object EntryClassAnalyzer {
         if (input.readInt() != CLASS_MAGIC) throw IOException("Invalid JVM class magic")
         input.readUnsignedShort()
         val majorVersion = input.readUnsignedShort()
-        if (majorVersion !in MIN_CLASS_VERSION..JAVA_8_CLASS_VERSION) {
-            throw IOException("JVM class version is outside the Java 8 contract")
+        if (majorVersion !in MIN_CLASS_VERSION..MAX_SPIKE_CLASS_VERSION) {
+            throw IOException("JVM class version is outside the M10 spike contract")
         }
 
         val constantPoolCount = input.readUnsignedShort()

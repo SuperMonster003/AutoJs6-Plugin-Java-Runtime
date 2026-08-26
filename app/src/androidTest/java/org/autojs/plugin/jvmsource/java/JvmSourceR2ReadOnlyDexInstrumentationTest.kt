@@ -39,7 +39,7 @@ class JvmSourceR2ReadOnlyDexInstrumentationTest {
         val providerPackage = context.packageName
         assertEquals(BuildConfig.APPLICATION_ID, providerPackage)
         assertTrue("Readonly evidence requires targetSdk 34+", context.applicationInfo.targetSdkVersion >= 34)
-        assertEquals("3.26.0", BuildConfig.ECJ_VERSION)
+        assertEquals("3.42.0", BuildConfig.ECJ_VERSION)
         assertEquals("8.13.17", BuildConfig.D8_VERSION)
 
         val canonicalRunId = requireBoundedArgument(arguments.getString(ARG_RUN_ID), ARG_RUN_ID, 64)
