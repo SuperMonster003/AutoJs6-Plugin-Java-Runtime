@@ -286,3 +286,25 @@ fingerprint、API、ABI、production APK SHA-256、AndroidTest APK SHA-256、测
 - [x] 本轮启动的 `emulator-5560`（API 26）与 `emulator-5562`（API 36）已正常关闭；
 - [x] 独立宿主 worktree `D:\idea-projects\AutoJs6-m8-evidence-afca` 已解除注册并删除；宿主主工作区
   原有的 Node/Explorer 未提交改动保持存在，本轮没有修改这些文件。
+
+## M10-2 D8 升级增量证据（2026-08-27）
+
+本文件前述表格继续保留 2026-08-25 M8 发布基线及其 D8 8.13.17 工件身份，不能用新结果覆盖历史
+记录。M10-2 把 Provider 运行时 D8/R8 升至 8.13.23 后，按失效规则重新取得受影响的 Provider 证据：
+
+| Gate | M10-2 结果 |
+| --- | --- |
+| `P24/P25` | `JavaProviderPipelineInstrumentedTest` 各 2/2；API 24/25 私有 loader 分支通过 |
+| `P26` | pipeline 2/2、样例 11/11；API 26 独有的单 buffer `InMemoryDexClassLoader` 分支通过 |
+| `P27+` | API 28 与 API 35 各 2/2；`InMemoryDexClassLoader` 分支通过 |
+| 样例矩阵 | API 24/25/26/28/35 各 11/11，含 desugaring 正负边界、取消、诊断和返回值 |
+| `P/W-R4` | API 24、28、35 各 1/1；65,536-method fixture 产出 2 DEX 并经 direct/worker 执行 |
+| `R34/36` | API 36 精确 R2 时序 1/1；D8 8.13.23、首字节前只读、部分写失败不发布且清理完成 |
+| 本地 gate | Debug/Release 各 164/164，lint 0 error，Debug/AndroidTest/Release APK 全部通过 |
+
+M10-2 没有改变 Host discovery、签名、协议 AAR 或 production Binder wire，因此这次依赖补丁不伪造
+新的 `H` 证据；既有宿主/Provider 分工保持不变。API 36 canonical run
+`a1956e81-4503-42a6-b088-00606ff31479` 的原始行见
+[`2026-08-27-api36-m10-2-r2-readonly.jsonl`](device-evidence-data/2026-08-27-api36-m10-2-r2-readonly.jsonl)。
+完整版本选择、缓存自动失效、JAR/APK 摘要、API 24/25/26/28/35/36 指纹、API 28 真机 JDWP 基线对照与
+设备清理记录见 [`d8-upgrade-m10-2.zh-CN.md`](d8-upgrade-m10-2.zh-CN.md)。

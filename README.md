@@ -3,7 +3,7 @@
 Independent Java single-file and bounded multi-file compiler/runtime provider for AutoJs6.
 
 The plugin exposes `org.autojs.plugin.JVM_SOURCE`, compiles Java 8 source with the pinned ECJ 3.26.0,
-converts verified class output with D8 8.13.17, and executes the resulting DEX in a disposable worker
+converts verified class output with D8 8.13.23, and executes the resulting DEX in a disposable worker
 process. The compiler and worker never run inside the AutoJs6 process.
 
 ## Compatibility
@@ -84,6 +84,11 @@ M10-1 对 Roadmap 候选 ECJ 3.42.0、测试日最新 3.46.0 与边界版本 3.3
 同时证明 3.33 在 API 35 可将 Java 11/17 源码完整送过 D8 与 ART，但它不满足 minSdk 24，不能发布。
 正式线继续固定 ECJ 3.26.0 与 Java 8；版本矩阵、工件摘要、失败根因和未来 Android-targeted fork 的
 重开条件见 [M10-1 ECJ 升级评估](docs/ecj-upgrade-m10-1.zh-CN.md)。
+M10-2 将 Provider 运行时 D8/R8 从 8.13.17 升级至测试日 Google Maven 已发布的最高非开发 8.13
+补丁 8.13.23；AGP 内嵌的构建期 R8 仍独立保持 8.13.19。缓存 key 与 toolchain fingerprint 均已验证
+随 D8 版本自动失效，Debug/Release 全量门禁和 API 24/25/26/28/35 ART、API 24/28/35 多 DEX、API 36
+R2 只读发布矩阵全部通过。上游差异、工件摘要与原始证据见
+[M10-2 R8/D8 补丁位升级](docs/d8-upgrade-m10-2.zh-CN.md)。
 
 ## Source example
 

@@ -297,9 +297,18 @@
     运行时、协议、缓存和发布依赖均未改变。版本/API 矩阵、工件摘要、根因与 Android-targeted ECJ fork
     的重开门槛见 `docs/ecj-upgrade-m10-1.zh-CN.md`。
 
-- [ ] **M10-2 R8/D8 补丁位升级评估** `[评估]` `[网络]`
+- [x] **M10-2 R8/D8 补丁位升级评估** `[评估]` `[网络]`
   - 内容: 8.13.17 → 8.13.22 (lint 提示)。评估变更日志, 升级后跑全量单测 + 设备矩阵; 缓存 key 含 D8 版本会自动失效, 验证该路径。
   - 验收: 决策记录或完成升级 + 证据。
+  - 结果: **Go，正式 Provider 运行时 D8/R8 升至 8.13.23**。测试日 Google Maven 中 `.23` 已是
+    最高已发布非开发 8.13 补丁，并在 Roadmap 候选 `.22` 上补充 annotation 排序后刷新缓存 hash；
+    未追随尚未发布到 Maven 的 `.24/.25` 分支头。显式 runtime classpath 为 8.13.23，AGP 9.3.0
+    内嵌构建期 R8 独立保持 8.13.19。精确回归证明 8.13.17→8.13.23 同时改变 toolchain fingerprint
+    与 schema-3 compilation-cache key，无需重复 bump cache schema/domain。Debug/Release 各 164/164，
+    pinned-input、lint 与三类 APK 全绿；API 24/25/26/28/35 pipeline 与 11 项样例全绿，API 24/28/35
+    R4 多 DEX 通过，API 36 R2 精确首字节前只读与失败清理 1/1。协议、ECJ/Java 8、Host/AAR、
+    version code/name 与安全边界均未改变。上游差异、JAR/APK 摘要、设备指纹、异常设备归因、原始
+    observation 和清理记录见 `docs/d8-upgrade-m10-2.zh-CN.md`。
 
 - [ ] **M10-3 Kotlin provider spike** `[评估]`
   - 内容: 协议已含 `KOTLIN`/`KOTLIN_JVM` 枚举但本插件仅广告 JAVA。评估嵌入式 kotlinc 的体积/内存可行性;

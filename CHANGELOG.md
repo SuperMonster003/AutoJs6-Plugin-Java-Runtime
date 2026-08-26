@@ -32,6 +32,10 @@ with an optional milestone suffix; Android package builds are tracked separately
 
 ### Changed
 
+- Upgraded the Provider's runtime D8/R8 dependency from 8.13.17 to 8.13.23 while leaving AGP's
+  separately bundled build-time R8 unchanged. The D8 version now has an exact cache-invalidation
+  regression test, and the candidate passed full Debug/Release gates plus API 24/25/26/28/35 ART,
+  API 24/28/35 multi-DEX, and API 36 read-only-publication device checks.
 - Changed the offline verification gate to run the unit suite against both Debug and Release build
   constants, including an assertion that Release observation export has zero file side effects.
 - Changed ECJ diagnostic redaction to replace sensitive path, digest, Binder, process-identity,

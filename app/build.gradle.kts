@@ -42,7 +42,7 @@ val expectedPinnedDependencies = linkedMapOf(
     "AndroidX annotations" to (libs.androidx.annotation to "androidx.annotation:annotation:1.9.1"),
     "Kotlin standard library" to (libs.kotlin.stdlib to "org.jetbrains.kotlin:kotlin-stdlib:2.3.21"),
     "ECJ" to (libs.ecj to "org.eclipse.jdt:ecj:3.26.0"),
-    "D8/R8" to (libs.r8 to "com.android.tools:r8:8.13.17"),
+    "D8/R8" to (libs.r8 to "com.android.tools:r8:8.13.23"),
     "core library desugaring" to
         (libs.desugar.jdk.libs.nio to "com.android.tools:desugar_jdk_libs_nio:2.1.5"),
     "core library desugaring configuration" to

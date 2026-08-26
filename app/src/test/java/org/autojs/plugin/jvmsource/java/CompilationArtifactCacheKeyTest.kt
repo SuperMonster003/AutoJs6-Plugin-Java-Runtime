@@ -1,6 +1,9 @@
 package org.autojs.plugin.jvmsource.java
 
 import org.autojs.plugin.jvmsource.api.JvmSha256
+import org.autojs.plugin.jvmsource.api.JvmSourceCompilerFamily
+import org.autojs.plugin.jvmsource.api.JvmSourceLanguage
+import org.autojs.plugin.jvmsource.api.JvmToolchainFingerprint
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -74,6 +77,36 @@ class CompilationArtifactCacheKeyTest {
     }
 
     @Test
+    fun d8PatchUpgradeFrom81317To81323InvalidatesToolchainAndCompilationCache() {
+        val base = provenance()
+        val oldToolchain = JvmToolchainFingerprint.compute(
+            language = JvmSourceLanguage.JAVA,
+            sourceCompilerFamily = JvmSourceCompilerFamily.ECJ,
+            sourceCompilerVersion = base.sourceCompilerVersion,
+            d8Version = "8.13.17",
+            runtimeLibraryFingerprint = base.runtimeLibraryFingerprint,
+        )
+        val upgradedToolchain = JvmToolchainFingerprint.compute(
+            language = JvmSourceLanguage.JAVA,
+            sourceCompilerFamily = JvmSourceCompilerFamily.ECJ,
+            sourceCompilerVersion = base.sourceCompilerVersion,
+            d8Version = "8.13.23",
+            runtimeLibraryFingerprint = base.runtimeLibraryFingerprint,
+        )
+        val previous = base.copy(
+            d8Version = "8.13.17",
+            toolchainFingerprint = oldToolchain,
+        )
+        val upgraded = base.copy(
+            d8Version = "8.13.23",
+            toolchainFingerprint = upgradedToolchain,
+        )
+
+        assertNotEquals(oldToolchain, upgradedToolchain)
+        assertNotEquals(key(previous), key(upgraded))
+    }
+
+    @Test
     fun canonicalizesSetLikeSignerAndAllowedCallFieldsOnly() {
         val base = provenance()
         assertEquals(
@@ -126,7 +159,7 @@ class CompilationArtifactCacheKeyTest {
     @Test
     fun canonicalSchemaHasAPinnedGoldenDigest() {
         assertEquals(
-            "4d1dd549bc02a20e975541c88cafacf0d97845f7eb5a60d9aac8ae9a59b4cf3d",
+            "b01de504fdf13eedf4c26430e2aafc053533185c244613aa134bf411e4269ac4",
             key(provenance()).hex,
         )
     }
@@ -147,7 +180,7 @@ class CompilationArtifactCacheKeyTest {
         sourceCompilerFamily = "ecj",
         sourceCompilerVersion = "3.26.0",
         sourceCompilerOptions = listOf("source=8", "target=8"),
-        d8Version = "8.13.17",
+        d8Version = "8.13.23",
         d8Options = listOf("mode=debug", "min-api=24"),
         minApi = 24,
         allowedHostCalls = listOf("app.launch"),

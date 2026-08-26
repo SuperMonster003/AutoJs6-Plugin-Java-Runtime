@@ -5,7 +5,7 @@ desugar-jdk-libs-nio = "2.1.5"
 ecj = "3.26.0"
 foojay-resolver-convention = "1.0.0"
 kotlin = "2.3.21"
-r8 = "8.13.17"
+r8 = "8.13.23"
 xz = "1.12"
 
 [libraries]
