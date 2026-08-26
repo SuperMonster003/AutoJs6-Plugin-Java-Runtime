@@ -65,6 +65,17 @@ class JavaSampleLibraryInstrumentedTest {
     }
 
     @Test
+    fun arbitraryEntrySampleUsesItsSelectedQualifiedClassThroughArt() {
+        withCompiledEntry(
+            sampleName = ARBITRARY_ENTRY_SAMPLE,
+            sourceFileName = "ScriptEntry.java",
+            entryClassName = "demo.entries.ScriptEntry",
+        ) { entry, _ ->
+            assertEquals("demo.entries.ScriptEntry", entry.run(NoCallsContext))
+        }
+    }
+
+    @Test
     fun scriptArgumentsSampleReadsTheProtocol13SnapshotThroughEntryApi4() {
         withCompiledEntry(SCRIPT_ARGS_SAMPLE) { entry, sourceBytes ->
             val context = RemoteJvmScriptContext(
@@ -278,10 +289,12 @@ class JavaSampleLibraryInstrumentedTest {
 
     private fun <T> withCompiledEntry(
         sampleName: String,
+        sourceFileName: String = "Main.java",
+        entryClassName: String = "Main",
         block: (AutoJsJvmEntry, ByteArray) -> T,
     ): T {
         val sourceBytes = sampleBytes(sampleName)
-        return PrivateSessionWorkspace.create(targetContext, "Main.java").use { workspace ->
+        return PrivateSessionWorkspace.create(targetContext, sourceFileName).use { workspace ->
             writeSource(workspace, sourceBytes)
             val ecj = EcjJavaCompiler(environment.compilerClasspath).compile(
                 sourceFile = workspace.sourceFile,
@@ -293,6 +306,7 @@ class JavaSampleLibraryInstrumentedTest {
             val classes = UserClassJarWriter.write(
                 workspace.classesDirectory,
                 workspace.programJar,
+                entryClassName,
             )
             val dexFiles = D8JavaCompiler(environment.d8RuntimeLibraries).compile(
                 programJar = workspace.programJar,
@@ -319,7 +333,7 @@ class JavaSampleLibraryInstrumentedTest {
                 parent = AutoJsJvmEntry::class.java.classLoader!!,
             ).use { loaded ->
                 val entry = WorkerEntryFactory.instantiate(
-                    WorkerEntryFactory.loadFromArt(loaded.classLoader),
+                    WorkerEntryFactory.loadFromArt(loaded.classLoader, entryClassName),
                 )
                 block(entry, sourceBytes)
             }
@@ -449,6 +463,7 @@ class JavaSampleLibraryInstrumentedTest {
     }
 
     private companion object {
+        const val ARBITRARY_ENTRY_SAMPLE = "arbitrary-entry.java"
         const val CANCELLATION_SAMPLE = "cancellation-sleep.java"
         const val CLIPBOARD_SAMPLE = "capability-set-2-clipboard.java"
         const val CORE_LIBRARY_DESUGARING_SAMPLE = "core-library-desugaring.java"
