@@ -4,6 +4,7 @@ import android.content.Context
 import java.io.Closeable
 import java.io.File
 import java.io.IOException
+import org.autojs.plugin.jvmsource.api.JvmSourcePackagePathPolicy
 import java.util.UUID
 
 internal class PrivateSessionWorkspace private constructor(
@@ -15,16 +16,45 @@ internal class PrivateSessionWorkspace private constructor(
             "Java source file escaped its private workspace"
         }
     }
+    val sourceDirectory = File(root, "sources")
     val classesDirectory = File(root, "classes")
     val programJar = File(root, "program.jar")
     val d8OutputDirectory = File(root, "d8-output")
     val cacheHitDirectory = File(root, "cache-hit")
 
     init {
-        if (!classesDirectory.mkdir() || !d8OutputDirectory.mkdir() || !cacheHitDirectory.mkdir()) {
+        if (!sourceDirectory.mkdir() || !classesDirectory.mkdir() ||
+            !d8OutputDirectory.mkdir() || !cacheHitDirectory.mkdir()
+        ) {
             close()
             throw IOException("Failed to create the private Java provider workspace")
         }
+    }
+
+    fun reservePackageSource(sourcePath: String): File {
+        JvmSourcePackagePathPolicy.requireSourcePath(sourcePath)
+        var parent = sourceDirectory
+        sourcePath.split('/').dropLast(1).forEach { segment ->
+            val child = File(parent, segment)
+            if (!child.exists() && !child.mkdir()) {
+                throw IOException("Failed to create a private Java source package directory")
+            }
+            val canonicalChild = child.canonicalFile
+            if (canonicalChild.parentFile != parent || !canonicalChild.isDirectory) {
+                throw IOException("Java source package directory escaped its private workspace")
+            }
+            parent = canonicalChild
+        }
+        val target = File(parent, sourcePath.substringAfterLast('/'))
+        if (target.parentFile != parent || target.exists() || !target.createNewFile()) {
+            throw IOException("Failed to reserve a private Java source package file")
+        }
+        val canonicalTarget = target.canonicalFile
+        if (canonicalTarget != target.absoluteFile || canonicalTarget.parentFile != parent) {
+            target.delete()
+            throw IOException("Java source package file escaped its private workspace")
+        }
+        return canonicalTarget
     }
 
     override fun close() {

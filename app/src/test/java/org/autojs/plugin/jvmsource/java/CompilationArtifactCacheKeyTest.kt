@@ -20,6 +20,15 @@ class CompilationArtifactCacheKeyTest {
     }
 
     @Test
+    fun bindsSourcePayloadKindFileCountAndTotalContentBytes() {
+        val base = provenance()
+
+        assertNotEquals(key(base), key(base.copy(sourcePayloadKind = "source-archive")))
+        assertNotEquals(key(base), key(base.copy(sourceFileCount = 2)))
+        assertNotEquals(key(base), key(base.copy(sourceContentBytes = 4_096L)))
+    }
+
+    @Test
     fun bindsSourceFileAndQualifiedEntryLayoutsIndependentlyAcrossTheR1Matrix() {
         val base = provenance()
         assertNotEquals(key(base), key(base.copy(sourceFileName = "Alternate.java")))
@@ -87,7 +96,7 @@ class CompilationArtifactCacheKeyTest {
             ByteArrayInputStream(CompilationArtifactCacheKeyCanonicalCodec.encode(provenance())),
         )
         assertEquals(CompilationArtifactCacheKeyCanonicalCodec.MAGIC, input.readInt())
-        assertEquals(2, CompilationArtifactCacheKeyCanonicalCodec.SCHEMA_VERSION)
+        assertEquals(3, CompilationArtifactCacheKeyCanonicalCodec.SCHEMA_VERSION)
         assertEquals(CompilationArtifactCacheKeyCanonicalCodec.SCHEMA_VERSION, input.readInt())
         assertEquals(listOf(1, 2, 3, 4, 5), CompilationCacheKeyValueType.entries.map { it.wireTag })
 
@@ -117,7 +126,7 @@ class CompilationArtifactCacheKeyTest {
     @Test
     fun canonicalSchemaHasAPinnedGoldenDigest() {
         assertEquals(
-            "9a1294ab53e86c5201420c726a94132e39894249a3ef77328afa314e95c64c89",
+            "4d1dd549bc02a20e975541c88cafacf0d97845f7eb5a60d9aac8ae9a59b4cf3d",
             key(provenance()).hex,
         )
     }

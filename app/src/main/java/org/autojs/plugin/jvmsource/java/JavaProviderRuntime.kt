@@ -50,7 +50,7 @@ internal object JavaProviderRuntime {
             d8Version = BuildConfig.D8_VERSION,
             runtimeLibraryFingerprint = environment.runtimeLibraryFingerprint,
             toolchainFingerprint = toolchainFingerprint,
-            maxSourceBytes = JvmSourceContract.MAX_SOURCE_BYTES,
+            maxSourceBytes = JvmSourceContract.MAX_SOURCE_PAYLOAD_BYTES,
             maxStdoutBytes = JvmSourceContract.MAX_STDOUT_BYTES,
             maxStderrBytes = JvmSourceContract.MAX_STDERR_BYTES,
             maxDiagnosticBytes = JvmSourceContract.MAX_DIAGNOSTIC_BYTES,

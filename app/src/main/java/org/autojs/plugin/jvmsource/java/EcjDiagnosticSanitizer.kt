@@ -2,12 +2,14 @@ package org.autojs.plugin.jvmsource.java
 
 import org.autojs.plugin.jvmsource.api.JvmDiagnosticSeverity
 import org.autojs.plugin.jvmsource.api.JvmSourceContract
+import org.autojs.plugin.jvmsource.api.JvmSourcePackagePathPolicy
 import java.io.File
 
 internal data class SanitizedEcjDiagnostic(
     val severity: JvmDiagnosticSeverity,
     val code: String,
     val message: String,
+    val sourceFileName: String?,
     val line: Int?,
     val column: Int?,
 )
@@ -41,6 +43,7 @@ internal object EcjDiagnosticSanitizer {
         privateFiles: Collection<File>,
         sourceFile: File? = null,
         sourceFileName: String? = null,
+        sourceFiles: Map<File, String> = emptyMap(),
     ): SanitizedEcjDiagnostic? = sanitizeAll(
         raw = raw,
         succeeded = succeeded,
@@ -48,6 +51,7 @@ internal object EcjDiagnosticSanitizer {
         privateFiles = privateFiles,
         sourceFile = sourceFile,
         sourceFileName = sourceFileName,
+        sourceFiles = sourceFiles,
     ).firstOrNull()
 
     /** Returns one ordered wire candidate for every ECJ ERROR/WARNING block in the batch output. */
@@ -58,6 +62,7 @@ internal object EcjDiagnosticSanitizer {
         privateFiles: Collection<File>,
         sourceFile: File? = null,
         sourceFileName: String? = null,
+        sourceFiles: Map<File, String> = emptyMap(),
     ): List<SanitizedEcjDiagnostic> {
         if (raw.isBlank()) return emptyList()
         return diagnosticBlocks(raw).map { block ->
@@ -68,6 +73,7 @@ internal object EcjDiagnosticSanitizer {
                 privateFiles = privateFiles,
                 sourceFile = sourceFile,
                 sourceFileName = sourceFileName,
+                sourceFiles = sourceFiles,
             )
         }
     }
@@ -79,6 +85,7 @@ internal object EcjDiagnosticSanitizer {
         privateFiles: Collection<File>,
         sourceFile: File?,
         sourceFileName: String?,
+        sourceFiles: Map<File, String>,
     ): SanitizedEcjDiagnostic {
         val parsedLine = LINE.find(raw)?.groupValues?.get(1)?.toIntOrNull()
             ?.takeIf { it in 1..MAX_SOURCE_POSITION }
@@ -101,7 +108,17 @@ internal object EcjDiagnosticSanitizer {
             JvmDiagnosticSeverity.WARNING -> "ECJ_WARNING"
             JvmDiagnosticSeverity.INFO -> "ECJ_INFO"
         }
-        val redacted = redact(raw, privateFiles, sourceFile, sourceFileName)
+        val logicalSources = linkedMapOf<File, String>().apply {
+            if (sourceFile != null && sourceFileName != null) put(sourceFile, sourceFileName)
+            putAll(sourceFiles)
+        }
+        val locatedSourceName = logicalSources.entries
+            .filter { (file, logicalName) ->
+                isSafeSourceFileName(logicalName) && pathVariants(file).any(raw::contains)
+            }
+            .maxByOrNull { (file, _) -> pathVariants(file).maxOfOrNull(String::length) ?: 0 }
+            ?.value
+        val redacted = redact(raw, privateFiles, logicalSources)
         val message = if (SENSITIVE_METADATA.containsMatchIn(redacted)) {
             // A label surviving the line-tail pass means its value could not be bounded safely.
             fallback(severity)
@@ -114,6 +131,7 @@ internal object EcjDiagnosticSanitizer {
             severity = severity,
             code = code,
             message = message,
+            sourceFileName = locatedSourceName,
             line = line,
             column = column,
         )
@@ -137,12 +155,11 @@ internal object EcjDiagnosticSanitizer {
     private fun redact(
         raw: String,
         privateFiles: Collection<File>,
-        sourceFile: File?,
-        sourceFileName: String?,
+        sourceFiles: Map<File, String>,
     ): String {
         val replacements = LinkedHashMap<String, String>()
-        val logicalName = sourceFileName?.takeIf(::isSafeSourceFileName)
-        if (sourceFile != null && logicalName != null) {
+        sourceFiles.forEach { (sourceFile, sourceFileName) ->
+            val logicalName = sourceFileName.takeIf(::isSafeSourceFileName) ?: return@forEach
             pathVariants(sourceFile).forEach { replacements[it] = logicalName }
         }
         privateFiles.forEach { file ->
@@ -171,10 +188,10 @@ internal object EcjDiagnosticSanitizer {
         runCatching { file.canonicalPath }.getOrNull()?.let(::add)
     }.filter { it.length > 1 }.toSet()
 
-    private fun isSafeSourceFileName(value: String): Boolean = value.isNotBlank() &&
-        value.length <= JvmSourceContract.MAX_SOURCE_FILE_NAME_BYTES &&
-        value !in setOf(".", "..") &&
-        '/' !in value && '\\' !in value && '\u0000' !in value
+    private fun isSafeSourceFileName(value: String): Boolean =
+        value.isNotBlank() && value.length <= JvmSourceContract.MAX_SOURCE_FILE_NAME_BYTES &&
+            (value !in setOf(".", "..") && '/' !in value && '\\' !in value && '\u0000' !in value ||
+                runCatching { JvmSourcePackagePathPolicy.requireSourcePath(value) }.isSuccess)
 
     private fun limitCodePoints(value: String, maximum: Int): String {
         val count = value.codePointCount(0, value.length)

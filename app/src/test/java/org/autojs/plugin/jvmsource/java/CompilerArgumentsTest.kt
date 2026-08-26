@@ -56,6 +56,33 @@ class CompilerArgumentsTest {
     }
 
     @Test
+    fun ecjKeepsEveryCanonicalPackageSourceAsOneOrderedArgument() {
+        val root = temporaryFolder.newFolder("multi-source-arguments")
+        val identity = JvmSha256.digest(byteArrayOf(7))
+        val androidJar = root.resolve("android.jar")
+        val entryApiJar = root.resolve("entry-api.jar")
+        val coreLibraryStubsJar = root.resolve("core-library-stubs.jar")
+        val classpath = CompilerClasspath(
+            androidJar = androidJar,
+            entryApiJar = entryApiJar,
+            coreLibraryStubsJar = coreLibraryStubsJar,
+            d8JavaApiStubsJar = root.resolve("d8-java.jar"),
+            desugaredLibraryConfiguration = root.resolve("desugar.json"),
+            identities = emptyList(),
+            fingerprint = identity,
+        )
+        val helper = root.resolve("demo/Helper.java")
+        val main = root.resolve("demo/Main.java")
+        val output = root.resolve("classes")
+
+        val arguments = EcjJavaCompiler(classpath).arguments(listOf(helper, main), output)
+
+        assertEquals(listOf(helper.absolutePath, main.absolutePath), arguments.takeLast(2))
+        assertEquals(1, arguments.count { it == helper.absolutePath })
+        assertEquals(1, arguments.count { it == main.absolutePath })
+    }
+
+    @Test
     fun d8UsesOnlyControlledLibrariesAndKeepsEveryPathAsOneArgument() {
         val root = temporaryFolder.newFolder("d8 path with spaces")
         val androidJar = root.resolve("android --lib.jar")

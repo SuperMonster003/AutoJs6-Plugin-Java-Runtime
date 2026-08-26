@@ -190,6 +190,40 @@ class EcjDiagnosticSanitizerTest {
     }
 
     @Test
+    fun multiFileDiagnosticsRetainOnlyCanonicalLogicalSourcePaths() {
+        val workspace = temporaryFolder.newFolder("ecj-package-diagnostics")
+        val main = workspace.resolve("sources/demo/Main.java")
+        val helper = workspace.resolve("sources/demo/Helper.java")
+        val raw = """
+            1. ERROR in ${helper.absolutePath} (at line 3)
+                missingHelper();
+                ^^^^^^^^^^^^^
+            The method missingHelper() is undefined
+            ----------
+            2. ERROR in ${main.absolutePath} (at line 7)
+                missingMain();
+                ^^^^^^^^^^^
+            The method missingMain() is undefined
+        """.trimIndent()
+
+        val diagnostics = EcjDiagnosticSanitizer.sanitizeAll(
+            raw = raw,
+            succeeded = false,
+            byteLimit = 4_096,
+            privateFiles = listOf(workspace),
+            sourceFiles = linkedMapOf(
+                helper to "demo/Helper.java",
+                main to "demo/Main.java",
+            ),
+        )
+
+        assertEquals(listOf("demo/Helper.java", "demo/Main.java"), diagnostics.map { it.sourceFileName })
+        assertTrue(diagnostics[0].message.contains("demo/Helper.java"))
+        assertTrue(diagnostics[1].message.contains("demo/Main.java"))
+        diagnostics.forEach { assertFalse(it.message.contains(workspace.absolutePath)) }
+    }
+
+    @Test
     fun multiByteDiagnosticRemainsInsideRequestedUtf8Budget() {
         val diagnostic = requireNotNull(
             EcjDiagnosticSanitizer.sanitize(

@@ -3,6 +3,7 @@ package org.autojs.plugin.jvmsource.java
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -20,6 +21,24 @@ class PrivateSessionWorkspaceTest {
 
         assertTrue(workspace.closeAndVerifyRemoved())
         assertTrue(base.list().orEmpty().isEmpty())
+    }
+
+    @Test
+    fun reservesOnlyCanonicalSourcePackagePathsInsideThePrivateSourceDirectory() {
+        val base = temporaryFolder.newFolder("package-workspace")
+        PrivateSessionWorkspace.createUnder(base).use { workspace ->
+            val source = workspace.reservePackageSource("demo/helpers/Helper.java")
+
+            assertEquals("Helper.java", source.name)
+            assertEquals("helpers", source.parentFile?.name)
+            assertTrue(source.canonicalPath.startsWith(workspace.sourceDirectory.canonicalPath + java.io.File.separator))
+            assertThrows(IllegalArgumentException::class.java) {
+                workspace.reservePackageSource("../Escape.java")
+            }
+            assertThrows(IllegalArgumentException::class.java) {
+                workspace.reservePackageSource("demo\\Escape.java")
+            }
+        }
     }
 
     @Test

@@ -5,7 +5,7 @@ import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.security.MessageDigest
 
-internal const val JAVA_COMPILATION_CACHE_IMPLEMENTATION_REVISION = "r4-cache-v3"
+internal const val JAVA_COMPILATION_CACHE_IMPLEMENTATION_REVISION = "r5-cache-v4"
 
 internal data class CompilationArtifactProvenance(
     val rawSourceSha256: JvmSha256,
@@ -41,6 +41,9 @@ internal data class CompilationArtifactProvenance(
     val supportedAbis: List<String>,
     val vmArchitecture: String,
     val providerImplementationRevision: String = JAVA_COMPILATION_CACHE_IMPLEMENTATION_REVISION,
+    val sourcePayloadKind: String = "single-file",
+    val sourceFileCount: Int = 1,
+    val sourceContentBytes: Long = 0L,
 )
 
 internal data class CompilationArtifactCacheKey(val sha256: JvmSha256) {
@@ -72,8 +75,8 @@ internal enum class CompilationCacheKeyValueType(val wireTag: Int) {
  */
 internal object CompilationArtifactCacheKeyCanonicalCodec {
     internal const val MAGIC = 0x414a434b // AJCK
-    internal const val SCHEMA_VERSION = 2
-    private const val DOMAIN = "org.autojs.jvm-source.java-compilation-cache-key.v2"
+    internal const val SCHEMA_VERSION = 3
+    private const val DOMAIN = "org.autojs.jvm-source.java-compilation-cache-key.v3"
 
     fun encode(value: CompilationArtifactProvenance): ByteArray {
         val bytes = ByteArrayOutputStream()
@@ -110,6 +113,9 @@ internal object CompilationArtifactCacheKeyCanonicalCodec {
             string("domain", DOMAIN)
             sha256("rawSourceSha256", value.rawSourceSha256)
             sha256("normalizedSourceSha256", value.normalizedSourceSha256)
+            string("sourcePayloadKind", value.sourcePayloadKind)
+            int32("sourceFileCount", value.sourceFileCount)
+            int64("sourceContentBytes", value.sourceContentBytes)
             string("sourceCharsetPolicy", value.sourceCharsetPolicy)
             string("sourceNormalizationPolicy", value.sourceNormalizationPolicy)
             string("sourceFileName", value.sourceFileName)

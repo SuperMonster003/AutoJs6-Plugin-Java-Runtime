@@ -29,6 +29,7 @@ import org.autojs.plugin.jvmsource.api.JvmSourceErrorCode
 import org.autojs.plugin.jvmsource.api.JvmSourceFailurePhase
 import org.autojs.plugin.jvmsource.api.JvmSourceLanguage
 import org.autojs.plugin.jvmsource.api.JvmSourceObservation
+import org.autojs.plugin.jvmsource.api.JvmSourcePayloadKind
 import org.autojs.plugin.jvmsource.api.JvmSourceRequest
 import org.autojs.plugin.jvmsource.api.JvmSourceResult
 import org.autojs.plugin.jvmsource.api.JvmSourceStarted
@@ -60,6 +61,7 @@ import org.autojs.plugin.jvmsource.java.JavaProviderObservedProcess
 import org.autojs.plugin.jvmsource.java.JavaProviderResourceProbe
 import org.autojs.plugin.jvmsource.java.JavaProviderRuntime
 import org.autojs.plugin.jvmsource.java.JavaRuntimeDiagnosticPolicy
+import org.autojs.plugin.jvmsource.java.JavaSourcePackageArchivePolicy
 import org.autojs.plugin.jvmsource.java.JavaSourcePolicy
 import org.autojs.plugin.jvmsource.java.PrivateSessionWorkspace
 import org.autojs.plugin.jvmsource.java.ProviderInstalledIdentityDecision
@@ -236,10 +238,10 @@ internal class RemoteJavaSourceSession(
 
             val privateWorkspace = PrivateSessionWorkspace.create(context, request.sourceFileName)
                 .also { workspace = it }
-            val normalizedSourceSha256 = copyAndValidateSource(privateWorkspace)
+            val preparedSources = copyAndValidateSource(privateWorkspace)
             ensureActive()
 
-            val cacheKey = compilationCacheKey(normalizedSourceSha256)
+            val cacheKey = compilationCacheKey(preparedSources.normalizedSourceSha256)
             val compilationCache = environment.compilationCache
             val cacheLane = environment.compilationCacheOperationLane
             var cachePublishEligible = false
@@ -352,7 +354,7 @@ internal class RemoteJavaSourceSession(
             val compileStartedAt = SystemClock.elapsedRealtime()
             val ecj = try {
                 EcjJavaCompiler(environment.compilerClasspath).compile(
-                    sourceFile = privateWorkspace.sourceFile,
+                    sourceFiles = preparedSources.sourceFiles.map(PreparedJavaSource::file),
                     outputDirectory = privateWorkspace.classesDirectory,
                     diagnosticByteLimit = request.diagnosticByteLimit,
                     ensureActive = ::ensureActive,
@@ -363,7 +365,7 @@ internal class RemoteJavaSourceSession(
                     elapsedSince(compileStartedAt),
                 )
             }
-            emitCompilerDiagnostics(ecj.diagnostics, ecj.succeeded, privateWorkspace)
+            emitCompilerDiagnostics(ecj.diagnostics, ecj.succeeded, privateWorkspace, preparedSources)
             if (!ecj.succeeded) {
                 throw JavaProviderFailure(
                     JvmSourceErrorCode.COMPILATION_FAILED,
@@ -458,7 +460,7 @@ internal class RemoteJavaSourceSession(
         }
     }
 
-    private fun copyAndValidateSource(privateWorkspace: PrivateSessionWorkspace): JvmSha256 {
+    private fun copyAndValidateSource(privateWorkspace: PrivateSessionWorkspace): PreparedJavaSources {
         val bytes = ByteArrayOutputStream(request.sourceSizeBytes.toInt())
         var total = 0L
         try {
@@ -499,17 +501,41 @@ internal class RemoteJavaSourceSession(
                 "Source framing or SHA-256 differs from request metadata",
             )
         }
-        val source = JavaSourcePolicy.decodeAndValidate(
-            bytes = sourceBytes,
-            sourceFileName = request.sourceFileName,
-            entryClassName = request.entryClassName,
-        )
-        val normalizedBytes = source.toByteArray(Charsets.UTF_8)
-        FileOutputStream(privateWorkspace.sourceFile).use { output ->
-            output.write(normalizedBytes)
-            output.fd.sync()
+        return when (request.sourcePayloadKind) {
+            JvmSourcePayloadKind.SINGLE_FILE -> {
+                val source = JavaSourcePolicy.decodeAndValidate(
+                    bytes = sourceBytes,
+                    sourceFileName = request.sourceFileName,
+                    entryClassName = request.entryClassName,
+                )
+                val normalizedBytes = source.toByteArray(Charsets.UTF_8)
+                FileOutputStream(privateWorkspace.sourceFile).use { output ->
+                    output.write(normalizedBytes)
+                    output.fd.sync()
+                }
+                PreparedJavaSources(
+                    sourceFiles = listOf(PreparedJavaSource(request.sourceFileName, privateWorkspace.sourceFile)),
+                    normalizedSourceSha256 = JvmSha256.digest(normalizedBytes),
+                )
+            }
+            JvmSourcePayloadKind.SOURCE_ARCHIVE -> {
+                val validated = JavaSourcePackageArchivePolicy.validate(sourceBytes, request)
+                val materialized = validated.sources.map { source ->
+                    ensureActive()
+                    val file = privateWorkspace.reservePackageSource(source.sourcePath)
+                    FileOutputStream(file).use { output ->
+                        output.write(source.normalizedBytes)
+                        output.fd.sync()
+                    }
+                    PreparedJavaSource(source.sourcePath, file)
+                }
+                require(materialized.any { it.sourcePath == validated.entrySourcePath })
+                PreparedJavaSources(
+                    sourceFiles = materialized,
+                    normalizedSourceSha256 = validated.normalizedPackageSha256,
+                )
+            }
         }
-        return JvmSha256.digest(normalizedBytes)
     }
 
     private fun compilationCacheKey(normalizedSourceSha256: JvmSha256): CompilationArtifactCacheKey {
@@ -521,6 +547,9 @@ internal class RemoteJavaSourceSession(
                 sourceCharsetPolicy = JavaSourcePolicy.CACHE_CHARSET_POLICY,
                 sourceNormalizationPolicy = JavaSourcePolicy.CACHE_NORMALIZATION_POLICY,
                 sourceFileName = request.sourceFileName,
+                sourcePayloadKind = request.sourcePayloadKind.wireName,
+                sourceFileCount = request.sourceFileCount,
+                sourceContentBytes = request.sourceContentBytes,
                 entryClassName = request.entryClassName,
                 language = request.language.wireName,
                 protocolMajor = request.protocolVersion.major,
@@ -556,6 +585,7 @@ internal class RemoteJavaSourceSession(
         raw: String,
         succeeded: Boolean,
         privateWorkspace: PrivateSessionWorkspace,
+        preparedSources: PreparedJavaSources,
     ) {
         val sanitized = EcjDiagnosticSanitizer.sanitizeAll(
             raw = raw,
@@ -565,10 +595,10 @@ internal class RemoteJavaSourceSession(
                 privateWorkspace.classesDirectory,
                 privateWorkspace.programJar,
                 privateWorkspace.d8OutputDirectory,
+                privateWorkspace.sourceDirectory,
                 *environment.compilerClasspath.installedFiles.toTypedArray(),
             ),
-            sourceFile = privateWorkspace.sourceFile,
-            sourceFileName = request.sourceFileName,
+            sourceFiles = preparedSources.sourceFiles.associate { it.file to it.sourcePath },
         )
         emitDiagnostics(
             sanitized.map { value ->
@@ -577,7 +607,7 @@ internal class RemoteJavaSourceSession(
                     severity = value.severity,
                     code = value.code,
                     message = value.message,
-                    sourceFileName = request.sourceFileName,
+                    sourceFileName = value.sourceFileName ?: request.sourceFileName,
                     line = value.line,
                     column = value.column,
                 )
@@ -1438,6 +1468,16 @@ internal class RemoteJavaSourceSession(
         val compilationElapsedMillis: Long,
         val cacheKey: CompilationArtifactCacheKey,
         val publishOnSuccess: Boolean,
+    )
+
+    private data class PreparedJavaSource(
+        val sourcePath: String,
+        val file: java.io.File,
+    )
+
+    private data class PreparedJavaSources(
+        val sourceFiles: List<PreparedJavaSource>,
+        val normalizedSourceSha256: JvmSha256,
     )
 
     private data class IdentityCheckedCacheLookup(
