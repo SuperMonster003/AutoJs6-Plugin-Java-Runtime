@@ -1,6 +1,6 @@
 # AutoJs6 Java Runtime Plugin
 
-Independent Java single-file compiler/runtime provider for AutoJs6.
+Independent Java single-file and bounded multi-file compiler/runtime provider for AutoJs6.
 
 The plugin exposes `org.autojs.plugin.JVM_SOURCE`, compiles Java 8 source with the pinned ECJ 3.26.0,
 converts verified class output with D8 8.13.17, and executes the resulting DEX in a disposable worker
@@ -10,14 +10,15 @@ process. The compiler and worker never run inside the AutoJs6 process.
 
 - Application ID: `io.github.supermonster003.autojs6.plugin.java.runtime`
 - Minimum Android API: 24
-- Required AutoJs6 version code: 5280
-- JVM source protocol: 1.5
+- Required AutoJs6 version code: 5281
+- JVM source protocol: 1.6
 - Entry API: 4 (`AutoJsJvmEntry.run(JvmScriptContext)`; `context.args()` added)
-- Current source shape: one `.java` file, entry simple name `Main`, optional package/imports
+- Current source shape: one `.java` file or a canonical 2–32-file Java package; entry simple name `Main`
 
 ## 中文使用说明
 
-当前版本接受严格 UTF-8 的单文件 Java 8 源码，入口简单名固定为 <code>Main</code>，并通过
+当前版本接受严格 UTF-8 的单文件 Java 8 源码，或含 2–32 个 compilation unit 的有界规范源码包；入口
+简单名固定为 <code>Main</code>。脚本通过
 <code>JvmScriptContext</code> 提供只读脚本参数、启动应用、剪贴板读写、stdout/stderr、可取消休眠和 toast 能力。返回值只接受
 有界 JSON profile；源码、输出、诊断、返回值和会话时间均有硬上限。完整的方法说明、类型表、限额与
 错误码见 [Java Context API 与运行边界](docs/context-api.zh-CN.md)。
@@ -56,6 +57,11 @@ Protocol 1.5 保持 Entry API 4，并在成功、错误或取消终态的资源�
 编译/执行/清理耗时、当次缓存结果、冷暖启动和最多六个 identity-free 数值资源样本。Host 会独立验证并
 输出固定摘要；Release 路径不依赖 Debug 私有 JSONL，也不会导出累计缓存计数。Wire 上限、隐私边界、
 MISS/HIT 生产证据见 [M9-4 观测数据协议化](docs/observation-protocol-m9-4.zh-CN.md)。
+Protocol 1.6 保持单 source FD 与 Entry API 4，并允许该 FD 承载确定性、STORED-only 的多文件 Java
+源码归档。Host 与 Provider 独立验证 manifest、ASCII 相对路径、文件数/总量、CRC/SHA、package/path
+一致性和零链接属性；路径穿越、重复项、压缩/ZIP64 与符号链接全部 fail closed。完整 wire、归档 profile、
+缓存迁移与 API 25 production Binder 证据见
+[M9-5 多文件源码包](docs/multifile-source-package-m9-5.zh-CN.md)。
 
 ## Source example
 
@@ -102,6 +108,12 @@ negotiated terminal after compiler/worker cleanup. AutoJs6 independently validat
 phase timings, the per-request cache outcome, start profiles, and up to six identity-free resource
 samples; cumulative cache telemetry remains confined to the debug-only private exporter.
 
+Protocol 1.6 keeps the single source FD and Entry API 4 while allowing that FD to carry one
+deterministic, STORED-only Java source archive. AutoJs6 and the provider independently validate its
+manifest, canonical relative paths, count/byte claims, hashes, package layout, and no-link metadata
+before the provider materializes any source path. Source packages contain 2–32 `.java` files and
+still select a `Main` entry; single-file requests remain supported.
+
 More samples cover script arguments, controlled `java.time`/enhanced Stream desugaring,
 cancellation, every supported return-value family, sanitized compiler/runtime errors, and result-size
 rejection. Their expected output and current API 24/API 28 device evidence are recorded in the
@@ -109,10 +121,10 @@ rejection. Their expected output and current API 24/API 28 device evidence are r
 
 ## Versioning
 
-`VERSION_NAME` follows SemVer with an optional milestone suffix (currently `0.7.0-m9`), while
+`VERSION_NAME` follows SemVer with an optional milestone suffix (currently `0.8.0-m9`), while
 `VERSION_BUILD` is a positive, monotonically increasing Android package version. Release metadata
-declares engine `jvm-source`, provider ID `ecj-java`, variant `java-ecj-d8`, Protocol 1.5, and
-required host version code 5280 for schema-v2 official-index generation.
+declares engine `jvm-source`, provider ID `ecj-java`, variant `java-ecj-d8`, Protocol 1.6, and
+required host version code 5281 for schema-v2 official-index generation.
 
 ## Local build
 

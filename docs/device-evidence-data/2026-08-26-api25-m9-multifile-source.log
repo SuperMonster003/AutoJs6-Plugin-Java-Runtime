@@ -1,0 +1,42 @@
+M9-5 production Binder multi-file source-package evidence
+date=2026-08-26 timezone=Asia/Shanghai
+device_serial=emulator-5556
+device_model=Android SDK built for x86
+device_api=25
+device_abi=x86
+device_fingerprint=google/sdk_google_phone_x86/generic_x86:7.1.1/NYC/6695155:userdebug/test-keys
+pre_install_packages=org.autojs.autojs6 absent; org.autojs.autojs6.test absent; io.github.supermonster003.autojs6.plugin.java.runtime absent
+host_apk=autojs6-v6.8.0-x86.apk bytes=42491124 sha256=8927933a4997c100b35e0090da5095b4db10706ad916cebb83cb0d6474cfa62c versionCode=5281 versionName=6.8.0
+host_android_test_apk=app-app-debug-androidTest.apk bytes=1608928 sha256=575c950d6bdb3d78617a548199c9e29068ca63c18e23c05324c19b51f3ced129
+provider_apk=app-release.apk bytes=27118578 sha256=3f22ed5d8634613d116426863b8ac6713474b6cb3a90dd3e51dc7590c227500c versionCode=8 versionName=0.8.0-m9
+selector=org.autojs.autojs.core.plugin.jvm.JvmSourceR1EndToEndInstrumentationTest#explicitMultiFileJavaPackageRunsThroughPinnedProductionProvider
+
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+org.autojs.autojs.core.plugin.jvm.JvmSourceR1EndToEndInstrumentationTest:
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: test=explicitMultiFileJavaPackageRunsThroughPinnedProductionProvider
+INSTRUMENTATION_STATUS: class=org.autojs.autojs.core.plugin.jvm.JvmSourceR1EndToEndInstrumentationTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: JVM_SOURCE_M9_PACKAGE_EVIDENCE={"schemaVersion":1,"phase":"M9-5","recordType":"production-provider-multi-file-source-package","protocolVersion":"1.6","entryApiVersion":4,"hostVersionCode":5281,"providerComponent":"io.github.supermonster003.autojs6.plugin.java.runtime\/org.autojs.plugin.jvmsource.java.service.JavaSourceCompilerService","providerVersionName":"0.8.0-m9","providerVersionCode":8,"sourcePayloadKind":"source-archive","sourceFileCount":2,"sourceContentBytes":308,"sourceArchiveBytes":834,"sourceArchiveSha256":"b092040fa865bab9fc2e0ef75bd4ebb64fe92f7ce600d01190bcdea32d409da3","requestSha256":"7094da1921b0ff80230cd40085586c2654df06cc033003cf6963e79d6bb91517","resultJson":"42","resultSha256":"73475cb40a568e8da8a045ced110137e159f890ac4da883b6b17dc651b3a8049","hostPid":11628,"compilerPid":11662,"workerPid":11757,"deviceApi":25}
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: test=explicitMultiFileJavaPackageRunsThroughPinnedProductionProvider
+INSTRUMENTATION_STATUS: class=org.autojs.autojs.core.plugin.jvm.JvmSourceR1EndToEndInstrumentationTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 1.543
+
+OK (1 test)
+
+INSTRUMENTATION_CODE: -1
+
+cleanup_uninstall_org.autojs.autojs6.test=Success
+cleanup_uninstall_io.github.supermonster003.autojs6.plugin.java.runtime=Success
+cleanup_uninstall_org.autojs.autojs6=Success
+post_cleanup_package_query=empty

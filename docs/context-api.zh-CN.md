@@ -1,7 +1,7 @@
 # Java Context API 与运行边界
 
-本文适用于 AutoJs6 Java Runtime Plugin <code>0.7.0-m9</code>、JVM Source Protocol
-<code>1.5</code>、Entry API <code>4</code>，描述当前 Java 能力 profile 与 R4 DEX 工件 profile
+本文适用于 AutoJs6 Java Runtime Plugin <code>0.8.0-m9</code>、JVM Source Protocol
+<code>1.6</code>、Entry API <code>4</code>，描述当前 Java 能力 profile 与 R4 DEX 工件 profile
 的用户可见行为。
 协议升级或后续 profile 可能扩展这些能力，但不会放宽当前请求已经协商出的边界。
 
@@ -33,9 +33,12 @@ public final class Main implements AutoJsJvmEntry {
 
 当前 profile 对源码有以下硬性约束：
 
-- 一次请求只接受一个 Java 源文件。一个文件内可以声明辅助类和内部类，但不能提交多文件源码包。
-- 入口类的简单名固定为 <code>Main</code>。宿主侧脚本文件名可以任意；传入编译器的逻辑编译单元名必须与入口简单名一致，即 <code>Main.java</code>。
-- 可以省略 <code>package</code>，也可以使用合法包名。使用包名时，入口仍是该包中的 <code>Main</code>。
+- 一次请求可以接受一个 Java 源文件，或一个含 2–32 个非空 <code>.java</code> compilation unit 的规范源码包。
+- 入口类的简单名固定为 <code>Main</code>。单文件的宿主脚本文件名可以任意，逻辑编译单元名为
+  <code>Main.java</code>；源码包调用方同时提供 source root 与其中的入口 <code>Main.java</code>。
+- 可以省略 <code>package</code>，也可以使用合法包名。源码包内每个 ASCII 相对路径必须精确对应该文件的
+  <code>package</code> 与简单名，例如 <code>demo/Helper.java</code> 必须声明 <code>package demo;</code>。
+  绝对路径、路径穿越、反斜杠、大小写折叠冲突、空目录、非 Java 文件和符号链接都拒绝。
 - <code>Main</code> 必须是 public、非 abstract、非 interface，必须实现 <code>AutoJsJvmEntry</code>，并具有 public 无参构造器。
 - 编译结果中必须恰好有一个具体类实现 <code>AutoJsJvmEntry</code>；存在第二个具体实现时会以入口歧义拒绝。
 - 入口签名为 <code>public Object run(JvmScriptContext context) throws Exception</code>。可以省略 <code>throws Exception</code>，也可以使用协变返回类型。
@@ -47,10 +50,13 @@ public final class Main implements AutoJsJvmEntry {
   lambda 整体开放 API 26 的 invoke 表面，以免制造可编译但 API 24 运行时缺类的新漏洞。
 - 输入必须是严格 UTF-8；仅允许文件开头存在一个 UTF-8 BOM，插件会在编译前移除它。畸形 UTF-8 和 NUL 字符会被拒绝。
 - 源码任何位置都禁止 Java Unicode escape 形式 <code>&#92;uXXXX</code>，包括注释、字符串和字符字面量。这避免词法检查结果被 Java 编译器的 Unicode 预处理重新解释。
+- 单文件和源码包的全部 Java 内容上限同为 4 MiB；源码包使用一个 STORED-only 规范归档承载，归档自身
+  最多 4 MiB + 64 KiB。manifest、路径、文件数/总量、CRC 与 SHA 会由 Host 和 Provider 独立验证，
+  详细格式与拒绝矩阵见 [M9-5 多文件源码包](multifile-source-package-m9-5.zh-CN.md)。
 - 当前 R4 D8 profile 接受 1 至 4 个严格连续命名的工件：<code>classes.dex</code>、
   <code>classes2.dex</code>、<code>classes3.dex</code>、<code>classes4.dex</code>。不允许缺号、别名、重排或
   第 5 个 DEX；所有 DEX 的总量仍受同一个 32 MiB 上限约束。该集合只在 provider 的编译器与隔离
-  worker 之间传递，不改变宿主侧单源码请求形态。
+  worker 之间传递，不改变宿主侧单 FD 源码传输形态。
 - Android API 26 的公开 <code>InMemoryDexClassLoader</code> 只有单 buffer 构造器，因此该版本继续只接受
   一个 <code>classes.dex</code>；API 24/25 和 API 27+ 才能安全共享 2 至 4 个 DEX 的同一 class namespace。
 
@@ -187,7 +193,8 @@ return result;
 
 | 项目 | 默认值 / 上限 | 超限结果 |
 |---|---:|---|
-| Java 源码 | 上限 4 MiB（4,194,304 bytes） | <code>SOURCE_TOO_LARGE</code> |
+| Java 源码内容 | 单文件或源码包合计上限 4 MiB（4,194,304 bytes） | <code>SOURCE_TOO_LARGE</code> / <code>INVALID_REQUEST</code> |
+| 源码包 | 2–32 个文件；单 FD 规范归档上限 4 MiB + 64 KiB（4,259,840 bytes） | <code>SOURCE_TOO_LARGE</code> / <code>ARTIFACT_INVALID</code> |
 | stdout | 上限 1 MiB（1,048,576 bytes） | <code>OUTPUT_LIMIT_EXCEEDED</code> |
 | stderr | 上限 1 MiB（1,048,576 bytes） | <code>OUTPUT_LIMIT_EXCEEDED</code> |
 | 编译诊断总 wire 预算 | 上限 64 KiB（65,536 bytes） | 超出预算的诊断不再回传 |
@@ -209,7 +216,8 @@ return result;
 
 ## 终态观测
 
-Protocol 1.5 的成功、错误与取消终态都会在 compiler/worker 清理完成后携带同一类有界 observation。
+自 Protocol 1.5 起（当前为 1.6），成功、错误与取消终态都会在 compiler/worker 清理完成后携带同一类
+有界 observation。
 AutoJs6 控制台显示固定摘要，包括：
 
 - Provider session 总耗时和 worker 启动耗时；
@@ -223,7 +231,7 @@ AutoJs6 控制台显示固定摘要，包括：
 
 协议对象不能表达源码、参数、诊断文本、异常、路径、package/component、签名、Binder identity、
 UID 或 PID。用于终态绑定的 request ID 在 Host 公开投影前删除；Debug 私有 JSONL 的累计 cache 计数也
-不会进入 Protocol 1.5。完整字段表、数值上限与 Release MISS/HIT 证据见
+不会进入终态 observation。完整字段表、数值上限与 Release MISS/HIT 证据见
 [M9-4 观测数据协议化](observation-protocol-m9-4.zh-CN.md)。
 
 ## 错误码语义
@@ -236,7 +244,7 @@ UID 或 PID。用于终态绑定的 request ID 在 Host 公开投影前删除；
 | <code>INVALID_REQUEST</code> | 元数据、UTF-8、源码布局、包名、能力或其他请求字段不属于当前 Java R1 profile。 |
 | <code>UNSUPPORTED_PROTOCOL</code> | 宿主请求的 Protocol 版本与 provider 支持范围不相交。 |
 | <code>UNSUPPORTED_LANGUAGE</code> | 请求语言不是当前 provider 广告的 Java。 |
-| <code>SOURCE_TOO_LARGE</code> | 源码流超过声明大小或 4 MiB 硬上限。 |
+| <code>SOURCE_TOO_LARGE</code> | 单文件源码内容超过 4 MiB，或源码包归档超过 4 MiB + 64 KiB 的硬上限。 |
 | <code>COMPILATION_FAILED</code> | ECJ 报错，或 class 输出数量、大小、格式不满足编译 profile。 |
 | <code>DEXING_FAILED</code> | D8 失败，或输出不满足连续命名、总量及当前设备文件数限制。 |
 | <code>EXECUTION_FAILED</code> | 入口构造器或 <code>run</code> 抛异常、返回值无法编码，或 Context 调用在 worker 中失败。 |
@@ -246,7 +254,7 @@ UID 或 PID。用于终态绑定的 request ID 在 Host 公开投影前删除；
 | <code>BUSY</code> | 已有一个活动会话；当前唯一明确可重试的错误。 |
 | <code>HOST_CALL_REJECTED</code> | host bridge 方法未授权、不在双侧白名单、payload 非法，或宿主拒绝执行。 |
 | <code>INTERNAL</code> | provider 内部故障，无法归入更具体且安全公开的类别。 |
-| <code>ARTIFACT_INVALID</code> | 源码 framing/SHA-256、JAR、DEX、缓存工件或受控编译类路径未通过完整性/结构校验。 |
+| <code>ARTIFACT_INVALID</code> | 源码 framing/SHA-256、源码包 ZIP/manifest/CRC/路径声明、JAR、DEX、缓存工件或受控编译类路径未通过完整性/结构校验。 |
 | <code>ENTRY_POINT_MISSING</code> | 未生成请求的 <code>Main</code>，或它没有实现 <code>AutoJsJvmEntry</code>。 |
 | <code>ENTRY_POINT_AMBIGUOUS</code> | 编译结果包含多个具体的 <code>AutoJsJvmEntry</code> 实现。 |
 | <code>ENTRY_POINT_ABI_INCOMPATIBLE</code> | 入口不是 public concrete class、缺少 public 无参构造器，或与 Entry API 不兼容。 |
@@ -267,7 +275,8 @@ UID 或 PID。用于终态绑定的 request ID 在 Host 公开投影前删除；
 
 - ECJ 诊断在回传前会限制总字节数和消息长度；私有绝对路径、摘要、uid/pid、Binder 引用和其他敏感元数据会按片段替换为 <code>&lt;redacted&gt;</code>，其余可操作的编译器原文会保留。
 - 一个源码包含多处 ECJ 问题时，provider 会按编译器顺序分别回传多条诊断；每条沿用 Protocol 1.4 引入的单诊断 frame，所有 frame 共用 64 KiB 总 wire 预算。
-- 编译错误包含可安全确认的源码文件名、行和列。诊断预算耗尽时，后续诊断可能不再出现。
+- 编译错误包含可安全确认的源码文件名或规范逻辑相对路径、行和列，例如
+  <code>demo/Helper.java:3</code>。诊断预算耗尽时，后续诊断可能不再出现。
 - Java 运行时异常回传通用的 <code>JAVA_RUNTIME_EXCEPTION</code>、安全源码位置与脱敏类名；
   <code>java.*</code>/<code>javax.*</code> 原样，其余精确归一为 <code>UserException</code>。异常 message、
   完整堆栈、绝对路径、provider/user package、UID/PID 均不回传；详见

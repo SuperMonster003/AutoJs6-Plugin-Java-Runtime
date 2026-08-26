@@ -25,6 +25,10 @@ with an optional milestone suffix; Android package builds are tracked separately
 - Added controlled user-code core library desugaring for API 26 `java.time` and supported enhanced
   Stream methods while retaining API 24 as the complete Android framework compilation boundary;
   the positive `java.time`/`Stream.toList()` sample and unsupported-method compile gate pass on API 24.
+- Added Protocol 1.6 bounded multi-file Java source packages over the existing single source FD:
+  2–32 canonical compilation units, deterministic manifest/STORED-only ZIP framing, Host and
+  Provider path/package revalidation, ordered ECJ compilation, safe logical-path diagnostics, and
+  API 25 production-Binder evidence returning `42` from a two-class package.
 
 ### Changed
 
@@ -46,6 +50,10 @@ with an optional milestone suffix; Android package builds are tracked separately
 - Changed compiler/runtime identity to bind the core-library compile stub, D8-only Java API 30 stub,
   and pinned desugar configuration; Release L8 output is complete and name-stable for dynamic user
   DEX, with build-time descriptor assertions for `LocalDate` and enhanced Stream dispatch.
+- Changed the JVM source protocol to 1.6 / tagged-wire schema 1.3, the minimum Host to version code
+  5281, and the Provider to `0.8.0-m9` / version code 8. Compilation-cache keys now use schema 3 and
+  `r5-cache-v4`, binding the raw archive, normalized file-set identity, payload kind, count, and
+  aggregate source bytes.
 
 ## [0.3.0-m5] - 2026-08-25
 

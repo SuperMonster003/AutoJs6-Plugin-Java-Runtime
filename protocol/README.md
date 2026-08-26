@@ -10,6 +10,7 @@ This independent plugin consumes three repository-local AAR snapshots:
 artifact. The Gradle `verifyPinnedInputs` task checks the complete file/module set, rejects symlinked
 artifacts, and verifies every digest before compilation or assembly.
 
-The current snapshot records `sourceDirty=false` and points to the host commit that finalized
-Protocol 1.4 and Entry API 4. Refresh all three AARs and their lock together whenever the host
-protocol source changes.
+The current snapshot records `sourceDirty=false` and points to host commit
+`1b79603bc7304ae44fe878b27ef01d2d77b2a963`, which finalized Protocol 1.6, tagged-wire schema 1.3,
+the canonical bounded multi-file source-package codec, and Entry API 4. Refresh all three AARs and
+their lock together whenever the host protocol source changes.

@@ -228,10 +228,20 @@
     Provider 的 production Binder 冷态 MISS 与暖态 HIT selector 各 1/1，设计、边界、工件摘要和原始
     marker 见 `docs/observation-protocol-m9-4.zh-CN.md`。
 
-- [ ] **M9-5 多文件源码包**
+- [x] **M9-5 多文件源码包**
   - 内容: 目前 `openSession` 单 source FD = 单 `.java` 文件。与宿主选型: 单 FD 承载有界 zip
     (清单 + 路径白名单 + 文件数/总量上限 + 禁符号链接) vs 多 FD 协议。沿用现有词法策略逐文件校验。
   - 验收: 多类工程样例端到端通过; 路径穿越/压缩炸弹/重复项用例全部被拒。
+  - 结果: 选择单 FD 承载 Protocol 1.6 / schema 1.3 的确定性 STORED-only 规范归档，2..32 个 Java
+    compilation unit、4 MiB 源码总量、4 MiB + 64 KiB 归档上限；manifest/路径/CRC/SHA/ZIP metadata
+    逐层交叉验证并以规范重编码字节恒等收口。Host 以 `lstat`/`O_NOFOLLOW` 冻结目录，Provider 在任何
+    源码路径落盘前整包重验，再向一次 ECJ batch compile 提交有序文件集；诊断保留安全逻辑相对路径，
+    cache key 升至 schema 3 / `r5-cache-v4`。AAR 锁指向 Host commit
+    `1b79603bc7304ae44fe878b27ef01d2d77b2a963`；Host shared/app 为 68/68、1,665 tests（3 skipped），
+    Provider Debug/Release 各 163/163，lint 与三类 APK 全绿。API 25 最终 Host + Release Provider 的
+    production Binder 两文件 selector 1/1 返回 `42` 且三进程 PID 分离；路径穿越、重复项、压缩/ZIP64、
+    symlink 与 package/path 不一致均有拒绝测试。设计、威胁边界、工件摘要和原始 marker 见
+    `docs/multifile-source-package-m9-5.zh-CN.md`。
 
 - [ ] **M9-6 超时上限提升评估** `[评估]`
   - 内容: `MAX_TIMEOUT_MILLIS=120s` 限制长任务。与宿主评估更高上限或续约 (keep-alive) 机制, 分析前台服务/ANR/功耗约束。
