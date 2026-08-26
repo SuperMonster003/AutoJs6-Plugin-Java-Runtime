@@ -310,10 +310,22 @@
     version code/name 与安全边界均未改变。上游差异、JAR/APK 摘要、设备指纹、异常设备归因、原始
     observation 和清理记录见 `docs/d8-upgrade-m10-2.zh-CN.md`。
 
-- [ ] **M10-3 Kotlin provider spike** `[评估]`
+- [x] **M10-3 Kotlin provider spike** `[评估]`
   - 内容: 协议已含 `KOTLIN`/`KOTLIN_JVM` 枚举但本插件仅广告 JAVA。评估嵌入式 kotlinc 的体积/内存可行性;
     大概率结论是"独立插件、复用本仓 worker/校验设施"。
   - 验收: go/no-go 与架构建议记录。
+  - 结果: **独立 Kotlin Provider go，嵌入 Java Provider no-go**。同目录 sibling
+    `AutoJs6-Plugin-Kotlin-Runtime` 已在独立 application/provider ID 下实现 patched K2 2.3.21→D8→ART、
+    compiler/worker 隔离、缓存与设备发布；对 clean commit `aa5b55f` 的强制离线重建通过 platform
+    55/55、app 153/153、compiler patch/runtime/protocol failure-path、双 Lint 与四类 APK，Release
+    31.86 MB。API 26 minimum pipeline 1/1；既有 API 31 production 证据含 50-session final 156.7 MiB
+    PSS、解绑后进程退休和 577 ms cold / 46 ms cache-hit 中位数。未退休跨 epoch 复用曾升至 1.893 GB，
+    证明 Kotlin 必须保留 binding-scoped compiler lifecycle。两仓 60 个同名 production 文件中只有
+    34 个包名归一化后逐字节相同，26 个 compiler/session/cache/loader 核心文件已分化；当前共享冻结
+    协议 AAR、golden vectors 与 conformance tests，不抽跨仓 production 模块。Kotlin release 仍为
+    Protocol 1.1 / Entry API 2、D8 8.13.17，且 JetBrains 当前稳定版已到 2.4.10；协议 1.6 对齐、Kotlin
+    2.4.10 与 D8 8.13.23 必须在 sibling 仓分别走独立升级门禁，不能继承 Java 结论。完整工件、PSS、
+    ART、代码复用边界、后续顺序与清理见 `docs/kotlin-provider-m10-3.zh-CN.md`。
 
 - [ ] **M10-4 远端仓库与 CI** `[网络]`
   - 内容: 仓库目前无 remote (纯本地, 2 个 commit)。确定托管方案; 鉴于网络易 524, CI 采用依赖预热缓存/自托管 runner,

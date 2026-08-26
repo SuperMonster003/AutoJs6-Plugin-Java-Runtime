@@ -8,6 +8,9 @@ with an optional milestone suffix; Android package builds are tracked separately
 
 ### Added
 
+- Added the M10-3 cross-repository Kotlin-provider decision: the existing independently versioned
+  Kotlin Runtime sibling is the supported architecture, while embedding its patched compiler,
+  controlled runtime, and compiler lifecycle into the Java Provider is explicitly rejected.
 - Added a debug-only, provider-private, bounded JSONL observation channel for five phase timings,
   worker startup, per-session cache outcomes, and compiler-process cache counters.
 - Added a reproducible API 24/API 36 production-Binder performance baseline, including raw

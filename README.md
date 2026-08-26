@@ -89,6 +89,14 @@ M10-2 将 Provider 运行时 D8/R8 从 8.13.17 升级至测试日 Google Maven �
 随 D8 版本自动失效，Debug/Release 全量门禁和 API 24/25/26/28/35 ART、API 24/28/35 多 DEX、API 36
 R2 只读发布矩阵全部通过。上游差异、工件摘要与原始证据见
 [M10-2 R8/D8 补丁位升级](docs/d8-upgrade-m10-2.zh-CN.md)。
+M10-3 确认 Kotlin/JVM 支持已经由同目录独立仓库
+[`AutoJs6-Plugin-Kotlin-Runtime`](https://github.com/SuperMonster003/AutoJs6-Plugin-Kotlin-Runtime)
+实现，不应把 patched kotlinc、stdlib/coroutines 与其 binding-scoped compiler 生命周期再并入 Java
+Provider。对 sibling `aa5b55f` 的干净离线重建通过 153/153 单测、双 Lint 与四类 APK，31.86 MB
+Release 低于 40 MB 预算；API 26 patched K2→D8→ART 1/1，既有 API 31 production/50-session 证据
+证明独立插件可行。两仓现在共享协议和 conformance 规范，不建立 production 运行依赖；完整体积、PSS、
+代码分化、Kotlin 2.4.10 后续门禁与协议收敛顺序见
+[M10-3 Kotlin Provider 架构评估](docs/kotlin-provider-m10-3.zh-CN.md)。
 
 ## Source example
 
