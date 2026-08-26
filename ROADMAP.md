@@ -154,14 +154,15 @@
     `docs/cache-persistence-m8-4.zh-CN.md`。
 
 - [x] **M8-5 任意入口类名 — 插件侧就绪** `[本仓]`
-  - 内容: 内部 `entryClassName` 已全链路参数化 (固定 `Main` 是宿主请求侧默认)。补齐非 `Main` 入口
+  - 内容: 内部 `entryClassName` 已全链路参数化（M8-5 交付时 Host 固定 `Main`；M9-7 后仅保留为兼容
+    默认）。补齐非 `Main` 入口
     (含包名组合) 的单测/仪器测试矩阵: `JavaSourcePolicy`、`UserClassJarWriter`、缓存 key、`EntryClassAnalyzer`。端到端放开在 M9-7。
   - 验收: 任意合法"简名+包名"矩阵测试全绿。
   - 结果: 插件侧就绪，生产实现无需修改。3 种非默认简名 (`ScriptEntry`/`_Entry9`/`$Entry`) ×
     3 种包布局 (默认包/常规深包/含 `_` 与 `$` 的边界包) 共 9 个组合，经真实 ECJ、入口 ABI 分析、
     JAR 路径/DEX descriptor 与缓存 key/物化重验全部通过；API 24 另以 3 个代表布局完成
-    ECJ→D8→`DexClassLoader`→ART 执行。宿主仍固定 `Main`，公开端到端放开留给 M9-7；详见
-    `docs/arbitrary-entry-class-m8-5.zh-CN.md`。
+    ECJ→D8→`DexClassLoader`→ART 执行。M8-5 当时的 Host 固定入口边界已由 M9-7 完成公开端到端
+    放开；插件侧先行证据见 `docs/arbitrary-entry-class-m8-5.zh-CN.md`。
 
 - [x] **M8-6 设备证据矩阵制度化** `[设备]`
   - 内容: 新建 `docs/device-evidence.md`: API 24/25 (`DexClassLoader` 路径)、26+ (`InMemoryDexClassLoader`)、
@@ -256,9 +257,16 @@
     `docs/timeout-limit-m9-6.zh-CN.md`。Provider Debug/Release 强制重跑各 163/163，pinned-input、Debug
     lint 与 Debug APK gate 全绿；因 no-go 且无运行时代码变化，不新增实验 APK 或设备结果。
 
-- [ ] **M9-7 任意入口类名端到端放开**
+- [x] **M9-7 任意入口类名端到端放开**
   - 内容: 宿主请求侧允许用户指定入口简名 (插件侧 M8-5 已就绪), README/文档同步移除 "`Main` 固定"表述。
   - 验收: 端到端非 `Main` 样例通过。
+  - 结果: Host 新增单文件/源码包显式入口 API，共享 ASCII identifier、`<Entry>.java <= 255 bytes`
+    与全限定名上限在 discovery/bind 前统一校验；旧 API 和 Kotlin 继续默认 `Main`，Protocol 仍为
+    `1.6` / schema `1.3` / Entry API `4`。Provider 新增 `demo.entries.ScriptEntry` 样例，API 25
+    Debug 样例矩阵 11/11；最终 Provider Release production Binder selector 返回
+    `"demo.entries.ScriptEntry"`，并观测到不同的 Host/compiler/worker PID。Host 69 + 1,670 项单测、
+    Provider Debug/Release 各 163 项单测、Lint、pinned-input 与双仓 APK/AAR 构建全绿；完整实现、制品
+    摘要、设备 marker 和清理记录见 `docs/arbitrary-entry-class-m9-7.zh-CN.md`。
 
 - [ ] **M9-8 会话并发模型评估** `[评估]`
   - 内容: `MAX_CONCURRENT_SESSIONS=1` 且第二会话立即 `BUSY`。评估宿主侧排队 vs 协议放开 >1 的语义

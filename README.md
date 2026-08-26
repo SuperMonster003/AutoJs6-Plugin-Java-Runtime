@@ -13,12 +13,12 @@ process. The compiler and worker never run inside the AutoJs6 process.
 - Required AutoJs6 version code: 5281
 - JVM source protocol: 1.6
 - Entry API: 4 (`AutoJsJvmEntry.run(JvmScriptContext)`; `context.args()` added)
-- Current source shape: one `.java` file or a canonical 2–32-file Java package; entry simple name `Main`
+- Current source shape: one `.java` file or a canonical 2–32-file Java package; caller-selected entry simple name (`Main` by default)
 
 ## 中文使用说明
 
-当前版本接受严格 UTF-8 的单文件 Java 8 源码，或含 2–32 个 compilation unit 的有界规范源码包；入口
-简单名固定为 <code>Main</code>。脚本通过
+当前版本接受严格 UTF-8 的单文件 Java 8 源码，或含 2–32 个 compilation unit 的有界规范源码包；Host
+调用方可以显式选择合法入口简名，既有入口继续默认使用 <code>Main</code>。脚本通过
 <code>JvmScriptContext</code> 提供只读脚本参数、启动应用、剪贴板读写、stdout/stderr、可取消休眠和 toast 能力。返回值只接受
 有界 JSON profile；源码、输出、诊断、返回值和会话时间均有硬上限。完整的方法说明、类型表、限额与
 错误码见 [Java Context API 与运行边界](docs/context-api.zh-CN.md)。
@@ -38,8 +38,10 @@ API 24，不支持的高版本方法会停在编译期。go 决策、精确 API 
 使用该 alias 而未通过安全 gate；最终继续使用 compiler 进程 epoch key。攻击证据、已回退原型数据和
 重新开启条件见 [M8-4 缓存持久化评估](docs/cache-persistence-m8-4.zh-CN.md)。
 provider 内部的入口类名全链路已通过非 `Main` 简名与包名矩阵，以及 API 24 的真实 ECJ→D8→ART
-验证；这不改变宿主当前固定 `Main` 的公开行为。测试边界与 M9-7 移交条件见
-[M8-5 任意入口类名插件侧证据](docs/arbitrary-entry-class-m8-5.zh-CN.md)。
+验证；M9-7 又在 Host 公开显式入口、共享校验、快照、请求、诊断和 production Binder 链路完成放开，
+同时保留 `Main` 默认。插件侧先行证据见
+[M8-5 任意入口类名插件侧证据](docs/arbitrary-entry-class-m8-5.zh-CN.md)，最终交付见
+[M9-7 任意入口类名端到端证据](docs/arbitrary-entry-class-m9-7.zh-CN.md)。
 M8 发布所需的 API 24/25 `DexClassLoader`、API 26+ `InMemoryDexClassLoader`、API 34/36 R2 只读
 发布时序，以及宿主↔provider Binder 分工和最近一次锁定记录，统一收录于
 [M8 设备证据矩阵](docs/device-evidence.md)。
@@ -66,12 +68,17 @@ M9-6 评估后继续保留 Host 30 秒正式总截止时间与 120 秒协议安�
 非前台 bound-service 链和进程心跳无法证明非可信计算仍有进展。若未来确需长任务，应以用户前台授权、
 会话专属前台服务、独立三层租约及不可续约绝对上限实现单独模式；约束与重开门槛见
 [M9-6 超时上限评估](docs/timeout-limit-m9-6.zh-CN.md)。
+M9-7 不增加 wire 字段或改变 Entry API；Host 通过
+<code>runJvmSourceWithEntryExplicit</code> / <code>runJvmSourcePackageWithEntryExplicit</code>
+接收入口简名，并在绑定 provider 前使用共享策略生成规范源码名与全限定入口。合法名称 profile、默认兼容、
+非 <code>Main</code> 样例与 production Binder 证据见
+[M9-7 任意入口类名端到端证据](docs/arbitrary-entry-class-m9-7.zh-CN.md)。
 
 ## Source example
 
 The ready-to-run [M5 capability sample](samples/m5-capabilities.java) demonstrates the complete first
-capability set. The file name may be arbitrary, but the entry simple name remains `Main` in
-Protocol 1:
+capability set. The physical file name may be arbitrary; this existing sample uses the backward-compatible
+`Main` default:
 
 ```java
 import org.autojs.plugin.jvmsource.api.AutoJsJvmEntry;
@@ -116,9 +123,14 @@ Protocol 1.6 keeps the single source FD and Entry API 4 while allowing that FD t
 deterministic, STORED-only Java source archive. AutoJs6 and the provider independently validate its
 manifest, canonical relative paths, count/byte claims, hashes, package layout, and no-link metadata
 before the provider materializes any source path. Source packages contain 2–32 `.java` files and
-still select a `Main` entry; single-file requests remain supported.
+select the caller-supplied entry; single-file requests remain supported.
 
-More samples cover script arguments, controlled `java.time`/enhanced Stream desugaring,
+M9-7 keeps Protocol 1.6 and Entry API 4. AutoJs6 callers can select an ASCII Java entry simple name;
+`Main` remains the default for existing launches. The
+[arbitrary-entry sample](samples/arbitrary-entry.java) deliberately uses a physical file name that differs
+from its public `demo.entries.ScriptEntry` class and must be launched through the explicit-entry Host API.
+
+More samples cover arbitrary entry selection, script arguments, controlled `java.time`/enhanced Stream desugaring,
 cancellation, every supported return-value family, sanitized compiler/runtime errors, and result-size
 rejection. Their expected output and current API 24/API 28 device evidence are recorded in the
 [sample guide](samples/README.zh-CN.md).

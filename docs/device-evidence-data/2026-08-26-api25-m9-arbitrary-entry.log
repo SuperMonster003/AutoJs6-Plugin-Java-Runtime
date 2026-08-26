@@ -1,0 +1,58 @@
+M9-7 arbitrary Java entry production Binder evidence
+date=2026-08-26 timezone=Asia/Shanghai
+device_serial=emulator-5556
+device_model=Android SDK built for x86
+device_api=25
+device_abi=x86
+device_fingerprint=google/sdk_google_phone_x86/generic_x86:7.1.1/NYC/6695155:userdebug/test-keys
+pre_install_packages=org.autojs.autojs6 absent; org.autojs.autojs6.test absent; io.github.supermonster003.autojs6.plugin.java.runtime absent; io.github.supermonster003.autojs6.plugin.java.runtime.test absent
+host_source_revision=5c3f6f38e1fd1595b4ca576c6647854ec0204ae0
+provider_implementation_revision=937b70669c5472395e5c109dab71f0b6a2ed8dba
+host_apk=autojs6-v6.8.0-x86.apk bytes=43161236 sha256=e3fc0513c4e23e96ee2d072c497bbb72a9d4d6424b91a530b7f1bd5217f22988 versionCode=5281 versionName=6.8.0
+host_android_test_apk=app-app-debug-androidTest.apk bytes=1610360 sha256=2103acda032d5967d2749750012766510a512f07111dc87b724568d6994e111b
+provider_debug_apk=app-debug.apk bytes=33744498 sha256=3de1b614fd585941c0e993f9f7f901a271e24980c7a20c567c4bc9b643c13aca
+provider_release_apk=app-release.apk bytes=27119262 sha256=d2453cc79faa4dbd0e9dced71c3fe2ba482a093006a64a6f125da27249ea3567 versionCode=8 versionName=0.8.0-m9 pkgFlags=HAS_CODE,ALLOW_CLEAR_USER_DATA (DEBUGGABLE absent)
+provider_android_test_apk=app-debug-androidTest.apk bytes=1027641 sha256=2b59c9d12be07e5a53145e33abdfc1f10f8ad7343b0465d8313b22beeb2a887d
+sample=samples/arbitrary-entry.java bytes=311 sha256=7b95fcbd31aff3ef225cf21350b135ad9490d54a27f40badaa8b4801de3fcefa
+
+provider_debug_sample_suite=org.autojs.plugin.jvmsource.java.JavaSampleLibraryInstrumentedTest
+provider_debug_sample_tests=11
+provider_debug_sample_time_seconds=6.11
+provider_debug_sample_result=OK (11 tests)
+provider_debug_arbitrary_entry_test=arbitraryEntrySampleUsesItsSelectedQualifiedClassThroughArt passed
+provider_debug_arbitrary_entry_layout=sourceFileName ScriptEntry.java; entryClassName demo.entries.ScriptEntry
+
+production_provider_variant=release
+production_provider_debuggable=false
+selector=org.autojs.autojs.core.plugin.jvm.JvmSourceR1EndToEndInstrumentationTest#explicitNonMainJavaEntryRunsThroughPinnedProductionProvider
+
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+org.autojs.autojs.core.plugin.jvm.JvmSourceR1EndToEndInstrumentationTest:
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: test=explicitNonMainJavaEntryRunsThroughPinnedProductionProvider
+INSTRUMENTATION_STATUS: class=org.autojs.autojs.core.plugin.jvm.JvmSourceR1EndToEndInstrumentationTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: JVM_SOURCE_M9_ENTRY_EVIDENCE={"schemaVersion":1,"phase":"M9-7","recordType":"production-provider-arbitrary-entry","protocolVersion":"1.6","entryApiVersion":4,"hostVersionCode":5281,"providerComponent":"io.github.supermonster003.autojs6.plugin.java.runtime\/org.autojs.plugin.jvmsource.java.service.JavaSourceCompilerService","providerVersionName":"0.8.0-m9","providerVersionCode":8,"sourcePayloadKind":"single-file","sourceFileName":"ScriptEntry.java","entryClassName":"demo.entries.ScriptEntry","sourceBytes":261,"sourceSha256":"5cc164dea748b2ee6078b2d88cfac93887fb3fe37b33f45f663bf101534a33f0","requestSha256":"1dbe211af18cb04166a73e5097705a21ebafde35da891c0681631c5d8fbb3b37","resultJson":"\"demo.entries.ScriptEntry\"","resultSha256":"09df059fc9e6805feb886430b8cbddacc421077aae99087738e21f3eee49d1f7","hostPid":22034,"compilerPid":22066,"workerPid":22124,"deviceApi":25}
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: test=explicitNonMainJavaEntryRunsThroughPinnedProductionProvider
+INSTRUMENTATION_STATUS: class=org.autojs.autojs.core.plugin.jvm.JvmSourceR1EndToEndInstrumentationTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 1.345
+
+OK (1 test)
+
+INSTRUMENTATION_CODE: -1
+
+cleanup_uninstall_org.autojs.autojs6.test=Success
+cleanup_uninstall_org.autojs.autojs6=Success
+cleanup_uninstall_io.github.supermonster003.autojs6.plugin.java.runtime.test=Success
+cleanup_uninstall_io.github.supermonster003.autojs6.plugin.java.runtime=Success
+post_cleanup_package_query=empty

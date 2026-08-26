@@ -27,19 +27,23 @@ public final class Main implements AutoJsJvmEntry {
 [samples/m5-capabilities.java](../samples/m5-capabilities.java)；剪贴板读写样例见
 [samples/capability-set-2-clipboard.java](../samples/capability-set-2-clipboard.java)；宿主参数样例见
 [samples/script-args.java](../samples/script-args.java)；运行时异常投影样例见
-[samples/runtime-exception.java](../samples/runtime-exception.java)。
+[samples/runtime-exception.java](../samples/runtime-exception.java)；非默认入口样例见
+[samples/arbitrary-entry.java](../samples/arbitrary-entry.java)。
 
 ## 源码形态
 
 当前 profile 对源码有以下硬性约束：
 
 - 一次请求可以接受一个 Java 源文件，或一个含 2–32 个非空 <code>.java</code> compilation unit 的规范源码包。
-- 入口类的简单名固定为 <code>Main</code>。单文件的宿主脚本文件名可以任意，逻辑编译单元名为
-  <code>Main.java</code>；源码包调用方同时提供 source root 与其中的入口 <code>Main.java</code>。
+- 入口类简名由 Host 显式调用方选择，既有启动路径默认使用 <code>Main</code>。合法简名使用 ASCII Java
+  identifier profile：首字符为字母、<code>_</code> 或 <code>$</code>，后续还可包含数字；简名最多 250 个
+  ASCII 字符，最终全限定名最多 512 bytes。单文件物理脚本名
+  可以任意，逻辑编译单元名为 <code>&lt;EntrySimpleName&gt;.java</code>；源码包调用方同时提供 source root、
+  其中同名的入口文件与入口简名。非默认入口当前仅对 Java 开放，Kotlin 仍使用 <code>Main</code>。
 - 可以省略 <code>package</code>，也可以使用合法包名。源码包内每个 ASCII 相对路径必须精确对应该文件的
   <code>package</code> 与简单名，例如 <code>demo/Helper.java</code> 必须声明 <code>package demo;</code>。
   绝对路径、路径穿越、反斜杠、大小写折叠冲突、空目录、非 Java 文件和符号链接都拒绝。
-- <code>Main</code> 必须是 public、非 abstract、非 interface，必须实现 <code>AutoJsJvmEntry</code>，并具有 public 无参构造器。
+- 所选入口类必须是 public、非 abstract、非 interface，必须实现 <code>AutoJsJvmEntry</code>，并具有 public 无参构造器。
 - 编译结果中必须恰好有一个具体类实现 <code>AutoJsJvmEntry</code>；存在第二个具体实现时会以入口歧义拒绝。
 - 入口签名为 <code>public Object run(JvmScriptContext context) throws Exception</code>。可以省略 <code>throws Exception</code>，也可以使用协变返回类型。
 - ECJ 使用 <code>-source 8 -target 8</code>、UTF-8 和禁用注解处理器。Java 8 指语言级别；完整 Android
@@ -258,7 +262,7 @@ UID 或 PID。用于终态绑定的 request ID 在 Host 公开投影前删除；
 | <code>HOST_CALL_REJECTED</code> | host bridge 方法未授权、不在双侧白名单、payload 非法，或宿主拒绝执行。 |
 | <code>INTERNAL</code> | provider 内部故障，无法归入更具体且安全公开的类别。 |
 | <code>ARTIFACT_INVALID</code> | 源码 framing/SHA-256、源码包 ZIP/manifest/CRC/路径声明、JAR、DEX、缓存工件或受控编译类路径未通过完整性/结构校验。 |
-| <code>ENTRY_POINT_MISSING</code> | 未生成请求的 <code>Main</code>，或它没有实现 <code>AutoJsJvmEntry</code>。 |
+| <code>ENTRY_POINT_MISSING</code> | 未生成请求所选的入口类，或它没有实现 <code>AutoJsJvmEntry</code>。 |
 | <code>ENTRY_POINT_AMBIGUOUS</code> | 编译结果包含多个具体的 <code>AutoJsJvmEntry</code> 实现。 |
 | <code>ENTRY_POINT_ABI_INCOMPATIBLE</code> | 入口不是 public concrete class、缺少 public 无参构造器，或与 Entry API 不兼容。 |
 | <code>CLASS_LOADING_FAILED</code> | ART 无法从已验证的用户 DEX 装载/链接入口，或入口并非由用户 DEX ClassLoader 定义。 |

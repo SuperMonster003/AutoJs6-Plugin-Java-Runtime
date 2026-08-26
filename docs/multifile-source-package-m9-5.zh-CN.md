@@ -1,5 +1,9 @@
 # M9-5 多文件源码包：Protocol 1.6 / Schema 1.3
 
+> 后续状态（2026-08-26）：本文中“入口仍固定为 `Main`”描述的是 M9-5 交付时边界；M9-7 已允许
+> Host 显式选择合法 Java 入口简名，旧 API 继续默认 `Main`。当前行为见
+> `docs/arbitrary-entry-class-m9-7.zh-CN.md`。
+
 ## 结论
 
 M9-5 已在 AutoJs6 Host 与 Java Runtime Provider 两侧完成。公开 Binder AIDL 仍只传一个 source

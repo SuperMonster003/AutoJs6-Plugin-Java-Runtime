@@ -1,11 +1,14 @@
 # Java 样例与预期结果
 
-样例文件名可以任意，但每个成功编译的文件都声明固定入口简单名 <code>Main</code>。在 AutoJs6
-编辑器中显式选择 JVM Source/Java 运行方式；不要把故意失败的样例当作普通 Java 工程源码一起编译。
+样例物理文件名可以任意。既有样例继续使用默认入口 <code>Main</code>；
+<code>arbitrary-entry.java</code> 则显式选择 <code>ScriptEntry</code>，证明物理文件名、逻辑编译单元名与
+全限定入口可被安全地区分。在 AutoJs6 编辑器中显式选择 JVM Source/Java 运行方式；不要把故意失败的
+样例当作普通 Java 工程源码一起编译。
 
 | 样例 | 目的 | 预期结果 |
 |---|---|---|
 | [m5-capabilities.java](m5-capabilities.java) | M5 完整 capability 集 | stdout 出现 <code>M5 Java log: 你好</code>，显示 toast，约 500 ms 后 stderr 出现耗时行，返回 JSON <code>5</code>。 |
+| [arbitrary-entry.java](arbitrary-entry.java) | M9-7 非默认入口简名 | 通过 Host 的 <code>runJvmSourceWithEntryExplicit(..., "ScriptEntry")</code> 启动；逻辑源码名为 <code>ScriptEntry.java</code>，入口为 <code>demo.entries.ScriptEntry</code>，返回同名 JSON 字符串。普通默认入口不会根据物理文件名自动推断。 |
 | [capability-set-2-clipboard.java](capability-set-2-clipboard.java) | M9 Capability Set 2 剪贴板读写 | 读取原文本、写入并回读 <code>M9 clipboard 你好</code>，随后恢复原文本；需要分别授予 <code>CLIPBOARD_READ</code> 与 <code>CLIPBOARD_WRITE</code>，stdout 出现 <code>clipboard round-trip: M9 clipboard 你好; restored=true</code>，返回包含 <code>before</code>、<code>written</code>、<code>restored</code> 的对象。Android 10+ 执行期间 AutoJs6 必须位于前台。 |
 | [script-args.java](script-args.java) | M9-2 宿主参数与 Entry API 4 | 通过 <code>context.args()</code> 读取字符串、boolean、嵌套 Map、List、number 与 null；不需要 capability，也不产生 host call。使用下方输入时返回确定性 JSON。 |
 | [core-library-desugaring.java](core-library-desugaring.java) | M8 受控 core library desugaring：<code>java.time</code> 与增强三参数 <code>Stream.iterate(...).toList()</code> | API 24+ 成功，返回字符串 <code>2024-03-01:CORE</code>。 |
@@ -38,6 +41,19 @@
 <code>Intent</code> 不会被隐式注入。完整边界见
 [Java Context API](../docs/context-api.zh-CN.md#脚本参数-profile)。
 
+非默认入口的 Host 调用形态如下；旧的 <code>runJvmSourceExplicit</code> 与源码包对应 API 仍默认
+<code>Main</code>：
+
+~~~kotlin
+JvmSourceExplicitRunner.runJvmSourceWithEntryExplicit(
+    file = File("arbitrary-entry.java"),
+    entrySimpleName = "ScriptEntry",
+)
+~~~
+
+多文件源码包使用 <code>runJvmSourcePackageWithEntryExplicit(sourceRoot, entryFile,
+"ScriptEntry")</code>；此时入口物理文件也必须精确命名为 <code>ScriptEntry.java</code>。
+
 ## 自动设备回归
 
 <code>JavaSampleLibraryInstrumentedTest</code> 将这些文件作为测试 APK asset，并在 Android
@@ -48,7 +64,9 @@
 Activity→Binder→worker 记录见
 [M9-1 剪贴板能力实现与证据](../docs/capability-set-2-m9-1.zh-CN.md)；参数生产链路记录见
 [M9-2 脚本入参实现与证据](../docs/script-arguments-m9-2.zh-CN.md)；运行时异常生产链路记录见
-[M9-3 运行时异常类名实现与证据](../docs/runtime-exception-class-m9-3.zh-CN.md)。宿主规范测试的代码所有权仍在
+[M9-3 运行时异常类名实现与证据](../docs/runtime-exception-class-m9-3.zh-CN.md)；非 <code>Main</code>
+production Binder selector 见
+[M9-7 任意入口类名端到端证据](../docs/arbitrary-entry-class-m9-7.zh-CN.md)。宿主规范测试的代码所有权仍在
 AutoJs6 宿主仓。
 
 ~~~powershell
