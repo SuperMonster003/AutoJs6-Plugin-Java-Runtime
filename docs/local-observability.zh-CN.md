@@ -2,9 +2,11 @@
 
 ## 边界与用途
 
-本通道为 M7-5 性能基线、M8-4 缓存重启对照和 M9-4 协议设计积累设备证据。它不修改 Protocol 1.1，不向
-AutoJs6 宿主、外部 Binder 回调、网络或 logcat 发送观测数据；编译器进程只在一次会话完成清理后，
-向插件自己的私有目录追加一行 JSON。
+本通道为 M7-5 性能基线、M8-4 缓存重启对照和 M9-4 协议设计积累了设备证据。它自身仍不向 AutoJs6
+宿主、外部 Binder callback、网络或 logcat 发送数据；编译器进程只在一次会话完成清理后，向插件自己的
+私有目录追加一行 JSON。M9-4 已另行通过 Protocol 1.5 落地 Release-safe 的**单请求终态投影**，不复用
+本文件通道，也不包含本地 JSONL 的累计缓存计数，详见
+[`observation-protocol-m9-4.zh-CN.md`](observation-protocol-m9-4.zh-CN.md)。
 
 导出同时受两个条件约束：
 

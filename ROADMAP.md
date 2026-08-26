@@ -216,10 +216,17 @@
     production Binder selector 1/1 且秘密异常 message 不可见。设计、工件哈希和原始 marker 见
     `docs/runtime-exception-class-m9-3.zh-CN.md`。
 
-- [ ] **M9-4 观测数据导出协议化**
+- [x] **M9-4 观测数据导出协议化**
   - 内容: 兑现 `JavaProviderObservationPolicy` 的"future negotiated protocol": 以 M7-4/5 积累的字段与
     真机证据为输入, 与宿主谈定导出 schema (阶段耗时、缓存结果、资源采样)。
   - 验收: 宿主侧可见编译/执行耗时展示; release 路径字段边界测试。
+  - 结果: Protocol 1.5 / schema 1.2 在 success/error/cancellation 清理后终态增加 reader-required 的
+    4 KiB observation；Host 独立重验并固定显示阶段耗时、单请求 cache 结果、冷暖启动与最多 6 个无身份
+    资源样本，Debug 累计 cache telemetry 不跨协议。AAR 锁指向 Host commit
+    `22bf823288d8b7b8f12acd71fa4f8e149ee03954`；Host shared/app 为 61/61、1,660 tests，Provider
+    Debug/Release 各 155/155，lint 与三类 APK 全绿。API 28 样例 10/10；API 36 最终 Host + Release
+    Provider 的 production Binder 冷态 MISS 与暖态 HIT selector 各 1/1，设计、边界、工件摘要和原始
+    marker 见 `docs/observation-protocol-m9-4.zh-CN.md`。
 
 - [ ] **M9-5 多文件源码包**
   - 内容: 目前 `openSession` 单 source FD = 单 `.java` 文件。与宿主选型: 单 FD 承载有界 zip

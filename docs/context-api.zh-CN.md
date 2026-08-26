@@ -1,7 +1,7 @@
 # Java Context API 与运行边界
 
-本文适用于 AutoJs6 Java Runtime Plugin <code>0.6.0-m9</code>、JVM Source Protocol
-<code>1.4</code>、Entry API <code>4</code>，描述当前 Java 能力 profile 与 R4 DEX 工件 profile
+本文适用于 AutoJs6 Java Runtime Plugin <code>0.7.0-m9</code>、JVM Source Protocol
+<code>1.5</code>、Entry API <code>4</code>，描述当前 Java 能力 profile 与 R4 DEX 工件 profile
 的用户可见行为。
 协议升级或后续 profile 可能扩展这些能力，但不会放宽当前请求已经协商出的边界。
 
@@ -202,9 +202,29 @@ return result;
 | JVM class 文件总量 | 上限 16 MiB，最多 256 个 class | <code>COMPILATION_FAILED</code> |
 | class JAR 协议工件 | 上限 20 MiB | <code>ARTIFACT_INVALID</code> 或编译失败 |
 | DEX 工件集合 | 总量上限 32 MiB；API 24/25、27+ 为 1 至 4 个，API 26 为 1 个 | <code>DEXING_FAILED</code> 或 <code>ARTIFACT_INVALID</code> |
+| 终态 observation | 独立 wire 上限 4 KiB；最多 6 个资源样本 | 畸形、超限、错绑或协商后缺失会被 Host 隔离 |
 | 并发会话 | 1 | 第二个会话返回可重试的 <code>BUSY</code> |
 
 30 秒默认超时覆盖整次会话，而不只是 <code>run</code>：源码读取、ECJ、D8、worker 启动与执行都会消耗该预算。
+
+## 终态观测
+
+Protocol 1.5 的成功、错误与取消终态都会在 compiler/worker 清理完成后携带同一类有界 observation。
+AutoJs6 控制台显示固定摘要，包括：
+
+- Provider session 总耗时和 worker 启动耗时；
+- ECJ、D8、DEX load、入口 run 与 termination 耗时；
+- 当次 cache 的 <code>NOT_EVALUATED</code>、<code>HIT</code> 或
+  <code>MISS/reason</code>，以及 compiler/worker 的 <code>COLD</code>/<code>WARM</code>；
+- 最多六个 compiler/worker 样本汇总出的 peak RSS、最大 open FD、临时工件字节和输出字节。
+
+不可用字段显示为 <code>n/a</code>，与真实的零毫秒/零字节不同。cache hit 时 ECJ 与 D8 没有执行，因此
+两项必须为 <code>n/a</code>；不会用零伪装成已执行阶段。
+
+协议对象不能表达源码、参数、诊断文本、异常、路径、package/component、签名、Binder identity、
+UID 或 PID。用于终态绑定的 request ID 在 Host 公开投影前删除；Debug 私有 JSONL 的累计 cache 计数也
+不会进入 Protocol 1.5。完整字段表、数值上限与 Release MISS/HIT 证据见
+[M9-4 观测数据协议化](observation-protocol-m9-4.zh-CN.md)。
 
 ## 错误码语义
 
@@ -246,7 +266,7 @@ return result;
 ## 诊断与隐私
 
 - ECJ 诊断在回传前会限制总字节数和消息长度；私有绝对路径、摘要、uid/pid、Binder 引用和其他敏感元数据会按片段替换为 <code>&lt;redacted&gt;</code>，其余可操作的编译器原文会保留。
-- 一个源码包含多处 ECJ 问题时，provider 会按编译器顺序分别回传多条诊断；每条仍使用 Protocol 1.4 的单诊断 frame，所有 frame 共用 64 KiB 总 wire 预算。
+- 一个源码包含多处 ECJ 问题时，provider 会按编译器顺序分别回传多条诊断；每条沿用 Protocol 1.4 引入的单诊断 frame，所有 frame 共用 64 KiB 总 wire 预算。
 - 编译错误包含可安全确认的源码文件名、行和列。诊断预算耗尽时，后续诊断可能不再出现。
 - Java 运行时异常回传通用的 <code>JAVA_RUNTIME_EXCEPTION</code>、安全源码位置与脱敏类名；
   <code>java.*</code>/<code>javax.*</code> 原样，其余精确归一为 <code>UserException</code>。异常 message、
