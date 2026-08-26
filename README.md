@@ -62,6 +62,10 @@ Protocol 1.6 保持单 source FD 与 Entry API 4，并允许该 FD 承载确定�
 一致性和零链接属性；路径穿越、重复项、压缩/ZIP64 与符号链接全部 fail closed。完整 wire、归档 profile、
 缓存迁移与 API 25 production Binder 证据见
 [M9-5 多文件源码包](docs/multifile-source-package-m9-5.zh-CN.md)。
+M9-6 评估后继续保留 Host 30 秒正式总截止时间与 120 秒协议安全上限，不增加滑动 keep-alive：当前
+非前台 bound-service 链和进程心跳无法证明非可信计算仍有进展。若未来确需长任务，应以用户前台授权、
+会话专属前台服务、独立三层租约及不可续约绝对上限实现单独模式；约束与重开门槛见
+[M9-6 超时上限评估](docs/timeout-limit-m9-6.zh-CN.md)。
 
 ## Source example
 

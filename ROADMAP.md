@@ -243,9 +243,18 @@
     symlink 与 package/path 不一致均有拒绝测试。设计、威胁边界、工件摘要和原始 marker 见
     `docs/multifile-source-package-m9-5.zh-CN.md`。
 
-- [ ] **M9-6 超时上限提升评估** `[评估]`
+- [x] **M9-6 超时上限提升评估** `[评估]`
   - 内容: `MAX_TIMEOUT_MILLIS=120s` 限制长任务。与宿主评估更高上限或续约 (keep-alive) 机制, 分析前台服务/ANR/功耗约束。
   - 验收: 决策记录 (含约束分析); 若 go: 协议字段与看门狗联动更新。
+  - 结果: **No-go**；保留正式 Host 30 秒总截止时间与 Protocol 1.6 的 120 秒安全上限，不增加可续约
+    keep-alive。审计确认 Host 在源码快照/发现/绑定前启动 30 秒 deadline，请求也固定为 30 秒，而
+    Provider 只在 `openSession` 后启动单次看门狗；只调大常量不会扩大正式预算。当前 compiler/worker
+    均为非前台 bound service，心跳只能证明进程存活、不能证明 ECJ/D8 或用户入口有进展，并会让非可信
+    死循环长期占用唯一会话槽。未来仅考虑由前台用户动作授权、Host 会话专属 FGS + 可见 stop、三层
+    独立租约和不可续约绝对上限组成的显式 `LONG_RUNNING` 模式；Protocol/Provider/AAR 均未改变。
+    完整双截止时间、Android FGS/ANR/Doze/功耗约束、Python 先例、联动面和重开条件见
+    `docs/timeout-limit-m9-6.zh-CN.md`。Provider Debug/Release 强制重跑各 163/163，pinned-input、Debug
+    lint 与 Debug APK gate 全绿；因 no-go 且无运行时代码变化，不新增实验 APK 或设备结果。
 
 - [ ] **M9-7 任意入口类名端到端放开**
   - 内容: 宿主请求侧允许用户指定入口简名 (插件侧 M8-5 已就绪), README/文档同步移除 "`Main` 固定"表述。

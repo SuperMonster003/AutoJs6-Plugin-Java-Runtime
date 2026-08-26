@@ -43,6 +43,10 @@ with an optional milestone suffix; Android package builds are tracked separately
 - Closed the M8-1 worker-prewarming evaluation as no-go after API 36 interleaved measurements failed
   to reproduce the required median improvement without tail-latency regression; the serial runtime
   path remains unchanged and the rejected candidate's raw observation evidence is retained.
+- Closed the M9-6 timeout-limit evaluation as no-go: the production Host keeps its 30-second total
+  deadline, Protocol 1.6 keeps the 120-second safety ceiling, and bounded sessions gain no sliding
+  keep-alive. A future long-running mode requires foreground user authorization, a session-scoped
+  Host foreground service, independent Host/compiler/worker leases, and a non-renewable absolute cap.
 - Changed the provider-private compiler/worker handoff to carry ordered DEX metadata and descriptor
   arrays, while preserving the external Protocol 1.1 surface and legacy single-DEX result identity.
 - Changed compilation-cache manifests to schema 2 and the implementation revision to `r4-cache-v3`;
