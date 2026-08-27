@@ -3,8 +3,9 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "autojs6-plugin-java-runtime"
 
 pluginManagement {
+    // Keep clean CI/archive builds independent from an unpublished Maven Local settings plugin.
+    includeBuild("build-logic/platform-versions")
     repositories {
-        mavenLocal()
         gradlePluginPortal()
         mavenCentral()
         google()

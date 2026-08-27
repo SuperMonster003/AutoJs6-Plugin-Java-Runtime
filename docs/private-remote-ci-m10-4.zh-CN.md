@@ -118,18 +118,26 @@ GitHub Actions 使用固定 `windows-2025`、Temurin JDK 21 和按完整 commit 
 | `gradle/actions/setup-gradle` | 6.3.0 | `9c971963bec38e04b3d30dcc455b5382be2fdbfb` |
 
 runner 先确认/安装 API 24、26、30、34、36 platform JAR，再在线执行同一组 Gradle tasks 预热 wrapper
-与依赖缓存；正式验收随后调用 `scripts/verify.ps1 --no-daemon --rerun-tasks`，四项验证 task 全部在
-`--offline` 下重新实际执行。PR 只读缓存，`main` push 才写缓存；workflow token 只有
-`contents: read`。
+与依赖缓存；正式验收随后先强制重跑 repository-local settings-plugin tests，再调用
+`scripts/verify.ps1 --no-daemon --rerun-tasks`，全部验证 task 都在 `--offline` 下重新实际执行。PR 只读
+缓存，`main` push 才写缓存；workflow token 只有 `contents: read`。
+
+首次 clean runner 揭示根 settings 原先通过 `mavenLocal()` 解析未公开的
+`org.autojs.build.platform-versions:1.4.1`，属于本机隐式依赖。正式修复从已审计 Kotlin sibling commit
+`aa5b55f41e129b2ce09c7deee5fce5098caa0c81` 精确导入 35-file / tree
+`67bf5be8be3f5bff2b476004449335da1eb7e87c` 的 `build-logic/platform-versions`，在
+`pluginManagement` 中以 included build 解析并删除 `mavenLocal()`。它的 5 suites、55 tests 进入 CI
+在线预热和离线强制重跑，clean checkout 不再要求开发机先发布私有 Gradle plugin。
 
 生产 `sm003.jks` 和任何密码都不进入 GitHub。`scripts/prepare-ci-signing.ps1` 在每个全新 runner
 中生成两天有效、随机密码、CI-only 的一次性 JKS；若发现已有 `sign.properties` 或目标 keystore 即
 拒绝覆盖。临时 APK 只证明构建完整性，不能用于发布或设备证据；job 结束始终精确删除两个临时文件，
 也不上传 APK、测试报告或 lint 报告 artifact。
 
-本地以同一临时签名脚本强制重跑离线 gate：Debug/Release 各 44 suites、164/164 tests，0
-failure/error/skipped；Debug Lint 0 error、29 warning；Debug APK 构建成功；92/92 tasks 实际执行，
-总耗时 2m55s。
+本地先对 repository-local settings plugin 强制离线重跑：5 suites、55/55 tests，7/7 tasks，43s；
+随后以同一临时签名脚本强制重跑根项目离线 gate：Debug/Release 各 44 suites、164/164 tests，0
+failure/error/skipped；Debug Lint 0 error、29 warning；Debug APK 构建成功；包含 included-build 任务在内
+96/96 tasks 实际执行，总耗时 4m12s。
 
 ## 远端验收
 

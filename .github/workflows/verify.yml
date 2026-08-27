@@ -70,6 +70,12 @@ jobs:
             }
           }
 
+      - name: Warm the repository-local settings plugin
+        shell: pwsh
+        run: |
+          & .\gradlew.bat -p build-logic/platform-versions test --no-daemon --console=plain --stacktrace --max-workers=2
+          exit $LASTEXITCODE
+
       - name: Generate ephemeral CI-only signing material
         shell: pwsh
         run: .\scripts\prepare-ci-signing.ps1
@@ -84,6 +90,12 @@ jobs:
             ':app:assembleDebug'
           )
           & .\gradlew.bat @tasks --no-daemon --console=plain --stacktrace --max-workers=2
+          exit $LASTEXITCODE
+
+      - name: Force the settings-plugin offline gate
+        shell: pwsh
+        run: |
+          & .\gradlew.bat -p build-logic/platform-versions test --offline --no-daemon --rerun-tasks --console=plain --stacktrace --max-workers=2
           exit $LASTEXITCODE
 
       - name: Force the offline verification gate
