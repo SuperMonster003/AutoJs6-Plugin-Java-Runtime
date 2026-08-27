@@ -1,0 +1,113 @@
+name: Offline verification
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offline-verification-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Windows / JDK 21 / offline gate
+    runs-on: windows-2025
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out the complete repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Restore the Gradle user-home cache
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Ensure required Android SDK platforms
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $requiredApis = @(24, 26, 30, 34, 36)
+          $missingPackages = @(
+            foreach ($api in $requiredApis) {
+              $androidJar = Join-Path $env:ANDROID_HOME "platforms\android-$api\android.jar"
+              if (-not (Test-Path -LiteralPath $androidJar -PathType Leaf)) {
+                "platforms;android-$api"
+              }
+            }
+          )
+          if ($missingPackages.Count -gt 0) {
+            $sdkManager = Join-Path $env:ANDROID_HOME 'cmdline-tools\latest\bin\sdkmanager.bat'
+            if (-not (Test-Path -LiteralPath $sdkManager -PathType Leaf)) {
+              throw "Android sdkmanager not found: $sdkManager"
+            }
+            & $sdkManager --install $missingPackages
+            if ($LASTEXITCODE -ne 0) {
+              throw "sdkmanager exited with code $LASTEXITCODE"
+            }
+          }
+          foreach ($api in $requiredApis) {
+            $androidJar = Join-Path $env:ANDROID_HOME "platforms\android-$api\android.jar"
+            if (-not (Test-Path -LiteralPath $androidJar -PathType Leaf)) {
+              throw "Required Android API $api platform is missing after setup"
+            }
+          }
+
+      - name: Generate ephemeral CI-only signing material
+        shell: pwsh
+        run: .\scripts\prepare-ci-signing.ps1
+
+      - name: Warm dependency and wrapper caches
+        shell: pwsh
+        run: |
+          $tasks = @(
+            ':app:testDebugUnitTest'
+            ':app:testReleaseUnitTest'
+            ':app:lintDebug'
+            ':app:assembleDebug'
+          )
+          & .\gradlew.bat @tasks --no-daemon --console=plain --stacktrace --max-workers=2
+          exit $LASTEXITCODE
+
+      - name: Force the offline verification gate
+        shell: pwsh
+        run: .\scripts\verify.ps1 --no-daemon --rerun-tasks --console=plain --stacktrace --max-workers=2
+
+      - name: Verify tracked files remain unchanged
+        shell: pwsh
+        run: |
+          git diff --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --exit-code
+          exit $LASTEXITCODE
+
+      - name: Remove ephemeral signing material
+        if: always()
+        shell: pwsh
+        run: |
+          $temporaryFiles = @(
+            (Join-Path $env:GITHUB_WORKSPACE 'sign.properties')
+            (Join-Path $env:GITHUB_WORKSPACE 'app\ci-only-signing.jks')
+          )
+          foreach ($temporaryFile in $temporaryFiles) {
+            if ([IO.File]::Exists($temporaryFile)) {
+              [IO.File]::Delete($temporaryFile)
+            }
+          }
