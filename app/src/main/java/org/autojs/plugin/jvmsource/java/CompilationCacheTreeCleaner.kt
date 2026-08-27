@@ -2,6 +2,7 @@ package org.autojs.plugin.jvmsource.java
 
 import java.io.File
 import java.io.IOException
+import java.nio.file.Files
 
 internal fun interface CompilationCacheTreeCleaner {
     /** Returns true only when the named candidate is verified absent from the expected parent. */
@@ -22,6 +23,11 @@ internal object JvmCompilationCacheTreeCleaner : CompilationCacheTreeCleaner {
         if (candidate.absoluteFile.path != lexicalCandidate.path) return false
         if (lexicalParent.list()?.any { it == candidate.name } != true) return true
 
+        if (Files.isSymbolicLink(candidate.toPath())) {
+            val deleted = runCatching { Files.deleteIfExists(candidate.toPath()) }.getOrDefault(false)
+            return deleted && lexicalParent.list()?.none { it == candidate.name } == true
+        }
+
         val canonicalCandidate = runCatching { candidate.canonicalFile }.getOrNull()
         if (canonicalCandidate == null || canonicalCandidate.path != lexicalCandidate.path) {
             // File.delete removes the listed link itself and does not traverse its target.
@@ -36,6 +42,7 @@ internal object JvmCompilationCacheTreeCleaner : CompilationCacheTreeCleaner {
             children.any { child ->
                 val expected = File(lexicalCandidate, child.name).absoluteFile
                 child.absoluteFile.path != expected.path ||
+                    Files.isSymbolicLink(child.toPath()) ||
                     runCatching { child.canonicalFile.path }.getOrNull() != expected.path ||
                     !child.isFile
             }

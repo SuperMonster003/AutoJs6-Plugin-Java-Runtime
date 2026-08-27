@@ -22,6 +22,7 @@ import java.io.Closeable
 import java.io.File
 import java.io.IOException
 import java.nio.ByteBuffer
+import java.nio.file.Files
 
 internal class WorkerDexLoader(private val context: Context) {
     /** Gate 1: consume, bind, and structurally validate the DEX without constructing a ClassLoader. */
@@ -306,7 +307,9 @@ internal class LoadedDex(
         val lexicalParent = root.absoluteFile.parentFile
             ?: throw IOException("Worker code-cache request has no private parent")
         val canonicalParent = lexicalParent.canonicalFile
-        if (canonicalParent.path != lexicalParent.path || !canonicalParent.isDirectory) {
+        if (isWindowsSymbolicLink(lexicalParent) ||
+            canonicalParent.path != lexicalParent.path || !canonicalParent.isDirectory
+        ) {
             throw IOException("Worker code-cache parent is no longer an ordinary directory")
         }
         deletePrivateTreeWithoutFollowingLinks(root)
@@ -321,6 +324,10 @@ private fun deletePrivateTreeWithoutFollowingLinks(root: File) {
         val lexical = node.absoluteFile
         require(lexical.path == expectedLexicalPath.absoluteFile.path) {
             "Worker code-cache cleanup escaped its lexical root"
+        }
+        if (isWindowsSymbolicLink(node)) {
+            deleteListedWorkerEntry(node, "Unable to remove a worker code-cache link")
+            return
         }
         val canonical = runCatching { node.canonicalFile }.getOrNull()
         if (canonical == null || canonical.path != lexical.path) {
@@ -340,5 +347,15 @@ private fun deletePrivateTreeWithoutFollowingLinks(root: File) {
 
 private fun deleteListedWorkerEntry(node: File, failureMessage: String) {
     val listed = node.parentFile?.list()?.any { it == node.name } == true
-    if (listed && !node.delete()) throw IOException(failureMessage)
+    if (!listed) return
+    val deleted = if (isWindowsSymbolicLink(node)) {
+        runCatching { Files.deleteIfExists(node.toPath()) }.getOrDefault(false)
+    } else {
+        node.delete()
+    }
+    if (!deleted) throw IOException(failureMessage)
 }
+
+/** Android's canonicalFile resolves links; Windows host tests require an explicit probe. */
+private fun isWindowsSymbolicLink(file: File): Boolean =
+    File.separatorChar == '\\' && Files.isSymbolicLink(file.toPath())

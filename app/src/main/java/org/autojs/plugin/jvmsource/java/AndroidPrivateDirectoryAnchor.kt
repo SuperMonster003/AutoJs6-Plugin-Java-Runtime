@@ -33,7 +33,13 @@ internal object AndroidPrivateDirectoryAnchor {
         if (lexicalIdentity == null) {
             throw IOException("$label must be an ordinary private directory")
         }
-        val canonical = lexical.canonicalFile
+        // java.io.File does not resolve directory symlinks consistently on the Windows host JVM.
+        // Android keeps the established canonicalFile path; host tests use NIO's real path.
+        val canonical = if (File.separatorChar == '\\') {
+            lexical.toPath().toRealPath().toFile()
+        } else {
+            lexical.canonicalFile
+        }
         val canonicalIdentity = readOrdinaryDirectoryIdentityWithoutFollowingFinalLink(canonical)
         if (canonicalIdentity == null || canonicalIdentity != lexicalIdentity) {
             throw IOException("$label changed identity during canonicalization")
