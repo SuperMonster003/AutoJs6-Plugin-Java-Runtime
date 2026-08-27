@@ -122,12 +122,22 @@ runner 先确认/安装 API 24、26、30、34、36 platform JAR，再在线执�
 `scripts/verify.ps1 --no-daemon --rerun-tasks`，全部验证 task 都在 `--offline` 下重新实际执行。PR 只读
 缓存，`main` push 才写缓存；workflow token 只有 `contents: read`。
 
+Windows runner 还在 `$RUNNER_TEMP` 下创建独立 JVM 临时根，并在写入后续 step 环境前用 JDK 自身读取
+`java.io.tmpdir` 验证路径一致。失败时只打印 JUnit XML 中的 testcase/异常摘要；成功时该诊断 step 跳过。
+这既避免 JUnit 临时根中的 Windows 旧式路径别名触发私有目录 fail-closed，也不放宽任何生产目录检查。
+
 首次 clean runner 揭示根 settings 原先通过 `mavenLocal()` 解析未公开的
 `org.autojs.build.platform-versions:1.4.1`，属于本机隐式依赖。正式修复从已审计 Kotlin sibling commit
 `aa5b55f41e129b2ce09c7deee5fce5098caa0c81` 精确导入 35-file / tree
 `67bf5be8be3f5bff2b476004449335da1eb7e87c` 的 `build-logic/platform-versions`，在
 `pluginManagement` 中以 included build 解析并删除 `mavenLocal()`。它的 5 suites、55 tests 进入 CI
 在线预热和离线强制重跑，clean checkout 不再要求开发机先发布私有 Gradle plugin。
+
+clean Windows runner 随后实际获得创建 symbolic link 的能力，暴露出 host JVM 的 `File.canonicalFile`
+不会像 Android/Linux 一样稳定解析目录链接：规范临时根修复后，失败由 20 项降为 5 项，且其中嵌套链接
+清理会跟随到测试保护目标。修复没有跳过测试，也没有改变 Android 分支；Android 继续使用既有
+`canonicalFile`、`lstat` 与 fd-pinned cleaner，Windows host fallback 额外以 NIO 识别/删除链接本身，
+trusted-ancestor 测试则用 `toRealPath` 获得等价规范路径。GitHub runner 上这 5 项随后全部通过。
 
 生产 `sm003.jks` 和任何密码都不进入 GitHub。`scripts/prepare-ci-signing.ps1` 在每个全新 runner
 中生成两天有效、随机密码、CI-only 的一次性 JKS；若发现已有 `sign.properties` 或目标 keystore 即
@@ -137,9 +147,37 @@ runner 先确认/安装 API 24、26、30、34、36 platform JAR，再在线执�
 本地先对 repository-local settings plugin 强制离线重跑：5 suites、55/55 tests，7/7 tasks，43s；
 随后以同一临时签名脚本强制重跑根项目离线 gate：Debug/Release 各 44 suites、164/164 tests，0
 failure/error/skipped；Debug Lint 0 error、29 warning；Debug APK 构建成功；包含 included-build 任务在内
-96/96 tasks 实际执行，总耗时 4m12s。
+96/96 tasks 实际执行。settings-plugin 导入后的首轮为 4m12s；Windows link-safe 收口后的最终本地复验为
+1m52s（依赖已预热）。两次结束后都确认 CI-only keystore 与 `sign.properties` 不存在。
 
 ## 远端验收
 
-本节在 Private 仓库创建和最终 CI 完成后回填 repository visibility、最终 commit、workflow run URL、
-任务结果与清理状态。
+2026-08-27 通过 GitHub API 复核
+`SuperMonster003/AutoJs6-Plugin-Java-Runtime` visibility 为 `PRIVATE`，default branch 为 `main`。远端仅有：
+
+- `main`（首个绿灯 code head `b8d63b700cb82be0e0a1a196c18a39624a4757d3`）；
+- `archive/m10-ecj-spike` → `07ed3b95f8437ed46759a42c32f31b1b434e1853`；
+- annotated `v0.3.0-m5` tag object → `d41739daad6769a1a89557a0d678b7dea38e742b`，
+  peeled target → `6353700c17cb440302fd0d45c4ad8c92de43b48c`。
+
+clean runner 的失败均作为验收输入保留，没有重跑伪装：
+
+1. [33042083935](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/actions/runs/33042083935)：
+   settings plugin 只能从开发机 `mavenLocal()` 解析；以精确 sibling tree 导入和 included build 修复。
+2. [33042778574](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/actions/runs/33042778574)：
+   插件已通过，但 Windows JVM 临时根 alias 令 20 项私有目录测试 fail-closed；配置并验证 canonical temp。
+3. [33043735143](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/actions/runs/33043735143)：
+   普通目录测试已通过，剩余 5 项实际 symlink 语义揭示 Windows host fallback 会跟随目标；按上节修复。
+
+首个完整绿灯为
+[33044386683](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/actions/runs/33044386683)，
+job `98424897886`，code head `b8d63b7`，总耗时 20m54s：
+
+- settings plugin 在线 7/7 tasks（53s），离线强制 7/7 tasks（59s）；
+- 根项目在线预热成功（8m58s），随后离线强制 96/96 tasks（7m09s）；
+- tracked files 零差异；失败诊断 step 正确跳过；临时签名删除 step 成功；
+- Gradle cache、JDK 与 checkout post-action 全部成功，workflow 最终 conclusion 为 `success`；
+- 没有上传 APK、测试报告、Lint 报告或任何 release artifact。
+
+因此 Private 可见性不妨碍 M10-4 的 `push + CI 绿灯一次` 验收；未来切换 Public 前仍按“决策”一节复核
+仓库内容和历史 Actions 日志。

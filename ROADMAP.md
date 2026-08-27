@@ -327,10 +327,20 @@
     2.4.10 与 D8 8.13.23 必须在 sibling 仓分别走独立升级门禁，不能继承 Java 结论。完整工件、PSS、
     ART、代码复用边界、后续顺序与清理见 `docs/kotlin-provider-m10-3.zh-CN.md`。
 
-- [ ] **M10-4 远端仓库与 CI** `[网络]`
+- [x] **M10-4 远端仓库与 CI** `[网络]`
   - 内容: 仓库目前无 remote (纯本地, 2 个 commit)。确定托管方案; 鉴于网络易 524, CI 采用依赖预热缓存/自托管 runner,
     验证任务全部 `--offline`。M6-5 本地脚本先行兜底。
   - 验收: push + CI 绿灯一次。
+  - 结果: GitHub Private 仓库已建立并仅发布 `main`、annotated `v0.3.0-m5` 与
+    `archive/m10-ecj-spike`；43 个既有 commit 的 author/committer、tagger 和后续提交均统一为 GitHub
+    ID-based noreply 身份，原历史只保存在本机私有 bundle。CI 固定 Windows 2025 / JDK 21 / SDK
+    24/26/30/34/36 与官方 action commit SHA；仓库内置并测试 settings plugin，在线预热后对 plugin 和
+    根项目分别 `--offline --rerun-tasks`。生产 keystore/密码不上云，runner 每次生成并最终删除随机
+    CI-only JKS。首个绿灯为 `b8d63b7` / [Actions 33044386683](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/actions/runs/33044386683)：
+    settings plugin 55/55，Provider Debug/Release 各 164/164，Lint 0 error，Debug APK 签名成功，根离线
+    gate 96/96 tasks，tracked tree 零改动；clean Windows runner 额外揭示并修复了 JVM 临时根 alias 与
+    symlink 不跟随语义。完整历史映射、备份摘要、失败归因、CI/签名边界见
+    `docs/private-remote-ci-m10-4.zh-CN.md`。
 
 - [ ] **M10-5 i18n 扩展**
   - 内容: `strings.xml` 目前 en + zh-rCN, 按宿主语言矩阵逐步补齐 (插件字符串仅 5 条, 成本低)。
