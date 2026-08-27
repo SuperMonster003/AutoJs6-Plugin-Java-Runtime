@@ -70,6 +70,31 @@ jobs:
             }
           }
 
+      - name: Configure a canonical JVM temporary directory
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $jvmTemp = Join-Path $env:RUNNER_TEMP 'autojs-jvm-temp'
+          New-Item -ItemType Directory -Path $jvmTemp -Force | Out-Null
+          $jvmTemp = [IO.Path]::GetFullPath($jvmTemp).TrimEnd([IO.Path]::DirectorySeparatorChar)
+
+          $env:TEMP = $jvmTemp
+          $env:TMP = $jvmTemp
+          $reported = (& java -XshowSettings:properties -version 2>&1 |
+            Select-String '^\s*java\.io\.tmpdir\s*=' |
+            Select-Object -First 1).Line
+          if (-not $reported) {
+            throw 'Unable to read java.io.tmpdir from the configured JDK'
+          }
+          $reportedPath = ($reported -replace '^\s*java\.io\.tmpdir\s*=\s*', '').Trim()
+          $reportedPath = [IO.Path]::GetFullPath($reportedPath).TrimEnd([IO.Path]::DirectorySeparatorChar)
+          if ($reportedPath -ne $jvmTemp) {
+            throw "JVM temporary directory differs: expected=$jvmTemp actual=$reportedPath"
+          }
+
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "TEMP=$jvmTemp"
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "TMP=$jvmTemp"
+
       - name: Warm the repository-local settings plugin
         shell: pwsh
         run: |
@@ -109,6 +134,24 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git diff --exit-code
           exit $LASTEXITCODE
+
+      - name: Print unit-test failure diagnostics
+        if: failure()
+        shell: pwsh
+        run: |
+          $resultFiles = Get-ChildItem -Path 'app/build/test-results' -Recurse -Filter 'TEST-*.xml' `
+            -ErrorAction SilentlyContinue
+          foreach ($resultFile in $resultFiles) {
+            [xml]$result = Get-Content -LiteralPath $resultFile.FullName
+            foreach ($testCase in @($result.testsuite.testcase)) {
+              foreach ($failure in @($testCase.failure, $testCase.error)) {
+                if ($null -ne $failure) {
+                  $message = ([string]$failure.message -replace '[\r\n]+', ' ').Trim()
+                  Write-Output "FAILED $($testCase.classname).$($testCase.name): $message"
+                }
+              }
+            }
+          }
 
       - name: Remove ephemeral signing material
         if: always()
