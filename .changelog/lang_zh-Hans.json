@@ -1,0 +1,15 @@
+{
+  "changelog_label_hint": "提示",
+  "changelog_label_feature": "新增",
+  "changelog_label_fix": "修复",
+  "changelog_label_improvement": "优化",
+  "changelog_label_dependency": "依赖",
+  "$data": {
+    "v0.8.0": {
+      "released_date": "2026/09/11",
+      "improvement": [
+        "构建阶段阻止意外引入原生依赖, 并输出 JSON 校验报告"
+      ]
+    }
+  }
+}

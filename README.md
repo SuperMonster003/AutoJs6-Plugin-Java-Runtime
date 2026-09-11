@@ -210,3 +210,7 @@ The APK provides two signature-protected services:
 - `org.autojs.plugin.JVM_SOURCE` for compilation/execution sessions.
 
 AutoJs6 discovers both by action. It does not depend on this plugin's package name.
+
+[16 KB verification](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/docs/16kb.md)
+
+Build verification rejects accidental native dependencies and produces a JSON report.

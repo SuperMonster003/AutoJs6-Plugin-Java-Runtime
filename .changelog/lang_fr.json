@@ -1,0 +1,15 @@
+{
+  "changelog_label_hint": "Note",
+  "changelog_label_feature": "Nouveauté",
+  "changelog_label_fix": "Correction",
+  "changelog_label_improvement": "Amélioration",
+  "changelog_label_dependency": "Dépendance",
+  "$data": {
+    "v0.8.0": {
+      "released_date": "2026/09/11",
+      "improvement": [
+        "La vérification de compilation rejette les dépendances natives involontaires et produit un rapport JSON"
+      ]
+    }
+  }
+}

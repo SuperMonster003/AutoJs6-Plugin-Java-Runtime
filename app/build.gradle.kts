@@ -17,6 +17,7 @@ import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
 
 plugins {
+    id("io.github.supermonster003.autojs6-native-alignment")
     id("org.autojs.build.versions")
     id("org.autojs.build.jvm-convention")
     id("com.android.application")
@@ -541,3 +542,6 @@ tasks.withType<L8DexDesugarLibTask>().configureEach {
 }
 
 versions.handleIfNeeded(project, "", listOf("debug", "release"))
+
+// Reject accidental native dependencies on every ABI.
+nativeAlignment { expectNoNativeLibraries.set(true) }

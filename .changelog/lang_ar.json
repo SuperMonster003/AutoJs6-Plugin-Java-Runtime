@@ -1,0 +1,15 @@
+{
+  "changelog_label_hint": "تلميح",
+  "changelog_label_feature": "ميزة",
+  "changelog_label_fix": "إصلاح",
+  "changelog_label_improvement": "تحسين",
+  "changelog_label_dependency": "اعتمادية",
+  "$data": {
+    "v0.8.0": {
+      "released_date": "2026/09/11",
+      "improvement": [
+        "التحقق أثناء البناء لمنع إدخال تبعيات أصلية غير مقصودة, مع تقرير JSON"
+      ]
+    }
+  }
+}

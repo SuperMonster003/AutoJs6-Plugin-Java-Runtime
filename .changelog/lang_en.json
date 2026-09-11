@@ -1,0 +1,15 @@
+{
+  "changelog_label_hint": "Hint",
+  "changelog_label_feature": "Feature",
+  "changelog_label_fix": "Fix",
+  "changelog_label_improvement": "Improvement",
+  "changelog_label_dependency": "Dependency",
+  "$data": {
+    "v0.8.0": {
+      "released_date": "2026/09/11",
+      "improvement": [
+        "Build verification rejects accidental native dependencies and produces a JSON report"
+      ]
+    }
+  }
+}

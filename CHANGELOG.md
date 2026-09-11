@@ -95,3 +95,5 @@ with an optional milestone suffix; Android package builds are tracked separately
 - Centralized pinned application dependencies in the Gradle version catalog while retaining
   independent literal-coordinate checks in `verifyPinnedInputs`.
 - Propagated API 26 requirements from the D8 path API and in-memory DEX loader to their callers.
+
+Build verification rejects accidental native dependencies and produces a JSON report.
