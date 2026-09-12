@@ -6,9 +6,94 @@
   "changelog_label_dependency": "Dependencia",
   "$data": {
     "v0.8.0": {
-      "released_date": "2026/09/11",
+      "released_date": "2026/09/12",
       "improvement": [
+        "Reorganizar el README y el historial de versiones en torno al uso, los ejemplos y los límites de capacidades, con generación coherente para diez idiomas a partir de fuentes JSON",
         "La verificación de compilación rechaza dependencias nativas accidentales y genera un informe JSON"
+      ]
+    },
+    "v0.8.0-m9": {
+      "released_date": "2026/08/27",
+      "hint": [
+        "El tiempo límite de sesión se mantiene en 30 segundos por defecto / tope duro de 120 segundos, y la concurrencia se mantiene en una sesión activa (una segunda sesión recibe un `BUSY` reintentable) — ambas evaluaciones de relajación concluyeron no proceder por ahora",
+        "Evaluación de actualización de ECJ: las versiones recientes (3.42/3.46) no pueden ejecutarse en Android, así que la línea publicada sigue fijada en ECJ 3.26.0 y Java 8"
+      ],
+      "feature": [
+        "Añadidos los paquetes de código multiarchivo (Protocol 1.6): una petición puede enviar un archivo canónico de 2 a 32 ficheros `.java` cuyas rutas deben coincidir exactamente con sus declaraciones `package`; el cruce de rutas, las entradas comprimidas, los enlaces simbólicos y los duplicados se rechazan todos",
+        "Apertura de extremo a extremo de nombres de clase de entrada arbitrarios: los llamadores pueden elegir explícitamente un nombre simple ASCII (el predeterminado sigue siendo `Main`), con el nuevo ejemplo de entrada no predeterminada `arbitrary-entry.java`"
+      ],
+      "improvement": [
+        "Confirmado que el soporte Kotlin/JVM queda en el plugin hermano Kotlin Runtime; los dos repositorios comparten el protocolo congelado y las pruebas de conformidad, sin dependencia de ejecución"
+      ],
+      "dependency": [
+        "Actualizado el D8/R8 de ejecución de 8.13.17 a 8.13.23; las claves de la caché de compilación se invalidan automáticamente con la versión de las herramientas"
+      ]
+    },
+    "v0.7.0-m9": {
+      "released_date": "2026/08/26",
+      "hint": [
+        "Las observaciones nunca contienen código, argumentos, rutas ni identidades de procesos; los builds release no exportan contadores de caché acumulativos"
+      ],
+      "feature": [
+        "Cada ejecución termina ahora con un resumen de observación acotado (Protocol 1.5): tiempos de las fases de compilación/ejecución/limpieza, resultado de la caché por petición, arranques en frío/calor y hasta seis muestras de recursos, mostrados uniformemente por la consola de AutoJs6"
+      ]
+    },
+    "v0.6.0-m9": {
+      "released_date": "2026/08/26",
+      "feature": [
+        "Las excepciones de ejecución exponen ahora un nombre de clase saneado con la línea fuente (Protocol 1.4): los nombres `java.*`/`javax.*` se muestran tal cual mientras que cualquier otra clase aparece como `UserException`; los mensajes y las pilas nunca cruzan la frontera del proceso",
+        "Añadido el ejemplo de excepción de ejecución `runtime-exception.java`, que demuestra la forma visible «clase + línea»"
+      ]
+    },
+    "v0.5.0-m9": {
+      "released_date": "2026/08/25",
+      "hint": [
+        "Los argumentos solo aceptan valores del perfil JSON (null / booleanos / números / cadenas / Map con claves String / Iterable / arrays); pasar POJO u objetos de Android produce el error estable `JVM_SOURCE_INVALID_ARGUMENTS`"
+      ],
+      "feature": [
+        "Añadidos los argumentos de script (Protocol 1.3 / Entry API 4): `context.args()` devuelve una instantánea de solo lectura de los argumentos de la configuración de ejecución del host (tope de 64 KiB, 64 niveles de anidamiento); los scripts existentes sin argumentos siguen ejecutándose sin cambios",
+        "Añadido el ejemplo de argumentos de script `script-args.java`, que lee Maps/Lists anidados, booleanos, números, cadenas y null"
+      ]
+    },
+    "v0.4.0-m9": {
+      "released_date": "2026/08/25",
+      "hint": [
+        "En Android 10 y posteriores, AutoJs6 debe estar en primer plano (con una Activity resumed) para las llamadas al portapapeles; las llamadas en segundo plano fallan de forma fiable antes de tocar el portapapeles del sistema"
+      ],
+      "feature": [
+        "Añadidas las capacidades de portapapeles (Protocol 1.2 / Entry API 3): `clipboard().getText/setText`, con lectura y escritura como dos concesiones independientes y un tope de texto de 16 KiB",
+        "Añadidos los artefactos multi-DEX: 1–4 archivos `classesN.dex` contiguos dentro de 32 MiB en total; un ejemplo con 65.536 referencias de métodos pasa en dispositivos API 24/36 (API 26 se mantiene en DEX único por una limitación de la plataforma)",
+        "Añadido el desugaring controlado de la core library: `java.time` y `Stream.iterate` de tres argumentos / `toList` mejorados funcionan desde API 24; los métodos no admitidos fallan en compilación en lugar de hacer fallar dispositivos antiguos",
+        "Añadida la guía china «Java Context API y límites de ejecución»: cada método, la tabla de tipos de retorno, los topes de recursos y la semántica de los códigos de error",
+        "Añadida la matriz de ejemplos verificados en dispositivo (cancelación, familias de valores de retorno, errores de compilación, exceso de resultado), más los scripts de control sin conexión `scripts/verify.ps1` / `verify.sh`"
+      ],
+      "fix": [
+        "El saneado de diagnósticos ahora reemplaza los segmentos sensibles en su lugar y conserva el resto del mensaje del compilador, en vez de degradar todo el mensaje a un texto fijo",
+        "El carril de operaciones de la caché de compilación ahora se recupera una vez tras un enfriamiento después de un tiempo agotado, en vez de quedar inutilizado hasta reiniciar el proceso"
+      ],
+      "improvement": [
+        "Los múltiples problemas de ECJ de una misma compilación se transmiten uno a uno en orden fuente (compartiendo el presupuesto diagnóstico de 64 KiB)",
+        "Los builds debug ganan un canal privado de observación JSONL (cinco tiempos de fase / arranque en frío del worker / contadores de caché); los builds release mantienen cero exportación, con aserciones de prueba",
+        "Completada la línea base de rendimiento API 24/36 en la ruta de producción y la evaluación del precalentamiento del worker (la ruta serial se mantiene); los nombres de clase de entrada arbitrarios quedaron listos en el lado del plugin",
+        "La persistencia de la caché entre procesos fue rechazada tras la revisión de seguridad; la clave de la caché sigue siendo válida solo dentro del proceso del compilador"
+      ]
+    },
+    "v0.3.0-m5": {
+      "released_date": "2026/08/25",
+      "hint": [
+        "Primera versión hito utilizable (cubre M1–M5); verificación de host con la misma firma, autorización por capacidad, procesos worker desechables y validación fail-closed activos desde el inicio"
+      ],
+      "feature": [
+        "Plugin independiente de compilación/ejecución de código Java establecido: ECJ 3.26.0 (Java 8) y D8 8.13.17 integrados, con compilación y ejecución en procesos separados",
+        "Implementado el perfil de código de archivo único de Protocol 1.1: análisis de la clase de entrada, diagnósticos saneados y mapeo completo de fases de fallo",
+        "Implementadas cuatro capacidades del host autorizadas individualmente: lanzamiento de aplicaciones, flujo de consola, sleep y toast",
+        "Implementada la caché de compilación autenticada con telemetría local"
+      ],
+      "fix": [
+        "Corregidos dos avisos lint de requisitos de API; los requisitos de API 26 ahora se propagan a los llamadores mediante `@RequiresApi`"
+      ],
+      "improvement": [
+        "Migrado el build a los plugins de convención platform-versions compartidos, centralizando las coordenadas de dependencias en el catálogo de versiones y conservando las aserciones literales de doble fuente"
       ]
     }
   }

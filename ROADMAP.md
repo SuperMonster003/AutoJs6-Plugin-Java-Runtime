@@ -3,6 +3,9 @@
 > 基于 `0.3.0-m5` (VERSION_BUILD=3, Protocol 1.1, Entry API 2) 现状制定, 探查日期 2026-08-24。
 > 当前形态 = R1 能力 profile + R2 落盘规则 + R3 缓存/观测 + R4 多 DEX 工件 + M5 能力集。
 >
+> **状态更新 (2026-08-27)**: 当前版本 `0.8.0-m9` (VERSION_BUILD=8, Protocol 1.6, Entry API 4,
+> 要求宿主 ≥ 5281)。M6–M9 全部完成, M10-1/2/3/4 已闭环; 待办余 M10-5/6、M11 后续条目与 M12 候选。
+>
 > **总体结论**: 插件在"安全与工程严谨度"维度已远超同类水准 (三进程隔离、双侧白名单、DEX 全量结构校验、
 > HMAC 缓存、多层看门狗、140 个单测全绿、零 TODO)。主要的精进空间集中在两条线:
 > **① 能力面与开发者体验** (宿主桥接仅 2 个方法、运行时诊断极简、Java 8 单源码文件);
@@ -28,6 +31,8 @@
 | M8 | 运行时增强 (本仓独立) | 0.5.x-m8 | M7 (基线数据) |
 | M9 | 协议协同能力扩展 | 0.6.x-m9 | 宿主协商 |
 | M10 | 远期探索 | — | 按需 |
+| M11 | 文档易读性与多语言资源 | — (文档线, 不递增版本) | 无 |
+| M12 | 能力候选方向 | 按能力另定 | 宿主协同 |
 
 ---
 
@@ -350,17 +355,69 @@
   - 内容: 将现有安全设计显性化成文档: 三进程隔离、签名校验、R1 白名单、DEX 校验链、脱敏策略、缓存 HMAC。既是评审基线也是对外信任背书。
   - 验收: 文档评审通过, README 链接。
 
+## M11 — 文档易读性与多语言资源 (文档线, 主体完成于 2026-08-27)
+
+> 背景: 用户反馈 README / CHANGELOG 晦涩难懂。参照 Kotlin-Runtime 等姊妹插件的 Python 多语言
+> 生成方案重建文档流水线; 深度工程内容保留在 `docs/` 与本路线图, README / CHANGELOG 面向最终用户。
+
+- [x] **M11-1 多语言生成流水线落地** `[本仓]`
+  - 建立 `.readme/` (common.json + 模板 + 10 语言 JSON) 与 `.changelog/` (模板 + 10 语言 JSON);
+    `.python/generate_markdown.py` 内置键序/版本序校验与占位符残留断言, 22 份输出全部生成通过并复跑验证幂等。
+- [x] **M11-2 用户视角重写 README** `[本仓]`
+  - 新结构: 简介 / 功能 / 快速上手 (装—启用—跑—排错, 含 `JVM_SOURCE_EXPERIMENT_DISABLED`、
+    `JVM_SOURCE_PROVIDER_NOT_SELECTED` 恢复指引) / 使用示例 / 能力边界 / 脚本运行库白名单 /
+    安全与隔离 / 发行历史 / 构建 / 资源结构 / 相关链接; 原「中文使用说明」的深度内容由
+    `docs/context-api.zh-CN.md` 与各里程碑评估记录承接, README 以链接指向。
+- [x] **M11-3 CHANGELOG 全量重写** `[本仓]`
+  - 依据 git 版本演进将旧 Keep-a-Changelog 的「单版本 + Unreleased 堆积」重建为 `v0.3.0-m5` →
+    `v0.8.0-m9` 六个版本条目, 按 提示/新增/修复/优化/依赖 标签归类, 摒弃工程内审措辞, 十语言同步。
+- [x] **M11-4 十语言生成与核对** `[本仓]`
+  - zh-Hans / zh-Hant-HK / zh-Hant-TW / en / fr / es / ja / ko / ru / ar; 根 `README.md` /
+    `CHANGELOG.md` 为 zh-Hans 副本; 术语约定与 Kotlin-Runtime 项目保持一致。
+- [ ] **M11-5 文档一致性门禁** (依赖 M10-4 CI)
+  - CI checkout 后重跑 `.python/generate_markdown.py` 并 `git diff --exit-code`,
+    阻断手改生成物或 JSON 源与生成物漂移。
+- [ ] **M11-6 发布流程演练**
+  - 下次发版按「更新 `.changelog/lang_*.json` 十语言源 → 重新生成 → 核对归档」实际演练一次,
+    并在发布证据中回填。
+- [ ] **M11-7 strings.xml 十语言扩展** (与 M10-5 合并推进)
+  - 插件名称/描述当前仅 en + zh-rCN, 按 README 语言清单同源扩展, lint 无 MissingTranslation。
+
+## M12 — 能力候选方向 (未排期, 按宿主与工具链节奏择机启动)
+
+> 以下条目启动前保持不承诺、不虚假声明; 发布面继续锁定 Protocol 1.6 / Entry API 4。每项新桥接
+> 能力必须过「安全四件套」: 默认拒绝 / 双侧硬编码白名单 / payload 上限 / 脱敏。
+
+- [ ] **M12-1 Capability Set 3 候选协商** `[宿主]` `[设备]`
+  - M9-1 遗留候选: `device.info` (只读脱敏子集)、`notice.show`、`vibrate`、受限文件通道
+    (宿主授权目录 + 路径白名单)。与宿主逐项谈判后按既有四阶段管线实装, 每项补双侧白名单测试、
+    payload 边界测试、未授权拒绝证据与真机样例。
+- [ ] **M12-2 LONG_RUNNING 显式长任务模式** `[宿主]` `[评估]`
+  - 按 M9-6 重开门槛: 前台用户授权 + 会话专属前台服务 + Host/compiler/worker 三层独立租约 +
+    不可续约绝对上限; 出现真实长任务需求后再启动。
+- [ ] **M12-3 Host 侧有界会话队列** `[宿主]` `[评估]`
+  - 按 M9-8 重开门槛: 先积累真实 `BUSY`/延迟数据, 再探索按精确 Provider 身份分区、deadline 从
+    入队起算、取消优先的 `1 active + 1 pending` 有界 FIFO。
+- [ ] **M12-4 Android-targeted ECJ fork 评估** `[评估]` `[网络]`
+  - 按 M10-1 重开条件: 仅当出现可在 API 24 运行的 Android 定向 ECJ 分支时, 重启 `-source 11/17`
+    语言级别解锁调研。
+- [ ] **M12-5 与 Kotlin Runtime 的协议收敛跟踪** `[宿主]`
+  - sibling 仓升级至 Protocol 1.6 / Entry API 4 后, 按 M10-3 记录的顺序对齐两仓 `protocolMin/Max`,
+    并完成协商组合真机复验。
+
 ## 持续性事项 (每个里程碑例行)
 
 - [ ] 宿主协议源变更时, `protocol/` 三个 AAR 与 lock **必须整组刷新** (见 `protocol/README.md`)
 - [ ] 发版前离线三连: `.\gradlew.bat :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --offline`
-- [ ] 发版 checklist: `VERSION_BUILD` 递增、tag、CHANGELOG、official-index 元数据字面量与 `version.properties` 双源一致 (由 `verifyPinnedInputs` 断言)
+- [ ] 发版 checklist: `VERSION_BUILD` 递增、tag、更新 `.changelog/lang_*.json` 十语言源并重新生成 CHANGELOG、official-index 元数据字面量与 `version.properties` 双源一致 (由 `verifyPinnedInputs` 断言)
 - [ ] 新增桥接能力必须过"安全四件套"评审: 默认拒绝 / 双侧白名单 / payload 上限 / 脱敏
+- [ ] 文档改动只编辑 `.readme/` 与 `.changelog/` 的 JSON 源, 随后运行 `.python/generate_markdown.py` 重新生成全部十语言文档; 生成物不手改
+- [ ] 新增能力或边界变化时, 同步更新 `samples/` 样例与 `.readme/` JSON 源 (features / 能力边界 / 运行库清单) 后重新生成 README
 
 ## 附录 — 网络受限环境的执行约定
 
 当前网络易触发 Cloudflare 502/524/529 (尤以 524 为甚), 因此:
 
-1. 本 Roadmap 中除标注 `[网络]` 的 3 项 (M10-1/2/4) 外, **全部条目可在 `--offline` 下完成验证**;
+1. 本 Roadmap 中除标注 `[网络]` 的条目 (待办余 M12-4; M10-1/M10-2/M10-4 已闭环) 外, **全部条目可在 `--offline` 下完成验证**;
 2. `[网络]` 条目集中到单独时段批量执行 (一次性拉齐依赖进本地缓存), 失败重试, 不阻塞其他线;
 3. 日常验证统一走 M6-5 的本地脚本, 禁用远端仓库解析。

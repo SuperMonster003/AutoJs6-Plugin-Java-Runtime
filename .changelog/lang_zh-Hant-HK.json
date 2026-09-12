@@ -6,9 +6,94 @@
   "changelog_label_dependency": "依賴",
   "$data": {
     "v0.8.0": {
-      "released_date": "2026/09/11",
+      "released_date": "2026/09/12",
       "improvement": [
+        "圍繞使用方法, 範例及能力邊界整理 README 與發行歷史, 並從 JSON 來源統一產生十語言文件",
         "建置階段阻止意外引入原生相依套件, 並輸出 JSON 校驗報告"
+      ]
+    },
+    "v0.8.0-m9": {
+      "released_date": "2026/08/27",
+      "hint": [
+        "會話超時維持預設 30 秒 / 硬上限 120 秒, 並發會話維持 1 個 (第二個會話返回可重試的 `BUSY`) — 兩項放開評估均判定現階段不實施",
+        "ECJ 升級評估結論: 新版 ECJ (3.42/3.46) 無法在 Android 運行, 正式線繼續固定 ECJ 3.26.0 與 Java 8"
+      ],
+      "feature": [
+        "多檔案源碼包 (Protocol 1.6): 單次請求可提交含 2–32 個 `.java` 檔案的規範歸檔, 檔案路徑須與 `package` 聲明精確對應; 路徑穿越, 壓縮條目, 符號連結與重複項等全部拒絕",
+        "入口類簡名端到端放開: 調用方可明確指定 ASCII 入口簡名 (預設仍為 `Main`), 非預設入口示例 `arbitrary-entry.java`"
+      ],
+      "improvement": [
+        "明確 Kotlin/JVM 支援由姊妹插件 Kotlin Runtime 獨立承擔; 兩倉共享凍結協議與一致性測試, 不建立運行依賴"
+      ],
+      "dependency": [
+        "運行時 D8/R8 升級: 8.13.17 → 8.13.23; 編譯緩存鍵隨工具鏈版本自動失效"
+      ]
+    },
+    "v0.7.0-m9": {
+      "released_date": "2026/08/26",
+      "hint": [
+        "觀測數據不含源碼, 參數, 路徑或進程身份; Release 構建不導出累計緩存計數"
+      ],
+      "feature": [
+        "每次執行結束後回傳有界觀測摘要 (Protocol 1.5): 編譯/執行/清理各階段耗時, 當次緩存命中結果, 冷暖啟動與最多六項資源採樣, 由 AutoJs6 控制枱統一展示"
+      ]
+    },
+    "v0.6.0-m9": {
+      "released_date": "2026/08/26",
+      "feature": [
+        "運行時異常回傳脫敏類名與源碼行 (Protocol 1.4): `java.*`/`javax.*` 原樣顯示, 其餘類統一顯示為 `UserException`; 異常 message 與堆疊不跨進程邊界",
+        "運行時異常示例 `runtime-exception.java`, 演示用戶可見的\"類名 + 行號\"形態"
+      ]
+    },
+    "v0.5.0-m9": {
+      "released_date": "2026/08/25",
+      "hint": [
+        "參數只接受 JSON profile 值 (null/布林/數字/字串/String-key Map/Iterable/陣列); 傳入 POJO 或 Android 物件會得到穩定錯誤 `JVM_SOURCE_INVALID_ARGUMENTS`"
+      ],
+      "feature": [
+        "腳本入參 (Protocol 1.3 / Entry API 4): `context.args()` 返回宿主執行配置的唯讀參數快照 (上限 64 KiB, 深度 64); 既有無參腳本無需修改即可繼續運行",
+        "腳本入參示例 `script-args.java`, 演示讀取嵌套 Map/List/布林/數字/字串與 null"
+      ]
+    },
+    "v0.4.0-m9": {
+      "released_date": "2026/08/25",
+      "hint": [
+        "Android 10 及以上系統調用剪貼簿時, AutoJs6 必須處於前台 (存在 resumed Activity); 後台調用會在觸碰系統剪貼簿前穩定失敗"
+      ],
+      "feature": [
+        "剪貼簿能力 (Protocol 1.2 / Entry API 3): `clipboard().getText/setText`, 讀與寫為兩項獨立授權, 文本上限 16 KiB",
+        "多 DEX 編譯產物支援: 1–4 個連續 `classesN.dex`, 總量 32 MiB 內; 65,536 方法引用的超大示例在 API 24/36 真機通過 (API 26 因平台限制保持單 DEX)",
+        "受控 core library desugaring: 最低 API 24 即可使用 `java.time` 與增強 Stream 的三參數 `iterate`/`toList`; 不支援的方法在編譯期報錯, 不會留到舊裝置運行時崩潰",
+        "中文《Java Context API 與運行邊界》文檔: 全部方法說明, 返回值類型表, 資源上限與錯誤碼語義",
+        "取消, 返回值家族, 編譯錯誤與結果超限等示例矩陣 (真機驗證), 以及一鍵離線驗證腳本 `scripts/verify.ps1` / `verify.sh`"
+      ],
+      "fix": [
+        "編譯診斷脫敏改為逐段替換: 只替換敏感片段並保留其餘編譯器原文, 不再把整條訊息降級為固定文案",
+        "編譯緩存操作通道在一次超時後支援冷卻恢復, 不再一次超時即永久失效直至進程重啟"
+      ],
+      "improvement": [
+        "一次編譯的多條 ECJ 錯誤按源碼順序逐條回傳 (共用 64 KiB 診斷預算)",
+        "Debug 構建新增私有 JSONL 觀測通道 (五階段耗時/worker 冷啟動/緩存計數), Release 構建保持零導出並有測試斷言",
+        "完成 API 24/36 生產鏈路性能基線與 worker 預熱評估 (維持串行路徑); 任意入口類名在插件側全鏈路就緒",
+        "編譯緩存持久化經安全評審判定不實施, 維持只在編譯器進程內有效的緩存密鑰"
+      ]
+    },
+    "v0.3.0-m5": {
+      "released_date": "2026/08/25",
+      "hint": [
+        "首個可用里程碑版本 (覆蓋 M1–M5); 同簽名宿主校驗, 能力逐項授權, 一次性 worker 進程與 fail-closed 校驗自始啟用"
+      ],
+      "feature": [
+        "獨立 Java 源碼編譯/運行插件成型: 內置 ECJ 3.26.0 (Java 8) 與 D8 8.13.17, 編譯與執行分處獨立進程",
+        "實現 Protocol 1.1 單檔案源碼檔案: 入口類解析, 淨化診斷與完整失敗階段映射",
+        "實現四項逐項授權的宿主能力: 應用啟動, 控制枱流, 休眠與浮窗",
+        "實現帶鑒權的編譯緩存與本地遙測"
+      ],
+      "fix": [
+        "2 處 API 約束 lint 告警, API 26 要求經 `@RequiresApi` 正確傳播到調用方"
+      ],
+      "improvement": [
+        "構建體系遷移至共享 platform-versions convention 插件, 依賴座標集中至版本目錄並保留字面量雙源斷言"
       ]
     }
   }
