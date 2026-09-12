@@ -15,9 +15,9 @@
 
 ###### 2026/08/27
 
-* `Hint` The session timeout stays at a 30-second default / 120-second hard cap, and concurrency stays at one active session (a second session receives a retryable `BUSY`) — both relaxation evaluations concluded not to proceed for now
+* `Hint` The session timeout stays at a 30-second default / 120-second hard cap, and concurrency stays at one active session (a second session receives a retryable `BUSY`) - both relaxation evaluations concluded not to proceed for now
 * `Hint` ECJ upgrade evaluation: newer ECJ releases (3.42/3.46) cannot run on Android, so the release line stays pinned to ECJ 3.26.0 and Java 8
-* `Feature` Multi-file source packages (Protocol 1.6): a single request may submit a canonical archive of 2–32 `.java` files whose paths must match their `package` declarations exactly; path traversal, compressed entries, symlinks, and duplicates are all rejected
+* `Feature` Multi-file source packages (Protocol 1.6): a single request may submit a canonical archive of 2-32 `.java` files whose paths must match their `package` declarations exactly; path traversal, compressed entries, symlinks, and duplicates are all rejected
 * `Feature` Opened arbitrary entry class names end to end: callers may explicitly select an ASCII entry simple name (the default remains `Main`), with the new non-default-entry sample `arbitrary-entry.java`
 * `Improvement` Confirmed Kotlin/JVM support stays with the sister plugin Kotlin Runtime; the two repositories share the frozen protocol and conformance tests without any runtime dependency
 * `Dependency` Upgraded the runtime D8/R8 from 8.13.17 to 8.13.23; compilation cache keys invalidate automatically with the toolchain version
@@ -50,7 +50,7 @@
 
 * `Hint` On Android 10 and later, AutoJs6 must be in the foreground (with a resumed Activity) for clipboard calls; background calls fail reliably before the system clipboard is touched
 * `Feature` Clipboard capabilities (Protocol 1.2 / Entry API 3): `clipboard().getText/setText` with read and write as two independent grants and a 16 KiB text cap
-* `Feature` Multi-DEX artifacts: 1–4 contiguous `classesN.dex` files within 32 MiB total; a 65,536-method-reference sample passes on API 24/36 devices (API 26 stays single-DEX due to a platform limitation)
+* `Feature` Multi-DEX artifacts: 1-4 contiguous `classesN.dex` files within 32 MiB total; a 65,536-method-reference sample passes on API 24/36 devices (API 26 stays single-DEX due to a platform limitation)
 * `Feature` Controlled core library desugaring: `java.time` and the three-argument enhanced `Stream.iterate`/`toList` work from API 24 onward; unsupported methods fail at compile time instead of crashing older devices at runtime
 * `Feature` The Chinese "Java Context API & runtime boundaries" guide: every method, the return-value type table, resource limits, and error-code semantics
 * `Feature` The device-verified sample matrix for cancellation, return-value families, compiler errors, and result-limit behavior, plus the one-shot offline gate scripts `scripts/verify.ps1` / `verify.sh`
@@ -65,7 +65,7 @@
 
 ###### 2026/08/25
 
-* `Hint` First usable milestone release (covering M1–M5); same-signer host checks, per-capability authorization, disposable worker processes, and fail-closed validation enabled from the start
+* `Hint` First usable milestone release (covering M1-M5); same-signer host checks, per-capability authorization, disposable worker processes, and fail-closed validation enabled from the start
 * `Feature` Standalone Java source compile/run plugin established: embedded ECJ 3.26.0 (Java 8) and D8 8.13.17, with compilation and execution in separate processes
 * `Feature` Implemented the Protocol 1.1 single-file source profile: entry-class analysis, sanitized diagnostics, and complete failure-phase mapping
 * `Feature` Implemented four individually authorized host capabilities: app launch, console stream, sleep, and toast

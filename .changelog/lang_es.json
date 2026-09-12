@@ -15,7 +15,7 @@
     "v0.8.0-m9": {
       "released_date": "2026/08/27",
       "hint": [
-        "El tiempo límite de sesión se mantiene en 30 segundos por defecto / tope duro de 120 segundos, y la concurrencia se mantiene en una sesión activa (una segunda sesión recibe un `BUSY` reintentable) — ambas evaluaciones de relajación concluyeron no proceder por ahora",
+        "El tiempo límite de sesión se mantiene en 30 segundos por defecto / tope duro de 120 segundos, y la concurrencia se mantiene en una sesión activa (una segunda sesión recibe un `BUSY` reintentable) - ambas evaluaciones de relajación concluyeron no proceder por ahora",
         "Evaluación de actualización de ECJ: las versiones recientes (3.42/3.46) no pueden ejecutarse en Android, así que la línea publicada sigue fijada en ECJ 3.26.0 y Java 8"
       ],
       "feature": [
@@ -62,7 +62,7 @@
       ],
       "feature": [
         "Añadidas las capacidades de portapapeles (Protocol 1.2 / Entry API 3): `clipboard().getText/setText`, con lectura y escritura como dos concesiones independientes y un tope de texto de 16 KiB",
-        "Añadidos los artefactos multi-DEX: 1–4 archivos `classesN.dex` contiguos dentro de 32 MiB en total; un ejemplo con 65.536 referencias de métodos pasa en dispositivos API 24/36 (API 26 se mantiene en DEX único por una limitación de la plataforma)",
+        "Añadidos los artefactos multi-DEX: 1-4 archivos `classesN.dex` contiguos dentro de 32 MiB en total; un ejemplo con 65.536 referencias de métodos pasa en dispositivos API 24/36 (API 26 se mantiene en DEX único por una limitación de la plataforma)",
         "Añadido el desugaring controlado de la core library: `java.time` y `Stream.iterate` de tres argumentos / `toList` mejorados funcionan desde API 24; los métodos no admitidos fallan en compilación en lugar de hacer fallar dispositivos antiguos",
         "Añadida la guía china «Java Context API y límites de ejecución»: cada método, la tabla de tipos de retorno, los topes de recursos y la semántica de los códigos de error",
         "Añadida la matriz de ejemplos verificados en dispositivo (cancelación, familias de valores de retorno, errores de compilación, exceso de resultado), más los scripts de control sin conexión `scripts/verify.ps1` / `verify.sh`"
@@ -81,7 +81,7 @@
     "v0.3.0-m5": {
       "released_date": "2026/08/25",
       "hint": [
-        "Primera versión hito utilizable (cubre M1–M5); verificación de host con la misma firma, autorización por capacidad, procesos worker desechables y validación fail-closed activos desde el inicio"
+        "Primera versión hito utilizable (cubre M1-M5); verificación de host con la misma firma, autorización por capacidad, procesos worker desechables y validación fail-closed activos desde el inicio"
       ],
       "feature": [
         "Plugin independiente de compilación/ejecución de código Java establecido: ECJ 3.26.0 (Java 8) y D8 8.13.17 integrados, con compilación y ejecución en procesos separados",

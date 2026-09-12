@@ -167,7 +167,7 @@ El plugin está diseñado con denegación por defecto; las siguientes restriccio
 
 ###### 2026/08/27
 
-* `Nota` El tiempo límite de sesión se mantiene en 30 segundos por defecto / tope duro de 120 segundos, y la concurrencia se mantiene en una sesión activa (una segunda sesión recibe un `BUSY` reintentable) — ambas evaluaciones de relajación concluyeron no proceder por ahora
+* `Nota` El tiempo límite de sesión se mantiene en 30 segundos por defecto / tope duro de 120 segundos, y la concurrencia se mantiene en una sesión activa (una segunda sesión recibe un `BUSY` reintentable) - ambas evaluaciones de relajación concluyeron no proceder por ahora
 * `Nota` Evaluación de actualización de ECJ: las versiones recientes (3.42/3.46) no pueden ejecutarse en Android, así que la línea publicada sigue fijada en ECJ 3.26.0 y Java 8
 * `Novedad` Añadidos los paquetes de código multiarchivo (Protocol 1.6): una petición puede enviar un archivo canónico de 2 a 32 ficheros `.java` cuyas rutas deben coincidir exactamente con sus declaraciones `package`; el cruce de rutas, las entradas comprimidas, los enlaces simbólicos y los duplicados se rechazan todos
 * `Novedad` Apertura de extremo a extremo de nombres de clase de entrada arbitrarios: los llamadores pueden elegir explícitamente un nombre simple ASCII (el predeterminado sigue siendo `Main`), con el nuevo ejemplo de entrada no predeterminada `arbitrary-entry.java`

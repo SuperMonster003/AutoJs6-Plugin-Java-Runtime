@@ -15,7 +15,7 @@
 
 ###### 2026/08/27
 
-* `Nota` El tiempo límite de sesión se mantiene en 30 segundos por defecto / tope duro de 120 segundos, y la concurrencia se mantiene en una sesión activa (una segunda sesión recibe un `BUSY` reintentable) — ambas evaluaciones de relajación concluyeron no proceder por ahora
+* `Nota` El tiempo límite de sesión se mantiene en 30 segundos por defecto / tope duro de 120 segundos, y la concurrencia se mantiene en una sesión activa (una segunda sesión recibe un `BUSY` reintentable) - ambas evaluaciones de relajación concluyeron no proceder por ahora
 * `Nota` Evaluación de actualización de ECJ: las versiones recientes (3.42/3.46) no pueden ejecutarse en Android, así que la línea publicada sigue fijada en ECJ 3.26.0 y Java 8
 * `Novedad` Añadidos los paquetes de código multiarchivo (Protocol 1.6): una petición puede enviar un archivo canónico de 2 a 32 ficheros `.java` cuyas rutas deben coincidir exactamente con sus declaraciones `package`; el cruce de rutas, las entradas comprimidas, los enlaces simbólicos y los duplicados se rechazan todos
 * `Novedad` Apertura de extremo a extremo de nombres de clase de entrada arbitrarios: los llamadores pueden elegir explícitamente un nombre simple ASCII (el predeterminado sigue siendo `Main`), con el nuevo ejemplo de entrada no predeterminada `arbitrary-entry.java`
@@ -50,7 +50,7 @@
 
 * `Nota` En Android 10 y posteriores, AutoJs6 debe estar en primer plano (con una Activity resumed) para las llamadas al portapapeles; las llamadas en segundo plano fallan de forma fiable antes de tocar el portapapeles del sistema
 * `Novedad` Añadidas las capacidades de portapapeles (Protocol 1.2 / Entry API 3): `clipboard().getText/setText`, con lectura y escritura como dos concesiones independientes y un tope de texto de 16 KiB
-* `Novedad` Añadidos los artefactos multi-DEX: 1–4 archivos `classesN.dex` contiguos dentro de 32 MiB en total; un ejemplo con 65.536 referencias de métodos pasa en dispositivos API 24/36 (API 26 se mantiene en DEX único por una limitación de la plataforma)
+* `Novedad` Añadidos los artefactos multi-DEX: 1-4 archivos `classesN.dex` contiguos dentro de 32 MiB en total; un ejemplo con 65.536 referencias de métodos pasa en dispositivos API 24/36 (API 26 se mantiene en DEX único por una limitación de la plataforma)
 * `Novedad` Añadido el desugaring controlado de la core library: `java.time` y `Stream.iterate` de tres argumentos / `toList` mejorados funcionan desde API 24; los métodos no admitidos fallan en compilación en lugar de hacer fallar dispositivos antiguos
 * `Novedad` Añadida la guía china «Java Context API y límites de ejecución»: cada método, la tabla de tipos de retorno, los topes de recursos y la semántica de los códigos de error
 * `Novedad` Añadida la matriz de ejemplos verificados en dispositivo (cancelación, familias de valores de retorno, errores de compilación, exceso de resultado), más los scripts de control sin conexión `scripts/verify.ps1` / `verify.sh`
@@ -65,7 +65,7 @@
 
 ###### 2026/08/25
 
-* `Nota` Primera versión hito utilizable (cubre M1–M5); verificación de host con la misma firma, autorización por capacidad, procesos worker desechables y validación fail-closed activos desde el inicio
+* `Nota` Primera versión hito utilizable (cubre M1-M5); verificación de host con la misma firma, autorización por capacidad, procesos worker desechables y validación fail-closed activos desde el inicio
 * `Novedad` Plugin independiente de compilación/ejecución de código Java establecido: ECJ 3.26.0 (Java 8) y D8 8.13.17 integrados, con compilación y ejecución en procesos separados
 * `Novedad` Implementado el perfil de código de archivo único de Protocol 1.1: análisis de la clase de entrada, diagnósticos saneados y mapeo completo de fases de fallo
 * `Novedad` Implementadas cuatro capacidades del host autorizadas individualmente: lanzamiento de aplicaciones, flujo de consola, sleep y toast

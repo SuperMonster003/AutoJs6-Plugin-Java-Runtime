@@ -167,9 +167,9 @@ The plugin is designed deny-by-default; the following restrictions are always in
 
 ###### 2026/08/27
 
-* `Hint` The session timeout stays at a 30-second default / 120-second hard cap, and concurrency stays at one active session (a second session receives a retryable `BUSY`) — both relaxation evaluations concluded not to proceed for now
+* `Hint` The session timeout stays at a 30-second default / 120-second hard cap, and concurrency stays at one active session (a second session receives a retryable `BUSY`) - both relaxation evaluations concluded not to proceed for now
 * `Hint` ECJ upgrade evaluation: newer ECJ releases (3.42/3.46) cannot run on Android, so the release line stays pinned to ECJ 3.26.0 and Java 8
-* `Feature` Multi-file source packages (Protocol 1.6): a single request may submit a canonical archive of 2–32 `.java` files whose paths must match their `package` declarations exactly; path traversal, compressed entries, symlinks, and duplicates are all rejected
+* `Feature` Multi-file source packages (Protocol 1.6): a single request may submit a canonical archive of 2-32 `.java` files whose paths must match their `package` declarations exactly; path traversal, compressed entries, symlinks, and duplicates are all rejected
 * `Feature` Opened arbitrary entry class names end to end: callers may explicitly select an ASCII entry simple name (the default remains `Main`), with the new non-default-entry sample `arbitrary-entry.java`
 * `Improvement` Confirmed Kotlin/JVM support stays with the sister plugin Kotlin Runtime; the two repositories share the frozen protocol and conformance tests without any runtime dependency
 * `Dependency` Upgraded the runtime D8/R8 from 8.13.17 to 8.13.23; compilation cache keys invalidate automatically with the toolchain version

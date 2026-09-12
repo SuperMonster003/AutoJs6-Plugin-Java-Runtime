@@ -160,14 +160,14 @@ Le plugin est conçu en refus par défaut ; les restrictions suivantes sont touj
 
 ###### 2026/09/12
 
-* `Amélioration` Réorganiser le README et l’historique des versions autour de l’utilisation, des exemples et des limites des capacités, avec une génération cohérente en dix langues à partir de sources JSON
+* `Amélioration` Réorganiser le README et l'historique des versions autour de l'utilisation, des exemples et des limites des capacités, avec une génération cohérente en dix langues à partir de sources JSON
 * `Amélioration` La vérification de compilation rejette les dépendances natives involontaires et produit un rapport JSON
 
 # v0.8.0-m9
 
 ###### 2026/08/27
 
-* `Note` Le délai de session reste à 30 secondes par défaut / plafond dur de 120 secondes, et la concurrence reste à une session active (une deuxième session reçoit un `BUSY` réessayable) — les deux évaluations d'assouplissement ont conclu de ne pas procéder pour l'instant
+* `Note` Le délai de session reste à 30 secondes par défaut / plafond dur de 120 secondes, et la concurrence reste à une session active (une deuxième session reçoit un `BUSY` réessayable) - les deux évaluations d'assouplissement ont conclu de ne pas procéder pour l'instant
 * `Note` Évaluation de la mise à niveau d'ECJ : les versions récentes (3.42/3.46) ne peuvent pas s'exécuter sur Android, la ligne publiée reste donc épinglée à ECJ 3.26.0 et Java 8
 * `Nouveauté` Ajout des paquets source multi-fichiers (Protocol 1.6) : une requête peut soumettre une archive canonique de 2 à 32 fichiers `.java` dont les chemins doivent correspondre exactement aux déclarations `package` ; traversée de chemins, entrées compressées, liens symboliques et doublons sont tous rejetés
 * `Nouveauté` Ouverture de bout en bout des noms de classe d'entrée arbitraires : les appelants peuvent choisir explicitement un nom simple ASCII (le défaut reste `Main`), avec le nouvel exemple d'entrée non défaut `arbitrary-entry.java`
