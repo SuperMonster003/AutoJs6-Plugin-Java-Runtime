@@ -12,8 +12,6 @@
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/issues"><img alt="GitHub closed issues" src="https://img.shields.io/github/issues/SuperMonster003/AutoJs6-Plugin-Java-Runtime?color=A24232&label=Issues"/></a>
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/commit/7caffea0b8d593ac3f4bf722d7b12edd78d6b94b"><img alt="Created" src="https://img.shields.io/date/1787396606?color=2e7d32&label=Created"/></a>
     <br>
-    <a href="https://developer.android.com/studio/archive"><img alt="Android Studio" src="https://img.shields.io/badge/Android%20Studio-2023.3+-B64FC8"/></a>
-    <a href="https://www.jetbrains.com/idea/download/other.html"><img alt="IntelliJ IDEA" src="https://img.shields.io/badge/IntelliJ%20IDEA-2023.3+-EE4677"/></a>
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/SuperMonster003/AutoJs6-Plugin-Java-Runtime?color=534BAE&label=License"/></a>
   </p>
 </div>
@@ -156,6 +154,13 @@ public final class Main implements AutoJsJvmEntry {
 
 ******
 
+# v0.8.1
+
+###### 2026/09/13
+
+* `修正` プラグインセンターから保護された入口を通じて新規インストールを有効化でき, メタデータはインストール済みパッケージに追従
+* `改善` ホストからの有効化, メタデータ, 多言語文書および署名済み APK の収集を共通規約に統一
+
 # v0.8.0
 
 ###### 2026/09/12
@@ -174,16 +179,9 @@ public final class Main implements AutoJsJvmEntry {
 * `改善` Kotlin/JVM サポートは姉妹プラグイン Kotlin Runtime が独立して担うことを確認. 両リポジトリは凍結プロトコルと適合性テストを共有し, 実行時依存は持ちません
 * `依存関係` ランタイム D8/R8 を 8.13.17 から 8.13.23 へ更新. コンパイルキャッシュキーはツールチェーンバージョンに連動して自動無効化
 
-# v0.7.0-m9
-
-###### 2026/08/26
-
-* `ヒント` 観測にはソース, 引数, パス, プロセス情報は一切含まれません. Release ビルドは累積キャッシュカウンタをエクスポートしません
-* `新機能` 毎回の実行が有界観測サマリー付きで終了するようになりました (Protocol 1.5): コンパイル/実行/クリーンアップの各フェーズ所要時間, リクエスト単位のキャッシュ結果, コールド/ウォーム起動, 最大 6 件のリソースサンプルを AutoJs6 コンソールが統一表示
-
 ##### さらに詳しい履歴はこちら
 
-* [CHANGELOG-ja.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/.changelog/CHANGELOG-ja.md)
+* [CHANGELOG-ja.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/assets/doc/CHANGELOG-ja.md)
 
 ******
 
@@ -203,7 +201,7 @@ Release ビルド:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-ビルドパラメータは `version.properties` に集約: 現在のバージョン 0.8.0-m9 (build 8), minSdk 24, targetSdk 36. コミット前の完全ゲートはワンショットスクリプト `scripts/verify.ps1` / `scripts/verify.sh` で実行できます (Debug/Release 単体テスト + Lint + Debug APK, 全てオフライン).
+ビルドパラメータは `version.properties` に集約: 現在のバージョン 0.8.1-m9 (build 52), minSdk 24, targetSdk 36. コミット前の完全ゲートはワンショットスクリプト `scripts/verify.ps1` / `scripts/verify.sh` で実行できます (Debug/Release 単体テスト + Lint + Debug APK, 全てオフライン).
 
 Release/debug APK はホストに受け入れられるために AutoJs6 と同一証明書での署名が必須です. ローカル署名素材はバージョン管理対象外の `sign.properties` と `app/sm003.jks` にあります.
 

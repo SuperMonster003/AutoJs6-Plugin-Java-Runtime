@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plugin_description">전용 프로세스에서 Java 소스를 컴파일하고 실행</string>
+    <string name="plugin_instruction">진입 클래스가 AutoJsJvmEntry를 구현하는 .java 소스를 실행</string>
+    <string name="plugin_name">Java Runtime</string>
+</resources>

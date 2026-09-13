@@ -12,8 +12,6 @@
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/issues"><img alt="GitHub closed issues" src="https://img.shields.io/github/issues/SuperMonster003/AutoJs6-Plugin-Java-Runtime?color=A24232&label=Issues"/></a>
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/commit/7caffea0b8d593ac3f4bf722d7b12edd78d6b94b"><img alt="Created" src="https://img.shields.io/date/1787396606?color=2e7d32&label=Created"/></a>
     <br>
-    <a href="https://developer.android.com/studio/archive"><img alt="Android Studio" src="https://img.shields.io/badge/Android%20Studio-2023.3+-B64FC8"/></a>
-    <a href="https://www.jetbrains.com/idea/download/other.html"><img alt="IntelliJ IDEA" src="https://img.shields.io/badge/IntelliJ%20IDEA-2023.3+-EE4677"/></a>
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/SuperMonster003/AutoJs6-Plugin-Java-Runtime?color=534BAE&label=License"/></a>
   </p>
 </div>
@@ -156,6 +154,13 @@ public final class Main implements AutoJsJvmEntry {
 
 ******
 
+# v0.8.1
+
+###### 2026/09/13
+
+* `إصلاح` يمكن لمركز الإضافات تنشيط المزود المثبت حديثا عبر مدخل محمي; تطابق البيانات المعروضة الحزمة المثبتة
+* `تحسين` توحيد تنشيط المضيف وبيانات الإضافة والوثائق المترجمة وتجميع إصدارات APK الموقعة وفق قواعد الإضافات المشتركة
+
 # v0.8.0
 
 ###### 2026/09/12
@@ -174,16 +179,9 @@ public final class Main implements AutoJsJvmEntry {
 * `تحسين` تأكيد بقاء دعم Kotlin/JVM لدى الإضافة الشقيقة Kotlin Runtime؛ يتشارك المستودعان البروتوكول المجمّد واختبارات المطابقة دون اعتمادية وقت تشغيل
 * `اعتمادية` ترقية D8/R8 وقت التشغيل من 8.13.17 إلى 8.13.23؛ وتُبطل مفاتيح ذاكرة الترجمة المخبأة تلقائيًا مع إصدار سلسلة الأدوات
 
-# v0.7.0-m9
-
-###### 2026/08/26
-
-* `تلميح` لا تحتوي الأرصاد أبدًا على المصدر أو الوسائط أو المسارات أو هويات العمليات؛ ولا تصدّر بنيات release عدادات ذاكرة مخبأة تراكمية
-* `ميزة` ينتهي كل تنفيذ الآن بملخص رصد محدود (Protocol 1.5): أزمنة مراحل الترجمة/التنفيذ/التنظيف، ونتيجة الذاكرة المخبأة لكل طلب، والإقلاع البارد/الدافئ، وحتى ست عينات موارد، تعرضها طرفية AutoJs6 بشكل موحّد
-
 ##### لمزيد من سجل الإصدارات، انظر
 
-* [CHANGELOG-ar.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/.changelog/CHANGELOG-ar.md)
+* [CHANGELOG-ar.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/assets/doc/CHANGELOG-ar.md)
 
 ******
 
@@ -203,7 +201,7 @@ public final class Main implements AutoJsJvmEntry {
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-تتركز معاملات البناء في `version.properties`: الإصدار الحالي 0.8.0-m9 (build 8)، minSdk 24، targetSdk 36. قبل الالتزام شغّل سكربتي البوابة `scripts/verify.ps1` / `scripts/verify.sh` (اختبارات وحدة Debug/Release + lint + APK بنسخة debug، وكل ذلك دون اتصال).
+تتركز معاملات البناء في `version.properties`: الإصدار الحالي 0.8.1-m9 (build 52)، minSdk 24، targetSdk 36. قبل الالتزام شغّل سكربتي البوابة `scripts/verify.ps1` / `scripts/verify.sh` (اختبارات وحدة Debug/Release + lint + APK بنسخة debug، وكل ذلك دون اتصال).
 
 يجب توقيع APK بنسختي release/debug بنفس شهادة AutoJs6 ليقبلها المضيف؛ وتوجد مواد التوقيع المحلية في `sign.properties` و `app/sm003.jks` المتجاهلين من نظام التحكم بالإصدارات.
 

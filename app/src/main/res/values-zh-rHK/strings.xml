@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plugin_description">在獨立程序中編譯和執行 Java 原始碼</string>
+    <string name="plugin_instruction">執行入口類別實作 AutoJsJvmEntry 的 .java 原始碼</string>
+    <string name="plugin_name">Java Runtime</string>
+</resources>
