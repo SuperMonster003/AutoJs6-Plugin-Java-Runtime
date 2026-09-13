@@ -12,8 +12,6 @@
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/issues"><img alt="GitHub closed issues" src="https://img.shields.io/github/issues/SuperMonster003/AutoJs6-Plugin-Java-Runtime?color=A24232&label=Issues"/></a>
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/commit/7caffea0b8d593ac3f4bf722d7b12edd78d6b94b"><img alt="Created" src="https://img.shields.io/date/1787396606?color=2e7d32&label=Created"/></a>
     <br>
-    <a href="https://developer.android.com/studio/archive"><img alt="Android Studio" src="https://img.shields.io/badge/Android%20Studio-2023.3+-B64FC8"/></a>
-    <a href="https://www.jetbrains.com/idea/download/other.html"><img alt="IntelliJ IDEA" src="https://img.shields.io/badge/IntelliJ%20IDEA-2023.3+-EE4677"/></a>
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/SuperMonster003/AutoJs6-Plugin-Java-Runtime?color=534BAE&label=License"/></a>
   </p>
 </div>
@@ -156,6 +154,13 @@ public final class Main implements AutoJsJvmEntry {
 
 ******
 
+# v0.8.1
+
+###### 2026/09/13
+
+* `修復` 外掛中心可透過受保護入口啟用新安裝的外掛, 顯示的中繼資料與實際安裝套件一致
+* `優化` 宿主啟用, 外掛中繼資料, 多語言文件與簽章發佈彙整遵循統一外掛規範
+
 # v0.8.0
 
 ###### 2026/09/12
@@ -174,16 +179,9 @@ public final class Main implements AutoJsJvmEntry {
 * `優化` 明確 Kotlin/JVM 支援由姊妹插件 Kotlin Runtime 獨立承擔; 兩倉共享凍結協定與一致性測試, 不建立執行相依
 * `相依` 執行時 D8/R8 升級: 8.13.17 → 8.13.23; 編譯快取鍵隨工具鏈版本自動失效
 
-# v0.7.0-m9
-
-###### 2026/08/26
-
-* `提示` 觀測資料不含原始碼, 參數, 路徑或程序身分; Release 建置不匯出累計快取計數
-* `新增` 每次執行結束後回傳有界觀測摘要 (Protocol 1.5): 編譯/執行/清理各階段耗時, 當次快取命中結果, 冷暖啟動與最多六項資源取樣, 由 AutoJs6 主控台統一顯示
-
 ##### 更多發行歷史可參閱
 
-* [CHANGELOG-zh-Hant-TW.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/.changelog/CHANGELOG-zh-Hant-TW.md)
+* [CHANGELOG-zh-Hant-TW.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/assets/doc/CHANGELOG-zh-Hant-TW.md)
 
 ******
 
@@ -203,7 +201,7 @@ Release 建置:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-建置參數集中於 `version.properties`: 目前版本 0.8.0-m9 (build 8), minSdk 24, targetSdk 36. 提交前完整門禁可執行一鍵指令碼 `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release 單元測試 + Lint + Debug APK, 全程離線).
+建置參數集中於 `version.properties`: 目前版本 0.8.1-m9 (build 52), minSdk 24, targetSdk 36. 提交前完整門禁可執行一鍵指令碼 `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release 單元測試 + Lint + Debug APK, 全程離線).
 
 Release/debug APK 必須與 AutoJs6 同憑證簽章才能被宿主接受; 本地簽章材料位於被版本控制忽略的 `sign.properties` 與 `app/sm003.jks`.
 

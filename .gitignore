@@ -12,3 +12,13 @@ releases/
 .migration-backup/
 !protocol/*.aar
 !gradle/wrapper/gradle-wrapper.jar
+
+/sign.properties
+
+/local.properties
+
+*.pre-platform-versions.bak
+
+__pycache__/
+
+/app/releases/

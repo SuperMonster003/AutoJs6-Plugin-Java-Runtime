@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plugin_description">Компилирует и выполняет код Java в отдельных процессах</string>
+    <string name="plugin_instruction">Выполняет код .java с входным классом, реализующим AutoJsJvmEntry</string>
+    <string name="plugin_name">Java Runtime</string>
+</resources>

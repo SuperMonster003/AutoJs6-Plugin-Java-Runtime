@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="plugin_description">Compile et exécute du code Java dans des processus dédiés</string>
+    <string name="plugin_instruction">Exécute le code .java dont la classe principale implémente AutoJsJvmEntry</string>
+    <string name="plugin_name">Java Runtime</string>
+</resources>

@@ -4,6 +4,13 @@
 
 ******
 
+# v0.8.1
+
+###### 2026/09/13
+
+* `Fix` The plugin center can activate a newly installed provider through a protected entry; displayed metadata follows the installed package
+* `Improvement` Host activation, plugin metadata, localized documentation and signed release collection follow the common plugin conventions
+
 # v0.8.0
 
 ###### 2026/09/12

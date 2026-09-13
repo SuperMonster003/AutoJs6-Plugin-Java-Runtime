@@ -12,8 +12,6 @@
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/issues"><img alt="GitHub closed issues" src="https://img.shields.io/github/issues/SuperMonster003/AutoJs6-Plugin-Java-Runtime?color=A24232&label=Issues"/></a>
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/commit/7caffea0b8d593ac3f4bf722d7b12edd78d6b94b"><img alt="Created" src="https://img.shields.io/date/1787396606?color=2e7d32&label=Created"/></a>
     <br>
-    <a href="https://developer.android.com/studio/archive"><img alt="Android Studio" src="https://img.shields.io/badge/Android%20Studio-2023.3+-B64FC8"/></a>
-    <a href="https://www.jetbrains.com/idea/download/other.html"><img alt="IntelliJ IDEA" src="https://img.shields.io/badge/IntelliJ%20IDEA-2023.3+-EE4677"/></a>
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/SuperMonster003/AutoJs6-Plugin-Java-Runtime?color=534BAE&label=License"/></a>
   </p>
 </div>
@@ -156,6 +154,13 @@ public final class Main implements AutoJsJvmEntry {
 
 ******
 
+# v0.8.1
+
+###### 2026/09/13
+
+* `修复` 插件中心可通过受保护入口激活新安装的插件, 显示的元数据与实际安装包一致
+* `优化` 宿主激活, 插件元数据, 多语言文档与签名发布归集遵循统一插件规范
+
 # v0.8.0
 
 ###### 2026/09/12
@@ -174,16 +179,9 @@ public final class Main implements AutoJsJvmEntry {
 * `优化` 明确 Kotlin/JVM 支持由姊妹插件 Kotlin Runtime 独立承担; 两仓共享冻结协议与一致性测试, 不建立运行依赖
 * `依赖` 运行时 D8/R8 升级: 8.13.17 → 8.13.23; 编译缓存键随工具链版本自动失效
 
-# v0.7.0-m9
-
-###### 2026/08/26
-
-* `提示` 观测数据不含源码, 参数, 路径或进程身份; Release 构建不导出累计缓存计数
-* `新增` 每次执行结束后回传有界观测摘要 (Protocol 1.5): 编译/执行/清理各阶段耗时, 当次缓存命中结果, 冷暖启动与最多六项资源采样, 由 AutoJs6 控制台统一展示
-
 ##### 更多发行历史可参阅
 
-* [CHANGELOG-zh-Hans.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/.changelog/CHANGELOG-zh-Hans.md)
+* [CHANGELOG-zh-Hans.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/assets/doc/CHANGELOG-zh-Hans.md)
 
 ******
 
@@ -203,7 +201,7 @@ Release 构建:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-构建参数集中于 `version.properties`: 当前版本 0.8.0-m9 (build 8), minSdk 24, targetSdk 36. 提交前完整门禁可运行一键脚本 `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release 单测 + Lint + Debug APK, 全程离线).
+构建参数集中于 `version.properties`: 当前版本 0.8.1-m9 (build 52), minSdk 24, targetSdk 36. 提交前完整门禁可运行一键脚本 `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release 单测 + Lint + Debug APK, 全程离线).
 
 Release/debug APK 必须与 AutoJs6 同证书签名才能被宿主接受; 本地签名材料位于被版本控制忽略的 `sign.properties` 与 `app/sm003.jks`.
 

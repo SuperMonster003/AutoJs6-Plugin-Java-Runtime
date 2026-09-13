@@ -12,8 +12,6 @@
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/issues"><img alt="GitHub closed issues" src="https://img.shields.io/github/issues/SuperMonster003/AutoJs6-Plugin-Java-Runtime?color=A24232&label=Issues"/></a>
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/commit/7caffea0b8d593ac3f4bf722d7b12edd78d6b94b"><img alt="Created" src="https://img.shields.io/date/1787396606?color=2e7d32&label=Created"/></a>
     <br>
-    <a href="https://developer.android.com/studio/archive"><img alt="Android Studio" src="https://img.shields.io/badge/Android%20Studio-2023.3+-B64FC8"/></a>
-    <a href="https://www.jetbrains.com/idea/download/other.html"><img alt="IntelliJ IDEA" src="https://img.shields.io/badge/IntelliJ%20IDEA-2023.3+-EE4677"/></a>
     <a href="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/SuperMonster003/AutoJs6-Plugin-Java-Runtime?color=534BAE&label=License"/></a>
   </p>
 </div>
@@ -156,6 +154,13 @@ El plugin está diseñado con denegación por defecto; las siguientes restriccio
 
 ******
 
+# v0.8.1
+
+###### 2026/09/13
+
+* `Corrección` El centro de complementos puede activar un proveedor recién instalado mediante una entrada protegida; los metadatos reflejan el paquete instalado
+* `Mejora` Activación del host, metadatos, documentación traducida y recopilación de APK firmados conforme a las convenciones comunes
+
 # v0.8.0
 
 ###### 2026/09/12
@@ -174,16 +179,9 @@ El plugin está diseñado con denegación por defecto; las siguientes restriccio
 * `Mejora` Confirmado que el soporte Kotlin/JVM queda en el plugin hermano Kotlin Runtime; los dos repositorios comparten el protocolo congelado y las pruebas de conformidad, sin dependencia de ejecución
 * `Dependencia` Actualizado el D8/R8 de ejecución de 8.13.17 a 8.13.23; las claves de la caché de compilación se invalidan automáticamente con la versión de las herramientas
 
-# v0.7.0-m9
-
-###### 2026/08/26
-
-* `Nota` Las observaciones nunca contienen código, argumentos, rutas ni identidades de procesos; los builds release no exportan contadores de caché acumulativos
-* `Novedad` Cada ejecución termina ahora con un resumen de observación acotado (Protocol 1.5): tiempos de las fases de compilación/ejecución/limpieza, resultado de la caché por petición, arranques en frío/calor y hasta seis muestras de recursos, mostrados uniformemente por la consola de AutoJs6
-
 ##### Para más historial, consulte
 
-* [CHANGELOG-es.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/.changelog/CHANGELOG-es.md)
+* [CHANGELOG-es.md](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/assets/doc/CHANGELOG-es.md)
 
 ******
 
@@ -203,7 +201,7 @@ Build release:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-Los parámetros de build se centralizan en `version.properties`: versión actual 0.8.0-m9 (build 8), minSdk 24, targetSdk 36. Antes de confirmar cambios, ejecute los scripts de control `scripts/verify.ps1` / `scripts/verify.sh` (pruebas unitarias Debug/Release + lint + APK debug, todo sin conexión).
+Los parámetros de build se centralizan en `version.properties`: versión actual 0.8.1-m9 (build 52), minSdk 24, targetSdk 36. Antes de confirmar cambios, ejecute los scripts de control `scripts/verify.ps1` / `scripts/verify.sh` (pruebas unitarias Debug/Release + lint + APK debug, todo sin conexión).
 
 Los APK release/debug deben firmarse con el mismo certificado que AutoJs6 para que el host los acepte; el material de firma local reside en `sign.properties` y `app/sm003.jks`, ignorados por el control de versiones.
 
