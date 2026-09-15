@@ -21,7 +21,7 @@
 | **P** | Provider pipeline instrumentation | ECJ、JAR、D8、DEX 校验、指定 loader 与 ART 入口执行是否在目标 API 真正成功 | 本仓 |
 | **W** | Provider 内部 compiler/worker Binder instrumentation | DEX 集是否经内部 AIDL/FD 边界交给一次性 `:worker`，且 worker 进程隔离、终态退出 | 本仓 |
 | **H** | AutoJs6 生产 Activity → provider Binder | 宿主是否完成插件发现、签名/版本选择、协议握手、生产 Binder 调用及结果回传 | **宿主仓** |
-| **R** | R2 真实文件系统审计 | API 34/36 且 targetSdk 34+ 时，落盘 DEX 是否在首个内容字节前只读，失败发布是否清理 | 本仓 |
+| **R** | R2 真实文件系统审计 | API 34+ 且 targetSdk 34+ 时，落盘 DEX 是否在首个内容字节前只读，失败发布是否清理 | 本仓 |
 
 `P` 不经过宿主 Binder，不能证明宿主发现和选择逻辑；`W` 只证明 provider 内部 Binder；`H` 的成功观测
 不能单独证明实际 class loader 类型或首字节前的文件 mode；`R` 也不证明 ART 执行。发布结论必须组合
@@ -132,7 +132,12 @@ canonical run `351eecc5-3951-4c94-adcf-2244d3fb1d56` 直接调用 production
 
 未重新序列化的输出行保存在
 [`2026-08-25-api36-r2-readonly.jsonl`](device-evidence-data/2026-08-25-api36-r2-readonly.jsonl)。
-该测试只接受 API 34 或 36，其他 API 会拒绝执行，避免把近似平台结果误记成 Android 14+ R2 证据。
+2026-08-25 取证时的测试实现只接受 API 34 或 36. 自 2026-09-15 起, Java 与 Kotlin Runtime 的测试
+均接受 API 34+, 包括 API 35、37 及后续版本; API 34 以下仍在编译和写入前拒绝执行, targetSdk 34+
+及其余取证前置条件保持不变. 适用范围依据
+[Android 14 动态代码加载规则](https://developer.android.com/about/versions/14/behavior-changes-14#safer-dynamic-code-loading).
+每次输出仍记录实际 `apiLevel`、设备 fingerprint 和 APK 摘要. 上述 API 36 历史记录及其 `R34/36`
+Gate 名称保留原样, 放开测试入口不代表其他 API 已取得设备通过证据.
 
 ### 宿主生产 Binder 事实与边界
 
@@ -206,13 +211,13 @@ adb -s <serial> shell am instrument -w -r `
 loader 分支证据。多 DEX 运行后还要读取 `JvmSourceR4MultiDex` tag，确认 direct 与 Binder 两行都存在、
 DEX 数/字节数/类数一致，且 `workerIsolated=true`。
 
-### R2 API 34/36
+### R2 API 34+
 
 先计算当前安装的宿主/provider APK SHA-256 和待测源码树清单摘要，再传入 runner；测试会在设备内独立
 重算两个 APK 摘要并验证 signer：
 
 ```powershell
-adb -s <api34-or-36-serial> shell am instrument -w -r `
+adb -s <api34-plus-serial> shell am instrument -w -r `
   -e class org.autojs.plugin.jvmsource.java.JvmSourceR2ReadOnlyDexInstrumentationTest `
   -e r2.readOnly.canonicalRunId <uuid> `
   -e r2.readOnly.sourceTreeSha256 <lowercase-source-tree-sha256> `
