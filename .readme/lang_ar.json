@@ -70,7 +70,7 @@
   "h3_build": "البناء",
   "p_build_intro": "يتضمن المستودع ملفات AAR مجمّدة للبروتوكول (`protocol/`) ويُبنى دون اتصال ودون الحاجة إلى نسخة من AutoJs6. يوصى بـ JDK 21؛ ويجب أن يوفر Android SDK المنصات 24 / 26 / 30 / 34 / 36 (تغذي المنصات الأدنى أنصال الترجمة الخاضعة للتحكم). بناء Debug",
   "text_release_build": "بناء Release",
-  "p_build_params": "تتركز معاملات البناء في `version.properties`: الإصدار الحالي {{ version_name }} (build {{ version_build }})، minSdk {{ min_api }}، targetSdk 36. قبل الالتزام شغّل سكربتي البوابة `scripts/verify.ps1` / `scripts/verify.sh` (اختبارات وحدة Debug/Release + lint + APK بنسخة debug، وكل ذلك دون اتصال)",
+  "p_build_params": "تتركز معاملات البناء في `version.properties`: الإصدار الحالي {{ version_name }} (build {{ version_build }})، minSdk {{ min_api }}، targetSdk 37. قبل الالتزام شغّل سكربتي البوابة `scripts/verify.ps1` / `scripts/verify.sh` (اختبارات وحدة Debug/Release + lint + APK بنسخة debug، وكل ذلك دون اتصال)",
   "p_build_signing": "يجب توقيع APK بنسختي release/debug بنفس شهادة AutoJs6 ليقبلها المضيف؛ وتوجد مواد التوقيع المحلية في `sign.properties` و `app/sm003.jks` المتجاهلين من نظام التحكم بالإصدارات",
   "h3_resource_layout": "بنية الموارد",
   "p_resource_layout": "يوفّر `strings.xml` توطين اسم الإضافة ووصفها؛ ويُولَّد README و CHANGELOG بواسطة `.python/generate_markdown.py` من مصادر JSON. لتعديل الوثائق حرّر مصادر JSON لا ملفات Markdown المولّدة",

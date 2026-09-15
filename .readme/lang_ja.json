@@ -70,7 +70,7 @@
   "h3_build": "ビルド",
   "p_build_intro": "リポジトリは凍結済みプロトコル AAR (`protocol/`) を同梱しており, AutoJs6 のチェックアウトなしでオフラインビルドできます. JDK 21 推奨, Android SDK には platforms 24 / 26 / 30 / 34 / 36 が必要です (低いバージョンの platform は制御されたコンパイルスタブの生成に使われます). Debug ビルド",
   "text_release_build": "Release ビルド",
-  "p_build_params": "ビルドパラメータは `version.properties` に集約: 現在のバージョン {{ version_name }} (build {{ version_build }}), minSdk {{ min_api }}, targetSdk 36. コミット前の完全ゲートはワンショットスクリプト `scripts/verify.ps1` / `scripts/verify.sh` で実行できます (Debug/Release 単体テスト + Lint + Debug APK, 全てオフライン)",
+  "p_build_params": "ビルドパラメータは `version.properties` に集約: 現在のバージョン {{ version_name }} (build {{ version_build }}), minSdk {{ min_api }}, targetSdk 37. コミット前の完全ゲートはワンショットスクリプト `scripts/verify.ps1` / `scripts/verify.sh` で実行できます (Debug/Release 単体テスト + Lint + Debug APK, 全てオフライン)",
   "p_build_signing": "Release/debug APK はホストに受け入れられるために AutoJs6 と同一証明書での署名が必須です. ローカル署名素材はバージョン管理対象外の `sign.properties` と `app/sm003.jks` にあります",
   "h3_resource_layout": "リソース構成",
   "p_resource_layout": "`strings.xml` はプラグイン名と説明のローカライズを提供します. README と CHANGELOG は `.python/generate_markdown.py` が JSON ソースから生成します. ドキュメントの変更は生成済み Markdown ではなく JSON ソースを編集してください",

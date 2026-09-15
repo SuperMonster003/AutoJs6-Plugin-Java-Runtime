@@ -154,6 +154,12 @@ public final class Main implements AutoJsJvmEntry {
 
 ******
 
+# v0.8.2
+
+###### 2026/09/15
+
+* `优化` 将 compileSdk 与 targetSdk 提升到 37 (Android 17), 插件行为不受新目标版本影响
+
 # v0.8.1
 
 ###### 2026/09/13
@@ -167,17 +173,6 @@ public final class Main implements AutoJsJvmEntry {
 
 * `优化` 围绕使用方法, 示例及能力边界整理 README 与发行历史, 并从 JSON 源统一生成十语言文档
 * `优化` 构建阶段阻止意外引入原生依赖, 并输出 JSON 校验报告
-
-# v0.8.0-m9
-
-###### 2026/08/27
-
-* `提示` 会话超时维持默认 30 秒 / 硬上限 120 秒, 并发会话维持 1 个 (第二个会话返回可重试的 `BUSY`) - 两项放开评估均判定现阶段不实施
-* `提示` ECJ 升级评估结论: 新版 ECJ (3.42/3.46) 无法在 Android 运行, 正式线继续固定 ECJ 3.26.0 与 Java 8
-* `新增` 多文件源码包 (Protocol 1.6): 单次请求可提交含 2-32 个 `.java` 文件的规范归档, 文件路径须与 `package` 声明精确对应; 路径穿越, 压缩条目, 符号链接与重复项等全部拒绝
-* `新增` 入口类简名端到端放开: 调用方可显式指定 ASCII 入口简名 (默认仍为 `Main`), 非默认入口示例 `arbitrary-entry.java`
-* `优化` 明确 Kotlin/JVM 支持由姊妹插件 Kotlin Runtime 独立承担; 两仓共享冻结协议与一致性测试, 不建立运行依赖
-* `依赖` 运行时 D8/R8 升级: 8.13.17 → 8.13.23; 编译缓存键随工具链版本自动失效
 
 ##### 更多发行历史可参阅
 
@@ -201,7 +196,7 @@ Release 构建:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-构建参数集中于 `version.properties`: 当前版本 0.8.1-m9 (build 52), minSdk 24, targetSdk 36. 提交前完整门禁可运行一键脚本 `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release 单测 + Lint + Debug APK, 全程离线).
+构建参数集中于 `version.properties`: 当前版本 0.8.2-m9 (build 56), minSdk 24, targetSdk 37. 提交前完整门禁可运行一键脚本 `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release 单测 + Lint + Debug APK, 全程离线).
 
 Release/debug APK 必须与 AutoJs6 同证书签名才能被宿主接受; 本地签名材料位于被版本控制忽略的 `sign.properties` 与 `app/sm003.jks`.
 

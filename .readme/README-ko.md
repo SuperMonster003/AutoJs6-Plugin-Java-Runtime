@@ -154,6 +154,12 @@ public final class Main implements AutoJsJvmEntry {
 
 ******
 
+# v0.8.2
+
+###### 2026/09/15
+
+* `개선` compileSdk 와 targetSdk 를 37 (Android 17) 로 올리며, 플러그인 동작은 새 대상 버전의 영향을 받지 않음
+
 # v0.8.1
 
 ###### 2026/09/13
@@ -167,17 +173,6 @@ public final class Main implements AutoJsJvmEntry {
 
 * `개선` 사용법, 예제, 기능 범위를 중심으로 README와 릴리스 이력을 정리하고 JSON 소스에서 10개 언어를 일관되게 생성
 * `개선` 빌드 시 의도하지 않은 네이티브 의존성을 거부하고 JSON 보고서 생성
-
-# v0.8.0-m9
-
-###### 2026/08/27
-
-* `힌트` 세션 타임아웃은 기본 30초 / 하드 상한 120초를 유지하고, 동시 세션도 1개를 유지합니다 (두 번째 세션은 재시도 가능한 `BUSY`를 받음) - 두 완화 평가 모두 현 단계에서는 시행하지 않기로 결론
-* `힌트` ECJ 업그레이드 평가: 최신 ECJ (3.42/3.46)는 Android에서 실행될 수 없어, 릴리스 라인은 계속 ECJ 3.26.0과 Java 8에 고정됩니다
-* `새 기능` 다중 파일 소스 패키지 추가 (Protocol 1.6): 한 요청으로 2-32개의 `.java` 파일로 이루어진 정규 아카이브를 제출할 수 있으며, 경로는 `package` 선언과 정확히 대응해야 합니다. 경로 탈출, 압축 항목, 심볼릭 링크, 중복 항목은 전부 거부됩니다
-* `새 기능` 임의 진입 클래스 이름을 엔드투엔드로 개방: 호출자가 ASCII 진입 단순명을 명시적으로 선택할 수 있습니다 (기본값은 여전히 `Main`). 비기본 진입 샘플 `arbitrary-entry.java` 추가
-* `개선` Kotlin/JVM 지원은 자매 플러그인 Kotlin Runtime이 독립적으로 담당함을 확인. 두 저장소는 동결 프로토콜과 적합성 테스트를 공유하며 실행 시 의존성은 없습니다
-* `의존성` 런타임 D8/R8을 8.13.17에서 8.13.23으로 업그레이드. 컴파일 캐시 키는 툴체인 버전에 따라 자동 무효화됩니다
 
 ##### 더 많은 릴리스 이력은 다음을 참조
 
@@ -201,7 +196,7 @@ Release 빌드:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-빌드 매개변수는 `version.properties`에 집중되어 있습니다: 현재 버전 0.8.1-m9 (build 52), minSdk 24, targetSdk 36. 커밋 전 전체 게이트는 원커맨드 스크립트 `scripts/verify.ps1` / `scripts/verify.sh`로 실행할 수 있습니다 (Debug/Release 단위 테스트 + Lint + Debug APK, 전 과정 오프라인).
+빌드 매개변수는 `version.properties`에 집중되어 있습니다: 현재 버전 0.8.2-m9 (build 56), minSdk 24, targetSdk 37. 커밋 전 전체 게이트는 원커맨드 스크립트 `scripts/verify.ps1` / `scripts/verify.sh`로 실행할 수 있습니다 (Debug/Release 단위 테스트 + Lint + Debug APK, 전 과정 오프라인).
 
 Release/debug APK는 호스트가 수락하려면 AutoJs6와 동일 인증서로 서명되어야 합니다. 로컬 서명 자료는 버전 관리에서 제외된 `sign.properties`와 `app/sm003.jks`에 있습니다.
 

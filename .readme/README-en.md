@@ -154,6 +154,12 @@ The plugin is designed deny-by-default; the following restrictions are always in
 
 ******
 
+# v0.8.2
+
+###### 2026/09/15
+
+* `Improvement` Raise compileSdk and targetSdk to 37 (Android 17); the plugin's behavior does not depend on the new target
+
 # v0.8.1
 
 ###### 2026/09/13
@@ -167,17 +173,6 @@ The plugin is designed deny-by-default; the following restrictions are always in
 
 * `Improvement` Reorganize the README and release history around usage, examples, and capability boundaries, with consistent generation for ten languages from JSON sources
 * `Improvement` Build verification rejects accidental native dependencies and produces a JSON report
-
-# v0.8.0-m9
-
-###### 2026/08/27
-
-* `Hint` The session timeout stays at a 30-second default / 120-second hard cap, and concurrency stays at one active session (a second session receives a retryable `BUSY`) - both relaxation evaluations concluded not to proceed for now
-* `Hint` ECJ upgrade evaluation: newer ECJ releases (3.42/3.46) cannot run on Android, so the release line stays pinned to ECJ 3.26.0 and Java 8
-* `Feature` Multi-file source packages (Protocol 1.6): a single request may submit a canonical archive of 2-32 `.java` files whose paths must match their `package` declarations exactly; path traversal, compressed entries, symlinks, and duplicates are all rejected
-* `Feature` Opened arbitrary entry class names end to end: callers may explicitly select an ASCII entry simple name (the default remains `Main`), with the new non-default-entry sample `arbitrary-entry.java`
-* `Improvement` Confirmed Kotlin/JVM support stays with the sister plugin Kotlin Runtime; the two repositories share the frozen protocol and conformance tests without any runtime dependency
-* `Dependency` Upgraded the runtime D8/R8 from 8.13.17 to 8.13.23; compilation cache keys invalidate automatically with the toolchain version
 
 ##### For more release history, see
 
@@ -201,7 +196,7 @@ Release build:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-Build parameters are centralized in `version.properties`: current version 0.8.1-m9 (build 52), minSdk 24, targetSdk 36. Before committing, run the one-shot gate scripts `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release unit tests + lint + debug APK, fully offline).
+Build parameters are centralized in `version.properties`: current version 0.8.2-m9 (build 56), minSdk 24, targetSdk 37. Before committing, run the one-shot gate scripts `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release unit tests + lint + debug APK, fully offline).
 
 Release/debug APKs must be signed with the same certificate as AutoJs6 to be accepted by the host; local signing material lives in the version-control-ignored `sign.properties` and `app/sm003.jks`.
 
