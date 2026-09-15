@@ -154,6 +154,12 @@ public final class Main implements AutoJsJvmEntry {
 
 ******
 
+# v0.8.2
+
+###### 2026/09/15
+
+* `改善` compileSdk と targetSdk を 37 (Android 17) に引き上げ, プラグインの動作は新しいターゲットの影響を受けない
+
 # v0.8.1
 
 ###### 2026/09/13
@@ -167,17 +173,6 @@ public final class Main implements AutoJsJvmEntry {
 
 * `改善` README とリリース履歴を使い方, サンプル, 機能の制限に沿って整理し, JSON ソースから 10 言語を一貫して生成
 * `改善` 意図しないネイティブ依存関係をビルド時に拒否し, JSON レポートを生成
-
-# v0.8.0-m9
-
-###### 2026/08/27
-
-* `ヒント` セッションタイムアウトは既定 30 秒 / ハード上限 120 秒のまま, 同時セッションも 1 のまま (2 つ目のセッションは再試行可能な `BUSY` を受け取ります) - 両緩和の評価はいずれも現段階で実施しない結論
-* `ヒント` ECJ 更新の評価: 新しい ECJ (3.42/3.46) は Android 上で動作できないため, リリースラインは引き続き ECJ 3.26.0 と Java 8 に固定
-* `新機能` 複数ファイルソースパッケージを追加 (Protocol 1.6): 1 リクエストで 2-32 個の `.java` ファイルからなる正規アーカイブを提出可能. パスは `package` 宣言と正確に対応する必要があり, パストラバーサル, 圧縮エントリ, シンボリックリンク, 重複は全て拒否
-* `新機能` 任意エントリクラス名をエンドツーエンドで開放: 呼び出し側は ASCII のエントリ単純名を明示的に選択可能 (既定は `Main` のまま). 非既定エントリの新サンプル `arbitrary-entry.java` を追加
-* `改善` Kotlin/JVM サポートは姉妹プラグイン Kotlin Runtime が独立して担うことを確認. 両リポジトリは凍結プロトコルと適合性テストを共有し, 実行時依存は持ちません
-* `依存関係` ランタイム D8/R8 を 8.13.17 から 8.13.23 へ更新. コンパイルキャッシュキーはツールチェーンバージョンに連動して自動無効化
 
 ##### さらに詳しい履歴はこちら
 
@@ -201,7 +196,7 @@ Release ビルド:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-ビルドパラメータは `version.properties` に集約: 現在のバージョン 0.8.1-m9 (build 52), minSdk 24, targetSdk 36. コミット前の完全ゲートはワンショットスクリプト `scripts/verify.ps1` / `scripts/verify.sh` で実行できます (Debug/Release 単体テスト + Lint + Debug APK, 全てオフライン).
+ビルドパラメータは `version.properties` に集約: 現在のバージョン 0.8.2-m9 (build 56), minSdk 24, targetSdk 37. コミット前の完全ゲートはワンショットスクリプト `scripts/verify.ps1` / `scripts/verify.sh` で実行できます (Debug/Release 単体テスト + Lint + Debug APK, 全てオフライン).
 
 Release/debug APK はホストに受け入れられるために AutoJs6 と同一証明書での署名が必須です. ローカル署名素材はバージョン管理対象外の `sign.properties` と `app/sm003.jks` にあります.
 

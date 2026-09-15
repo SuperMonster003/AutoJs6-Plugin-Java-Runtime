@@ -154,6 +154,12 @@ Le plugin est conçu en refus par défaut ; les restrictions suivantes sont touj
 
 ******
 
+# v0.8.2
+
+###### 2026/09/15
+
+* `Amélioration` compileSdk et targetSdk passent à 37 (Android 17) ; le comportement du plugin ne dépend pas de la nouvelle cible
+
 # v0.8.1
 
 ###### 2026/09/13
@@ -167,17 +173,6 @@ Le plugin est conçu en refus par défaut ; les restrictions suivantes sont touj
 
 * `Amélioration` Réorganiser le README et l'historique des versions autour de l'utilisation, des exemples et des limites des capacités, avec une génération cohérente en dix langues à partir de sources JSON
 * `Amélioration` La vérification de compilation rejette les dépendances natives involontaires et produit un rapport JSON
-
-# v0.8.0-m9
-
-###### 2026/08/27
-
-* `Note` Le délai de session reste à 30 secondes par défaut / plafond dur de 120 secondes, et la concurrence reste à une session active (une deuxième session reçoit un `BUSY` réessayable) - les deux évaluations d'assouplissement ont conclu de ne pas procéder pour l'instant
-* `Note` Évaluation de la mise à niveau d'ECJ : les versions récentes (3.42/3.46) ne peuvent pas s'exécuter sur Android, la ligne publiée reste donc épinglée à ECJ 3.26.0 et Java 8
-* `Nouveauté` Ajout des paquets source multi-fichiers (Protocol 1.6) : une requête peut soumettre une archive canonique de 2 à 32 fichiers `.java` dont les chemins doivent correspondre exactement aux déclarations `package` ; traversée de chemins, entrées compressées, liens symboliques et doublons sont tous rejetés
-* `Nouveauté` Ouverture de bout en bout des noms de classe d'entrée arbitraires : les appelants peuvent choisir explicitement un nom simple ASCII (le défaut reste `Main`), avec le nouvel exemple d'entrée non défaut `arbitrary-entry.java`
-* `Amélioration` Confirmation que le support Kotlin/JVM reste porté par le plugin jumeau Kotlin Runtime ; les deux dépôts partagent le protocole gelé et les tests de conformité, sans dépendance d'exécution
-* `Dépendance` Mise à niveau du D8/R8 d'exécution de 8.13.17 à 8.13.23 ; les clés du cache de compilation s'invalident automatiquement avec la version de la chaîne d'outils
 
 ##### Pour plus d'historique, voir
 
@@ -201,7 +196,7 @@ Build release:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-Les paramètres de build sont centralisés dans `version.properties` : version actuelle 0.8.1-m9 (build 52), minSdk 24, targetSdk 36. Avant de committer, lancez les scripts de contrôle `scripts/verify.ps1` / `scripts/verify.sh` (tests unitaires Debug/Release + lint + APK debug, entièrement hors ligne).
+Les paramètres de build sont centralisés dans `version.properties` : version actuelle 0.8.2-m9 (build 56), minSdk 24, targetSdk 37. Avant de committer, lancez les scripts de contrôle `scripts/verify.ps1` / `scripts/verify.sh` (tests unitaires Debug/Release + lint + APK debug, entièrement hors ligne).
 
 Les APK release/debug doivent être signés avec le même certificat qu'AutoJs6 pour être acceptés par l'hôte ; le matériel de signature local réside dans `sign.properties` et `app/sm003.jks`, ignorés par le contrôle de version.
 
