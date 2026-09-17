@@ -154,6 +154,12 @@ El plugin está diseñado con denegación por defecto; las siguientes restriccio
 
 ******
 
+# v0.8.3
+
+###### 2026/09/17
+
+* `Corrección` La limpieza de recursos y la salida del worker simultáneas ya no finalizan dos veces la misma sesión ni envían la respuesta final antes de preparar las observaciones, evitando tiempos de espera intermitentes en el host
+
 # v0.8.2
 
 ###### 2026/09/15
@@ -166,13 +172,6 @@ El plugin está diseñado con denegación por defecto; las siguientes restriccio
 
 * `Corrección` El centro de complementos puede activar un proveedor recién instalado mediante una entrada protegida; los metadatos reflejan el paquete instalado
 * `Mejora` Activación del host, metadatos, documentación traducida y recopilación de APK firmados conforme a las convenciones comunes
-
-# v0.8.0
-
-###### 2026/09/12
-
-* `Mejora` Reorganizar el README y el historial de versiones en torno al uso, los ejemplos y los límites de capacidades, con generación coherente para diez idiomas a partir de fuentes JSON
-* `Mejora` La verificación de compilación rechaza dependencias nativas accidentales y genera un informe JSON
 
 ##### Para más historial, consulte
 

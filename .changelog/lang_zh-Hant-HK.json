@@ -5,6 +5,12 @@
   "changelog_label_improvement": "優化",
   "changelog_label_dependency": "依賴",
   "$data": {
+    "v0.8.3": {
+      "released_date": "2026/09/17",
+      "fix": [
+        "資源清理與 worker 結束並行時不再重複完成同一工作階段, 避免執行觀測尚未就緒便傳送結束回呼而導致宿主間歇性逾時"
+      ]
+    },
     "v0.8.2": {
       "released_date": "2026/09/15",
       "improvement": [

@@ -4,6 +4,12 @@
 
 ******
 
+# v0.8.3
+
+###### 2026/09/17
+
+* `Corrección` La limpieza de recursos y la salida del worker simultáneas ya no finalizan dos veces la misma sesión ni envían la respuesta final antes de preparar las observaciones, evitando tiempos de espera intermitentes en el host
+
 # v0.8.2
 
 ###### 2026/09/15

@@ -10,6 +10,7 @@ internal class ProviderResourceCleanupBarrier {
 
     private var state = State.ACTIVE
     private var workerDeathObserved = false
+    private var finalizationClaimed = false
 
     @Synchronized
     fun beginCleanup(): Boolean {
@@ -18,11 +19,11 @@ internal class ProviderResourceCleanupBarrier {
         return true
     }
 
-    /** Returns true only when resource cleanup was already published as complete. */
+    /** Claims finalization once, only after resource cleanup was published as complete. */
     @Synchronized
     fun observeWorkerDeath(): Boolean {
         workerDeathObserved = true
-        return state == State.RESOURCES_READY
+        return state == State.RESOURCES_READY && claimFinalization()
     }
 
     /**
@@ -32,7 +33,14 @@ internal class ProviderResourceCleanupBarrier {
     fun resourcesClosed(waitForWorkerDeath: Boolean): Boolean {
         check(state == State.CLOSING)
         state = State.RESOURCES_READY
-        return !waitForWorkerDeath || workerDeathObserved
+        return (!waitForWorkerDeath || workerDeathObserved) && claimFinalization()
+    }
+
+    /** Called under the same monitor by both resource closure and worker-death callbacks. */
+    private fun claimFinalization(): Boolean {
+        if (finalizationClaimed) return false
+        finalizationClaimed = true
+        return true
     }
 
     @Synchronized

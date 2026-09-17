@@ -5,6 +5,12 @@
   "changelog_label_improvement": "개선",
   "changelog_label_dependency": "의존성",
   "$data": {
+    "v0.8.3": {
+      "released_date": "2026/09/17",
+      "fix": [
+        "리소스 정리와 worker 종료가 동시에 발생해도 같은 세션을 두 번 완료하지 않으며, 실행 관측 준비 전에 종료 콜백이 전송되어 발생하던 호스트의 간헐적 시간 초과를 방지"
+      ]
+    },
     "v0.8.2": {
       "released_date": "2026/09/15",
       "improvement": [

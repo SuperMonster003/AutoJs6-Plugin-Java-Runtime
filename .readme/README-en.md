@@ -154,6 +154,12 @@ The plugin is designed deny-by-default; the following restrictions are always in
 
 ******
 
+# v0.8.3
+
+###### 2026/09/17
+
+* `Fix` Concurrent resource cleanup and worker exit can no longer finalize the same session twice or deliver a terminal callback before execution observations are ready, preventing intermittent host timeouts
+
 # v0.8.2
 
 ###### 2026/09/15
@@ -166,13 +172,6 @@ The plugin is designed deny-by-default; the following restrictions are always in
 
 * `Fix` The plugin center can activate a newly installed provider through a protected entry; displayed metadata follows the installed package
 * `Improvement` Host activation, plugin metadata, localized documentation and signed release collection follow the common plugin conventions
-
-# v0.8.0
-
-###### 2026/09/12
-
-* `Improvement` Reorganize the README and release history around usage, examples, and capability boundaries, with consistent generation for ten languages from JSON sources
-* `Improvement` Build verification rejects accidental native dependencies and produces a JSON report
 
 ##### For more release history, see
 

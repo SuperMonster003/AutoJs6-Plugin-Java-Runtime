@@ -5,6 +5,12 @@
   "changelog_label_improvement": "Improvement",
   "changelog_label_dependency": "Dependency",
   "$data": {
+    "v0.8.3": {
+      "released_date": "2026/09/17",
+      "fix": [
+        "Concurrent resource cleanup and worker exit can no longer finalize the same session twice or deliver a terminal callback before execution observations are ready, preventing intermittent host timeouts"
+      ]
+    },
     "v0.8.2": {
       "released_date": "2026/09/15",
       "improvement": [

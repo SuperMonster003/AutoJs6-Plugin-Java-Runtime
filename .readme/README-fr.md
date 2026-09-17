@@ -154,6 +154,12 @@ Le plugin est conçu en refus par défaut ; les restrictions suivantes sont touj
 
 ******
 
+# v0.8.3
+
+###### 2026/09/17
+
+* `Correction` Le nettoyage des ressources et la sortie du worker simultanés ne peuvent plus finaliser deux fois la même session ni envoyer le rappel final avant que les observations soient prêtes, évitant les délais dépassés intermittents de l'hôte
+
 # v0.8.2
 
 ###### 2026/09/15
@@ -166,13 +172,6 @@ Le plugin est conçu en refus par défaut ; les restrictions suivantes sont touj
 
 * `Correction` Le centre des extensions peut activer un fournisseur nouvellement installé via une entrée protégée; les métadonnées suivent le paquet installé
 * `Amélioration` Harmonisation de l'activation, des métadonnées, de la documentation traduite et de la collecte des APK signés
-
-# v0.8.0
-
-###### 2026/09/12
-
-* `Amélioration` Réorganiser le README et l'historique des versions autour de l'utilisation, des exemples et des limites des capacités, avec une génération cohérente en dix langues à partir de sources JSON
-* `Amélioration` La vérification de compilation rejette les dépendances natives involontaires et produit un rapport JSON
 
 ##### Pour plus d'historique, voir
 
