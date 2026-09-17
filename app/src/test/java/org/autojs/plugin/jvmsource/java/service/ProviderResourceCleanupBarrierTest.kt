@@ -10,6 +10,41 @@ import java.util.concurrent.TimeUnit
 
 class ProviderResourceCleanupBarrierTest {
     @Test
+    fun workerDeathCannotOvertakeTheFinalizerPublishingTerminalObservation() {
+        val barrier = ProviderResourceCleanupBarrier()
+        val finalizerClaimed = CountDownLatch(1)
+        val allowObservationPublication = CountDownLatch(1)
+        val pool = Executors.newSingleThreadExecutor()
+        try {
+            val cleanup = pool.submit<Boolean> {
+                assertTrue(barrier.beginCleanup())
+                val claimed = barrier.resourcesClosed(waitForWorkerDeath = false)
+                finalizerClaimed.countDown()
+                check(allowObservationPublication.await(5, TimeUnit.SECONDS))
+                claimed
+            }
+            assertTrue(finalizerClaimed.await(5, TimeUnit.SECONDS))
+            // Worker death may arrive while the owner has not yet published its observation.
+            // A second finalizer would deliver the terminal callback with a missing observation.
+            assertFalse(barrier.observeWorkerDeath())
+            allowObservationPublication.countDown()
+            assertTrue(cleanup.get(5, TimeUnit.SECONDS))
+        } finally {
+            allowObservationPublication.countDown()
+            pool.shutdownNow()
+        }
+    }
+
+    @Test
+    fun workerDeathCanClaimFinalizationOnlyOnceAfterResourceClosure() {
+        val barrier = ProviderResourceCleanupBarrier()
+        assertTrue(barrier.beginCleanup())
+        assertFalse(barrier.resourcesClosed(waitForWorkerDeath = true))
+        assertTrue(barrier.observeWorkerDeath())
+        assertFalse(barrier.observeWorkerDeath())
+    }
+
+    @Test
     fun workerDeathBetweenCleanupClaimAndResourceCloseCannotFinalizeEarly() {
         val barrier = ProviderResourceCleanupBarrier()
         val cleanupClaimed = CountDownLatch(1)

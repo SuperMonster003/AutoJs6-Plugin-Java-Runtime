@@ -5,6 +5,12 @@
   "changelog_label_improvement": "优化",
   "changelog_label_dependency": "依赖",
   "$data": {
+    "v0.8.3": {
+      "released_date": "2026/09/17",
+      "fix": [
+        "资源清理与 worker 退出并发时不再重复完成同一会话, 避免执行观测尚未就绪便发送结束回调而导致宿主间歇性超时"
+      ]
+    },
     "v0.8.2": {
       "released_date": "2026/09/15",
       "improvement": [

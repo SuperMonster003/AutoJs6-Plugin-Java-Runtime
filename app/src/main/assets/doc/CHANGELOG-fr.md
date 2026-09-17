@@ -4,6 +4,12 @@
 
 ******
 
+# v0.8.3
+
+###### 2026/09/17
+
+* `Correction` Le nettoyage des ressources et la sortie du worker simultanés ne peuvent plus finaliser deux fois la même session ni envoyer le rappel final avant que les observations soient prêtes, évitant les délais dépassés intermittents de l'hôte
+
 # v0.8.2
 
 ###### 2026/09/15

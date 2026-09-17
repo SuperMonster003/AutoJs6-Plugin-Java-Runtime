@@ -4,6 +4,12 @@
 
 ******
 
+# v0.8.3
+
+###### 2026/09/17
+
+* `Fix` Concurrent resource cleanup and worker exit can no longer finalize the same session twice or deliver a terminal callback before execution observations are ready, preventing intermittent host timeouts
+
 # v0.8.2
 
 ###### 2026/09/15
