@@ -6,9 +6,10 @@
 
 # v0.8.3
 
-###### 2026/09/17
+###### 2026/09/19
 
 * `Fix` Concurrent resource cleanup and worker exit can no longer finalize the same session twice or deliver a terminal callback before execution observations are ready, preventing intermittent host timeouts
+* `Fix` SDK XML v4 parsing warnings with AGP 9.1 and APK native alignment checks incorrectly triggered by JVM unit-test assembly tasks, using shared build plugins 1.8.3
 
 # v0.8.2
 

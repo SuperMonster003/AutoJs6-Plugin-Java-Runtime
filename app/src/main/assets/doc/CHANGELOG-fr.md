@@ -6,9 +6,10 @@
 
 # v0.8.3
 
-###### 2026/09/17
+###### 2026/09/19
 
 * `Correction` Le nettoyage des ressources et la sortie du worker simultanés ne peuvent plus finaliser deux fois la même session ni envoyer le rappel final avant que les observations soient prêtes, évitant les délais dépassés intermittents de l'hôte
+* `Correction` Avertissements de lecture SDK XML v4 avec AGP 9.1 et contrôles d'alignement natif des APK déclenchés par erreur lors de l'assemblage des tests unitaires JVM, avec les plugins de compilation partagés 1.8.3
 
 # v0.8.2
 
