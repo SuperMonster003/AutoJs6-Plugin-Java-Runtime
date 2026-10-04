@@ -82,5 +82,6 @@
   "text_link_context_api": "Java Context API et limites d'exécution (méthodes/plafonds/codes d'erreur)",
   "text_link_samples": "Répertoire d'exemples",
   "text_link_roadmap": "Feuille de route (avec les registres de vérification par jalon)",
-  "text_link_third_party": "Mentions tierces"
+  "text_link_third_party": "Mentions tierces",
+  "p_icon_artwork": "Le [dessin original]({{ icon_source_url }}) est fourni par le responsable du projet. `.icons/recipe.json` conserve les réglages; utilisez `python .python/generate_icon_studio.py --check` pour vérifier la recette et les ressources."
 }

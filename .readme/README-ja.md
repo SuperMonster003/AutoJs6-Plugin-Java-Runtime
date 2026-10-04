@@ -2,7 +2,10 @@
 
 <div align="center">
   <p>
-    <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-java-runtime-ic-launcher" border="0" width="128" />
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap-night/ic_launcher.png?raw=true" />
+      <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-java-runtime-ic-launcher" border="0" width="128" />
+    </picture>
   </p>
 
   <p>AutoJs6 向け Java 8 ソース (単一ファイル / 複数ファイルソースパッケージ) のコンパイル/実行プラグイン</p>
@@ -154,6 +157,12 @@ public final class Main implements AutoJsJvmEntry {
 
 ******
 
+# v0.8.4
+
+###### 2026/10/04
+
+* `改善` アプリとプラグインセンターのアイコンに管理者提供の図稿を使用し, 色と比率を維持, 共通の視覚基準と透明な余白で輪郭全体を表示, Icon Studio による調整と再生成に対応
+
 # v0.8.3
 
 ###### 2026/09/19
@@ -166,13 +175,6 @@ public final class Main implements AutoJsJvmEntry {
 ###### 2026/09/15
 
 * `改善` compileSdk と targetSdk を 37 (Android 17) に引き上げ, プラグインの動作は新しいターゲットの影響を受けない
-
-# v0.8.1
-
-###### 2026/09/13
-
-* `修正` プラグインセンターから保護された入口を通じて新規インストールを有効化でき, メタデータはインストール済みパッケージに追従
-* `改善` ホストからの有効化, メタデータ, 多言語文書および署名済み APK の収集を共通規約に統一
 
 ##### さらに詳しい履歴はこちら
 
@@ -196,7 +198,7 @@ Release ビルド:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-ビルドパラメータは `version.properties` に集約: 現在のバージョン 0.8.2-m9 (build 56), minSdk 24, targetSdk 37. コミット前の完全ゲートはワンショットスクリプト `scripts/verify.ps1` / `scripts/verify.sh` で実行できます (Debug/Release 単体テスト + Lint + Debug APK, 全てオフライン).
+ビルドパラメータは `version.properties` に集約: 現在のバージョン 0.8.4-m9 (build 63), minSdk 24, targetSdk 37. コミット前の完全ゲートはワンショットスクリプト `scripts/verify.ps1` / `scripts/verify.sh` で実行できます (Debug/Release 単体テスト + Lint + Debug APK, 全てオフライン).
 
 Release/debug APK はホストに受け入れられるために AutoJs6 と同一証明書での署名が必須です. ローカル署名素材はバージョン管理対象外の `sign.properties` と `app/sm003.jks` にあります.
 
@@ -216,6 +218,8 @@ app/src/main/res/values*/strings.xml
 ```
 
 `strings.xml` はプラグイン名と説明のローカライズを提供します. README と CHANGELOG は `.python/generate_markdown.py` が JSON ソースから生成します. ドキュメントの変更は生成済み Markdown ではなく JSON ソースを編集してください.
+
+アイコンの[原稿](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/.python/icons/java-runtime.svg)は管理者から提供されました. `.icons/recipe.json` に調整値を保存し, `python .python/generate_icon_studio.py --check` でレシピとリソースの一致を確認できます.
 
 ******
 

@@ -2,7 +2,10 @@
 
 <div align="center">
   <p>
-    <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-java-runtime-ic-launcher" border="0" width="128" />
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap-night/ic_launcher.png?raw=true" />
+      <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-java-runtime-ic-launcher" border="0" width="128" />
+    </picture>
   </p>
 
   <p>Plugin de compilation et d'exécution de source Java 8 (mono-fichier / paquet source multi-fichiers) pour AutoJs6</p>
@@ -154,6 +157,12 @@ Le plugin est conçu en refus par défaut ; les restrictions suivantes sont touj
 
 ******
 
+# v0.8.4
+
+###### 2026/10/04
+
+* `Amélioration` Les icônes de l'application et du centre de plugins utilisent les images fournies par le responsable, avec leurs couleurs et proportions, des marges transparentes et une taille optique commune pour afficher toute la silhouette, avec réglage et génération dans Icon Studio
+
 # v0.8.3
 
 ###### 2026/09/19
@@ -166,13 +175,6 @@ Le plugin est conçu en refus par défaut ; les restrictions suivantes sont touj
 ###### 2026/09/15
 
 * `Amélioration` compileSdk et targetSdk passent à 37 (Android 17) ; le comportement du plugin ne dépend pas de la nouvelle cible
-
-# v0.8.1
-
-###### 2026/09/13
-
-* `Correction` Le centre des extensions peut activer un fournisseur nouvellement installé via une entrée protégée; les métadonnées suivent le paquet installé
-* `Amélioration` Harmonisation de l'activation, des métadonnées, de la documentation traduite et de la collecte des APK signés
 
 ##### Pour plus d'historique, voir
 
@@ -196,7 +198,7 @@ Build release:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-Les paramètres de build sont centralisés dans `version.properties` : version actuelle 0.8.2-m9 (build 56), minSdk 24, targetSdk 37. Avant de committer, lancez les scripts de contrôle `scripts/verify.ps1` / `scripts/verify.sh` (tests unitaires Debug/Release + lint + APK debug, entièrement hors ligne).
+Les paramètres de build sont centralisés dans `version.properties` : version actuelle 0.8.4-m9 (build 63), minSdk 24, targetSdk 37. Avant de committer, lancez les scripts de contrôle `scripts/verify.ps1` / `scripts/verify.sh` (tests unitaires Debug/Release + lint + APK debug, entièrement hors ligne).
 
 Les APK release/debug doivent être signés avec le même certificat qu'AutoJs6 pour être acceptés par l'hôte ; le matériel de signature local réside dans `sign.properties` et `app/sm003.jks`, ignorés par le contrôle de version.
 
@@ -216,6 +218,8 @@ app/src/main/res/values*/strings.xml
 ```
 
 `strings.xml` localise le nom et la description du plugin ; README et CHANGELOG sont générés par `.python/generate_markdown.py` à partir des sources JSON. Pour modifier la documentation, éditez les sources JSON plutôt que le Markdown généré.
+
+Le [dessin original](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/.python/icons/java-runtime.svg) est fourni par le responsable du projet. `.icons/recipe.json` conserve les réglages; utilisez `python .python/generate_icon_studio.py --check` pour vérifier la recette et les ressources.
 
 ******
 

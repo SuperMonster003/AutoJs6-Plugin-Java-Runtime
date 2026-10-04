@@ -4,6 +4,12 @@
 
 ******
 
+# v0.8.4
+
+###### 2026/10/04
+
+* `Amélioration` Les icônes de l'application et du centre de plugins utilisent les images fournies par le responsable, avec leurs couleurs et proportions, des marges transparentes et une taille optique commune pour afficher toute la silhouette, avec réglage et génération dans Icon Studio
+
 # v0.8.3
 
 ###### 2026/09/19
