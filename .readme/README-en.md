@@ -162,6 +162,7 @@ The plugin is designed deny-by-default; the following restrictions are always in
 ###### 2026/10/04
 
 * `Improvement` Application and Plugin Center icons use maintainer-supplied artwork, preserving colors and proportions with transparent padding and unified optical sizing to keep the complete silhouette visible, with Icon Studio adjustment and regeneration
+* `Improvement` Plugin Center icons use the sizes, positions, light and dark artwork, and circular backgrounds adjusted in Icon Studio, retaining reproducible sources and parameters
 
 # v0.8.3
 
@@ -198,7 +199,7 @@ Release build:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-Build parameters are centralized in `version.properties`: current version 0.8.4-m9 (build 63), minSdk 24, targetSdk 37. Before committing, run the one-shot gate scripts `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release unit tests + lint + debug APK, fully offline).
+Build parameters are centralized in `version.properties`: current version 0.8.4-m9 (build 64), minSdk 24, targetSdk 37. Before committing, run the one-shot gate scripts `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release unit tests + lint + debug APK, fully offline).
 
 Release/debug APKs must be signed with the same certificate as AutoJs6 to be accepted by the host; local signing material lives in the version-control-ignored `sign.properties` and `app/sm003.jks`.
 

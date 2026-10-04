@@ -162,6 +162,7 @@ El plugin está diseñado con denegación por defecto; las siguientes restriccio
 ###### 2026/10/04
 
 * `Mejora` Los iconos de la aplicación y del centro de plugins usan las imágenes del mantenedor, conservando colores y proporciones con márgenes transparentes y un tamaño óptico común para mostrar la silueta completa, con ajustes y generación en Icon Studio
+* `Mejora` Los iconos del centro de plugins usan los tamaños, posiciones, imágenes claras y oscuras y fondos circulares ajustados en Icon Studio, conservando fuentes y parámetros reproducibles
 
 # v0.8.3
 
@@ -198,7 +199,7 @@ Build release:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-Los parámetros de build se centralizan en `version.properties`: versión actual 0.8.4-m9 (build 63), minSdk 24, targetSdk 37. Antes de confirmar cambios, ejecute los scripts de control `scripts/verify.ps1` / `scripts/verify.sh` (pruebas unitarias Debug/Release + lint + APK debug, todo sin conexión).
+Los parámetros de build se centralizan en `version.properties`: versión actual 0.8.4-m9 (build 64), minSdk 24, targetSdk 37. Antes de confirmar cambios, ejecute los scripts de control `scripts/verify.ps1` / `scripts/verify.sh` (pruebas unitarias Debug/Release + lint + APK debug, todo sin conexión).
 
 Los APK release/debug deben firmarse con el mismo certificado que AutoJs6 para que el host los acepte; el material de firma local reside en `sign.properties` y `app/sm003.jks`, ignorados por el control de versiones.
 

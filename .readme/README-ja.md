@@ -162,6 +162,7 @@ public final class Main implements AutoJsJvmEntry {
 ###### 2026/10/04
 
 * `改善` アプリとプラグインセンターのアイコンに管理者提供の図稿を使用し, 色と比率を維持, 共通の視覚基準と透明な余白で輪郭全体を表示, Icon Studio による調整と再生成に対応
+* `改善` プラグインセンターのアイコンに Icon Studio で調整したサイズ, 位置, 明暗の図稿と円形背景を適用し, 再生成可能な原稿とパラメーターを保持
 
 # v0.8.3
 
@@ -198,7 +199,7 @@ Release ビルド:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-ビルドパラメータは `version.properties` に集約: 現在のバージョン 0.8.4-m9 (build 63), minSdk 24, targetSdk 37. コミット前の完全ゲートはワンショットスクリプト `scripts/verify.ps1` / `scripts/verify.sh` で実行できます (Debug/Release 単体テスト + Lint + Debug APK, 全てオフライン).
+ビルドパラメータは `version.properties` に集約: 現在のバージョン 0.8.4-m9 (build 64), minSdk 24, targetSdk 37. コミット前の完全ゲートはワンショットスクリプト `scripts/verify.ps1` / `scripts/verify.sh` で実行できます (Debug/Release 単体テスト + Lint + Debug APK, 全てオフライン).
 
 Release/debug APK はホストに受け入れられるために AutoJs6 と同一証明書での署名が必須です. ローカル署名素材はバージョン管理対象外の `sign.properties` と `app/sm003.jks` にあります.
 

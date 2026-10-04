@@ -162,6 +162,7 @@ public final class Main implements AutoJsJvmEntry {
 ###### 2026/10/04
 
 * `優化` 應用程式與外掛程式中心圖示採用維護者提供的新圖稿, 保留顏色和比例, 按統一視覺基準補充透明留白以完整顯示輪廓, 並支援 Icon Studio 調整和重建
+* `優化` 外掛程式中心圖示採用統一工作台調整後的尺寸, 位置, 明暗圖稿與圓形底色, 保留可重建原稿和參數
 
 # v0.8.3
 
@@ -198,7 +199,7 @@ Release 建置:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-建置參數集中於 `version.properties`: 目前版本 0.8.4-m9 (build 63), minSdk 24, targetSdk 37. 提交前完整門禁可執行一鍵指令碼 `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release 單元測試 + Lint + Debug APK, 全程離線).
+建置參數集中於 `version.properties`: 目前版本 0.8.4-m9 (build 64), minSdk 24, targetSdk 37. 提交前完整門禁可執行一鍵指令碼 `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release 單元測試 + Lint + Debug APK, 全程離線).
 
 Release/debug APK 必須與 AutoJs6 同憑證簽章才能被宿主接受; 本地簽章材料位於被版本控制忽略的 `sign.properties` 與 `app/sm003.jks`.
 

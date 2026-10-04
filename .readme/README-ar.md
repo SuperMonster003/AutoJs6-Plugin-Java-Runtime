@@ -162,6 +162,7 @@ public final class Main implements AutoJsJvmEntry {
 ###### 2026/10/04
 
 * `تحسين` تستخدم أيقونات التطبيق ومركز الملحقات الصور التي قدمها مسؤول المشروع مع الحفاظ على الألوان والنسب وإضافة هوامش شفافة وحجم بصري موحد لإظهار الشكل كاملا ودعم التعديل وإعادة التوليد عبر Icon Studio
+* `تحسين` تستخدم أيقونات مركز الملحقات الأحجام والمواضع والصور الفاتحة والداكنة والخلفيات الدائرية المعدلة في Icon Studio مع الاحتفاظ بالمصادر والمعلمات لإعادة إنتاجها
 
 # v0.8.3
 
@@ -198,7 +199,7 @@ public final class Main implements AutoJsJvmEntry {
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-تتركز معاملات البناء في `version.properties`: الإصدار الحالي 0.8.4-m9 (build 63)، minSdk 24، targetSdk 37. قبل الالتزام شغّل سكربتي البوابة `scripts/verify.ps1` / `scripts/verify.sh` (اختبارات وحدة Debug/Release + lint + APK بنسخة debug، وكل ذلك دون اتصال).
+تتركز معاملات البناء في `version.properties`: الإصدار الحالي 0.8.4-m9 (build 64)، minSdk 24، targetSdk 37. قبل الالتزام شغّل سكربتي البوابة `scripts/verify.ps1` / `scripts/verify.sh` (اختبارات وحدة Debug/Release + lint + APK بنسخة debug، وكل ذلك دون اتصال).
 
 يجب توقيع APK بنسختي release/debug بنفس شهادة AutoJs6 ليقبلها المضيف؛ وتوجد مواد التوقيع المحلية في `sign.properties` و `app/sm003.jks` المتجاهلين من نظام التحكم بالإصدارات.
 
