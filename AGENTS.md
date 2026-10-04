@@ -26,3 +26,9 @@ INFO `getInfo()` also enforces the configured AutoJs6 host UID. Plugin instrumen
 - Preserve the maintainer-supplied `.python/icons/java-runtime.svg` and its original bytes. Keep the colored artwork in both themes, with uniform scaling and transparent padding so the full silhouette fits the Plugin Center circle.
 - `.icons/recipe.json` owns later Icon Studio adjustments; application `ic_launcher` and dedicated `ic_plugin_center` use the same day/night outputs. Keep the portable renderer, source snapshots, generated PNGs, keep rules and icon CI together. Regenerate/check with `.python/generate_icon_studio.py`.
 - An icon replacement must not add a MAIN / LAUNCHER entry or change compiler/runtime contracts.
+
+
+## Icon Studio publication snapshot (2026-10-04)
+
+- `.icons/recipe.json` and its content-addressed original assets own the current icon geometry, tone and backgrounds. Keep the portable renderer, generated resources, keep rules and icon CI in the same change.
+- Use `.python/generate_icon_studio.py --check` for read-only reproduction checks. Optical size bands are advisory; retain canvas, transparency and safe-circle checks. Three uses neutral foregrounds and fixed #FAFAFA / #212121 surfaces; other plugins may use colored artwork and custom or transparent surfaces.
