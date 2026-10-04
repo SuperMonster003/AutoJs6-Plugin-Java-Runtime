@@ -2,7 +2,10 @@
 
 <div align="center">
   <p>
-    <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-java-runtime-ic-launcher" border="0" width="128" />
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap-night/ic_launcher.png?raw=true" />
+      <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-java-runtime-ic-launcher" border="0" width="128" />
+    </picture>
   </p>
 
   <p>إضافة لترجمة وتشغيل شيفرة Java 8 (ملف واحد / حزمة مصادر متعددة الملفات) لتطبيق AutoJs6</p>
@@ -154,6 +157,12 @@ public final class Main implements AutoJsJvmEntry {
 
 ******
 
+# v0.8.4
+
+###### 2026/10/04
+
+* `تحسين` تستخدم أيقونات التطبيق ومركز الملحقات الصور التي قدمها مسؤول المشروع مع الحفاظ على الألوان والنسب وإضافة هوامش شفافة وحجم بصري موحد لإظهار الشكل كاملا ودعم التعديل وإعادة التوليد عبر Icon Studio
+
 # v0.8.3
 
 ###### 2026/09/19
@@ -166,13 +175,6 @@ public final class Main implements AutoJsJvmEntry {
 ###### 2026/09/15
 
 * `تحسين` رفع compileSdk و targetSdk إلى 37 (Android 17)؛ لا يعتمد سلوك المكون الإضافي على الهدف الجديد
-
-# v0.8.1
-
-###### 2026/09/13
-
-* `إصلاح` يمكن لمركز الإضافات تنشيط المزود المثبت حديثا عبر مدخل محمي; تطابق البيانات المعروضة الحزمة المثبتة
-* `تحسين` توحيد تنشيط المضيف وبيانات الإضافة والوثائق المترجمة وتجميع إصدارات APK الموقعة وفق قواعد الإضافات المشتركة
 
 ##### لمزيد من سجل الإصدارات، انظر
 
@@ -196,7 +198,7 @@ public final class Main implements AutoJsJvmEntry {
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-تتركز معاملات البناء في `version.properties`: الإصدار الحالي 0.8.2-m9 (build 56)، minSdk 24، targetSdk 37. قبل الالتزام شغّل سكربتي البوابة `scripts/verify.ps1` / `scripts/verify.sh` (اختبارات وحدة Debug/Release + lint + APK بنسخة debug، وكل ذلك دون اتصال).
+تتركز معاملات البناء في `version.properties`: الإصدار الحالي 0.8.4-m9 (build 63)، minSdk 24، targetSdk 37. قبل الالتزام شغّل سكربتي البوابة `scripts/verify.ps1` / `scripts/verify.sh` (اختبارات وحدة Debug/Release + lint + APK بنسخة debug، وكل ذلك دون اتصال).
 
 يجب توقيع APK بنسختي release/debug بنفس شهادة AutoJs6 ليقبلها المضيف؛ وتوجد مواد التوقيع المحلية في `sign.properties` و `app/sm003.jks` المتجاهلين من نظام التحكم بالإصدارات.
 
@@ -216,6 +218,8 @@ app/src/main/res/values*/strings.xml
 ```
 
 يوفّر `strings.xml` توطين اسم الإضافة ووصفها؛ ويُولَّد README و CHANGELOG بواسطة `.python/generate_markdown.py` من مصادر JSON. لتعديل الوثائق حرّر مصادر JSON لا ملفات Markdown المولّدة.
+
+قدم مسؤول المشروع [الصورة الأصلية](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/.python/icons/java-runtime.svg). يحفظ `.icons/recipe.json` التعديلات ويمكن استخدام `python .python/generate_icon_studio.py --check` للتحقق من تطابق الوصفة والموارد.
 
 ******
 

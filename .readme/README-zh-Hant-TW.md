@@ -2,7 +2,10 @@
 
 <div align="center">
   <p>
-    <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-java-runtime-ic-launcher" border="0" width="128" />
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap-night/ic_launcher.png?raw=true" />
+      <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-java-runtime-ic-launcher" border="0" width="128" />
+    </picture>
   </p>
 
   <p>用於 AutoJs6 的 Java 8 原始碼 (單檔案 / 多檔案原始碼包) 編譯與執行插件</p>
@@ -154,6 +157,12 @@ public final class Main implements AutoJsJvmEntry {
 
 ******
 
+# v0.8.4
+
+###### 2026/10/04
+
+* `優化` 應用程式與外掛程式中心圖示採用維護者提供的新圖稿, 保留顏色和比例, 按統一視覺基準補充透明留白以完整顯示輪廓, 並支援 Icon Studio 調整和重建
+
 # v0.8.3
 
 ###### 2026/09/19
@@ -166,13 +175,6 @@ public final class Main implements AutoJsJvmEntry {
 ###### 2026/09/15
 
 * `優化` 將 compileSdk 與 targetSdk 提升到 37 (Android 17), 外掛程式行為不受新目標版本影響
-
-# v0.8.1
-
-###### 2026/09/13
-
-* `修復` 外掛中心可透過受保護入口啟用新安裝的外掛, 顯示的中繼資料與實際安裝套件一致
-* `優化` 宿主啟用, 外掛中繼資料, 多語言文件與簽章發佈彙整遵循統一外掛規範
 
 ##### 更多發行歷史可參閱
 
@@ -196,7 +198,7 @@ Release 建置:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-建置參數集中於 `version.properties`: 目前版本 0.8.2-m9 (build 56), minSdk 24, targetSdk 37. 提交前完整門禁可執行一鍵指令碼 `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release 單元測試 + Lint + Debug APK, 全程離線).
+建置參數集中於 `version.properties`: 目前版本 0.8.4-m9 (build 63), minSdk 24, targetSdk 37. 提交前完整門禁可執行一鍵指令碼 `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release 單元測試 + Lint + Debug APK, 全程離線).
 
 Release/debug APK 必須與 AutoJs6 同憑證簽章才能被宿主接受; 本地簽章材料位於被版本控制忽略的 `sign.properties` 與 `app/sm003.jks`.
 
@@ -216,6 +218,8 @@ app/src/main/res/values*/strings.xml
 ```
 
 `strings.xml` 提供插件名稱與描述的本地化; README 與 CHANGELOG 由 `.python/generate_markdown.py` 根據 JSON 來源檔案產生. 修改文件請編輯 JSON 來源檔案而非產生的 Markdown.
+
+圖示[原稿](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/.python/icons/java-runtime.svg)由維護者提供. `.icons/recipe.json` 儲存後續調整參數, 使用 `python .python/generate_icon_studio.py --check` 檢查配方與資源的一致性.
 
 ******
 

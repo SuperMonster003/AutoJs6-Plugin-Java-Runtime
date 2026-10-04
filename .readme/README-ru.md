@@ -2,7 +2,10 @@
 
 <div align="center">
   <p>
-    <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-java-runtime-ic-launcher" border="0" width="128" />
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap-night/ic_launcher.png?raw=true" />
+      <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-java-runtime-ic-launcher" border="0" width="128" />
+    </picture>
   </p>
 
   <p>Плагин компиляции и запуска исходного кода Java 8 (один файл / многофайловый пакет исходников) для AutoJs6</p>
@@ -154,6 +157,12 @@ public final class Main implements AutoJsJvmEntry {
 
 ******
 
+# v0.8.4
+
+###### 2026/10/04
+
+* `Улучшение` Значки приложения и центра плагинов используют изображения сопровождающего, сохраняя цвета и пропорции с прозрачными отступами и единым визуальным размером для отображения полного силуэта, с настройкой и генерацией в Icon Studio
+
 # v0.8.3
 
 ###### 2026/09/19
@@ -166,13 +175,6 @@ public final class Main implements AutoJsJvmEntry {
 ###### 2026/09/15
 
 * `Улучшение` Подняты compileSdk и targetSdk до 37 (Android 17); поведение плагина не зависит от нового целевого уровня
-
-# v0.8.1
-
-###### 2026/09/13
-
-* `Исправление` Центр плагинов может активировать новую установку через защищенный вход; метаданные соответствуют установленному пакету
-* `Улучшение` Активация из хоста, метаданные, переведенная документация и сборка подписанных APK приведены к общим правилам
 
 ##### Подробнее об истории выпусков см.
 
@@ -196,7 +198,7 @@ Release-сборка:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-Параметры сборки централизованы в `version.properties`: текущая версия 0.8.2-m9 (build 56), minSdk 24, targetSdk 37. Перед коммитом запускайте скрипты контроля `scripts/verify.ps1` / `scripts/verify.sh` (юнит-тесты Debug/Release + lint + debug-APK, полностью офлайн).
+Параметры сборки централизованы в `version.properties`: текущая версия 0.8.4-m9 (build 63), minSdk 24, targetSdk 37. Перед коммитом запускайте скрипты контроля `scripts/verify.ps1` / `scripts/verify.sh` (юнит-тесты Debug/Release + lint + debug-APK, полностью офлайн).
 
 Release/debug APK должны быть подписаны тем же сертификатом, что и AutoJs6, чтобы хост их принял; локальные материалы подписи находятся в игнорируемых системой контроля версий `sign.properties` и `app/sm003.jks`.
 
@@ -216,6 +218,8 @@ app/src/main/res/values*/strings.xml
 ```
 
 `strings.xml` локализует имя и описание плагина; README и CHANGELOG генерируются скриптом `.python/generate_markdown.py` из JSON-источников. Для изменения документации редактируйте JSON-источники, а не сгенерированный Markdown.
+
+[Исходное изображение](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/.python/icons/java-runtime.svg) предоставлено сопровождающим. `.icons/recipe.json` сохраняет настройки; команда `python .python/generate_icon_studio.py --check` проверяет соответствие рецепта ресурсам.
 
 ******
 

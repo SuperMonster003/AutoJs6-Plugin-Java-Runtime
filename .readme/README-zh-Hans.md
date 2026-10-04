@@ -2,7 +2,10 @@
 
 <div align="center">
   <p>
-    <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-java-runtime-ic-launcher" border="0" width="128" />
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap-night/ic_launcher.png?raw=true" />
+      <img src="https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/app/src/main/res/mipmap/ic_launcher.png?raw=true" alt="autojs6-plugin-java-runtime-ic-launcher" border="0" width="128" />
+    </picture>
   </p>
 
   <p>用于 AutoJs6 的 Java 8 源码 (单文件 / 多文件源码包) 编译与运行插件</p>
@@ -154,6 +157,12 @@ public final class Main implements AutoJsJvmEntry {
 
 ******
 
+# v0.8.4
+
+###### 2026/10/04
+
+* `优化` 应用与插件中心图标采用维护者提供的新图稿, 保留颜色和比例, 按统一视觉基准补充透明留白以完整显示轮廓, 并支持 Icon Studio 调整和重建
+
 # v0.8.3
 
 ###### 2026/09/19
@@ -166,13 +175,6 @@ public final class Main implements AutoJsJvmEntry {
 ###### 2026/09/15
 
 * `优化` compileSdk/targetSdk 升级至 37 (Android 17)
-
-# v0.8.1
-
-###### 2026/09/13
-
-* `修复` 新安装插件的激活及插件信息显示问题
-* `优化` 统一宿主激活流程, 插件信息及多语言文档, 并完善签名发布校验
 
 ##### 更多发行历史可参阅
 
@@ -196,7 +198,7 @@ Release 构建:
 .\gradlew.bat :app:assembleRelease --offline
 ```
 
-构建参数集中于 `version.properties`: 当前版本 0.8.2-m9 (build 56), minSdk 24, targetSdk 37. 提交前完整门禁可运行一键脚本 `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release 单测 + Lint + Debug APK, 全程离线).
+构建参数集中于 `version.properties`: 当前版本 0.8.4-m9 (build 63), minSdk 24, targetSdk 37. 提交前完整门禁可运行一键脚本 `scripts/verify.ps1` / `scripts/verify.sh` (Debug/Release 单测 + Lint + Debug APK, 全程离线).
 
 Release/debug APK 必须与 AutoJs6 同证书签名才能被宿主接受; 本地签名材料位于被版本控制忽略的 `sign.properties` 与 `app/sm003.jks`.
 
@@ -216,6 +218,8 @@ app/src/main/res/values*/strings.xml
 ```
 
 `strings.xml` 提供插件名称与描述的本地化; README 与 CHANGELOG 由 `.python/generate_markdown.py` 根据 JSON 源文件生成. 修改文档请编辑 JSON 源文件而非生成的 Markdown.
+
+图标[原稿](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/blob/main/.python/icons/java-runtime.svg)由维护者提供. `.icons/recipe.json` 保存后续调整参数, 使用 `python .python/generate_icon_studio.py --check` 检查配方与资源的一致性.
 
 ******
 
