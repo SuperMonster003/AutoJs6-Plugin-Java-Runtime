@@ -12,7 +12,6 @@ Outputs:
     .readme/README-<code>.md     -- one README per language
     README.md                    -- repository root, default language copy
     app/src/main/assets/doc/CHANGELOG-<code>.md
-    CHANGELOG.md                 -- repository root, default language copy
 
 Edit the JSON sources, never the generated markdown.
 """
@@ -241,8 +240,19 @@ def generate_changelogs(languages, changelogs):
         if TEMPLATE_PATTERN.search(output):
             raise ValueError(f"Unresolved changelog placeholder for {code}")
         write_text(ANDROID_CHANGELOG_DIR / f"CHANGELOG-{code}.md", output)
-        if code == LANGUAGE_CODE_DEFAULT:
-            write_text(ROOT / "CHANGELOG.md", output)
+
+
+def validate_root_documents(root):
+    extras = sorted(
+        path.name for path in root.iterdir()
+        if path.is_file() and path.name != "README.md"
+        and re.fullmatch(r"(?:README|CHANGELOG)(?:[._-].*)?", path.name, re.IGNORECASE)
+    )
+    if extras:
+        raise SystemExit(
+            "Unexpected root documentation: " + ", ".join(extras)
+            + ". Keep only README.md at the root; use .readme/, app/src/main/assets/doc/, or docs/."
+        )
 
 
 def main(argv=None):
@@ -250,6 +260,7 @@ def main(argv=None):
     parser.add_argument("--check", action="store_true", help="check generated content without writing")
     args = parser.parse_args(argv)
     GENERATED.clear()
+    validate_root_documents(ROOT)
     if LANGUAGE_CODE_DEFAULT not in LANGUAGE_CODES:
         raise ValueError(f"Default language code {LANGUAGE_CODE_DEFAULT!r} is not supported")
     languages, changelogs = load_languages()
