@@ -101,6 +101,8 @@ public final class Main implements AutoJsJvmEntry {
 
 يُبثّ `console().log/error` سطرًا بسطر أثناء تشغيل السكربت؛ ويُقاطَع `sleep` فورًا بإجراء الإيقاف. مزيد من الأمثلة في مجلد [samples](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/tree/main/samples): اختبار القدرات `m5-capabilities.java`، والحافظة `capability-set-2-clipboard.java`، ووسائط السكربت `script-args.java`، وحزمة المصادر متعددة الملفات `multi-file-source-package/`، والدخول غير الافتراضي `arbitrary-entry.java` وغيرها — وكلها بسجلات تحقق على أجهزة حقيقية.
 
+الإكمال في المحرر: استنادا إلى الملف `protocol/jvm-source-api.aar` المثبت في هذه الإضافة (JVM Entry API 4), تتضمن إضافة Ace Editor الأنواع `AutoJsJvmEntry` و`JvmScriptContext` وغيرها, 7 أنواع في المجموع: يعرض الإكمال طرقها الـ 17, ويحل تشخيص الترجمة هذه الأنواع. في بيئات التطوير الأخرى أضف `classes.jar` من ذلك الملف إلى classpath الترجمة.
+
 ******
 
 ### الحدود

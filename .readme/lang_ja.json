@@ -31,6 +31,7 @@
   "h3_usage": "使用例",
   "p_usage_intro": "コンソール出力, toast, 中断可能な sleep, アプリ起動の 4 つの基本能力を実演する, すぐ実行できる最小例です",
   "p_usage_note": "`console().log/error` はスクリプト実行中に一行ずつリアルタイムで転送されます. `sleep` は停止操作で即座に中断できます. その他の例は [samples]({{ samples_url }}) ディレクトリを参照: 能力スモーク `m5-capabilities.java`, クリップボード `capability-set-2-clipboard.java`, スクリプト引数 `script-args.java`, 複数ファイルソースパッケージ `multi-file-source-package/`, 非既定エントリ `arbitrary-entry.java` など. いずれも実機検証記録付きです.",
+  "p_editor_completion": "エディター補完: Ace Editor プラグインは, 本プラグインが固定した `protocol/jvm-source-api.aar` (JVM Entry API 4) に基づき `AutoJsJvmEntry`, `JvmScriptContext` など 7 個の型を内蔵します. 補完にはそれらの 17 個のメソッドが表示され, コンパイル診断もこれらの型を解決できます. 他の IDE では, その AAR 内の `classes.jar` をコンパイルクラスパスに追加してください.",
   "h3_boundaries": "機能境界",
   "p_boundaries_intro": "安全で予測可能な動作を保つため, 現行バージョンは意図的に以下の境界を維持しています",
   "boundaries": [

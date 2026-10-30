@@ -101,6 +101,8 @@ public final class Main implements AutoJsJvmEntry {
 
 `console().log/error` streams line by line while the script is running; `sleep` is promptly interrupted by a stop action. More examples live in the [samples](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/tree/main/samples) directory — capability smoke test `m5-capabilities.java`, clipboard `capability-set-2-clipboard.java`, script arguments `script-args.java`, multi-file source package `multi-file-source-package/`, non-default entry `arbitrary-entry.java`, and more — each with recorded device evidence.
 
+Editor completion: from the frozen `protocol/jvm-source-api.aar` of this plugin (JVM Entry API 4), the Ace Editor plugin bundles `AutoJsJvmEntry`, `JvmScriptContext` and the other types, 7 in all: completion lists their 17 methods, and compile diagnostics resolve these types. With other IDEs, add `classes.jar` from that AAR to the compile classpath.
+
 ******
 
 ### Boundaries

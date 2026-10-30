@@ -84,6 +84,8 @@ public final class Main implements AutoJsJvmEntry {
 
 {{ p_usage_note }}
 
+{{ p_editor_completion }}
+
 ******
 
 ### {{ h3_boundaries }}

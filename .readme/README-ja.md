@@ -101,6 +101,8 @@ public final class Main implements AutoJsJvmEntry {
 
 `console().log/error` はスクリプト実行中に一行ずつリアルタイムで転送されます. `sleep` は停止操作で即座に中断できます. その他の例は [samples](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/tree/main/samples) ディレクトリを参照: 能力スモーク `m5-capabilities.java`, クリップボード `capability-set-2-clipboard.java`, スクリプト引数 `script-args.java`, 複数ファイルソースパッケージ `multi-file-source-package/`, 非既定エントリ `arbitrary-entry.java` など. いずれも実機検証記録付きです.
 
+エディター補完: Ace Editor プラグインは, 本プラグインが固定した `protocol/jvm-source-api.aar` (JVM Entry API 4) に基づき `AutoJsJvmEntry`, `JvmScriptContext` など 7 個の型を内蔵します. 補完にはそれらの 17 個のメソッドが表示され, コンパイル診断もこれらの型を解決できます. 他の IDE では, その AAR 内の `classes.jar` をコンパイルクラスパスに追加してください.
+
 ******
 
 ### 機能境界

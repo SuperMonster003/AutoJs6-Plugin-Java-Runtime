@@ -101,6 +101,8 @@ public final class Main implements AutoJsJvmEntry {
 
 `console().log/error` 在腳本運行期間逐行即時回傳; `sleep` 可被停止操作即時中斷. 更多示例見 [samples](https://github.com/SuperMonster003/AutoJs6-Plugin-Java-Runtime/tree/main/samples) 目錄: 能力冒煙 `m5-capabilities.java`, 剪貼簿 `capability-set-2-clipboard.java`, 腳本入參 `script-args.java`, 多檔案源碼包 `multi-file-source-package/`, 非預設入口 `arbitrary-entry.java` 等, 均附真機驗證記錄.
 
+編輯器補全: Ace Editor 插件按本插件凍結的 `protocol/jvm-source-api.aar` (JVM Entry API 4) 內置 `AutoJsJvmEntry`, `JvmScriptContext` 等 7 個類型: 補全列出它們的 17 個方法, 編譯診斷也能解析這些類型. 使用其他 IDE 時, 可把該 AAR 中的 `classes.jar` 加入編譯類路徑.
+
 ******
 
 ### 能力邊界

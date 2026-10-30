@@ -31,6 +31,7 @@
   "h3_usage": "使用示例",
   "p_usage_intro": "下面是一個可直接運行的最小示例, 演示控制枱輸出、浮窗、可中斷休眠與應用啟動四項基礎能力",
   "p_usage_note": "`console().log/error` 在腳本運行期間逐行即時回傳; `sleep` 可被停止操作即時中斷. 更多示例見 [samples]({{ samples_url }}) 目錄: 能力冒煙 `m5-capabilities.java`, 剪貼簿 `capability-set-2-clipboard.java`, 腳本入參 `script-args.java`, 多檔案源碼包 `multi-file-source-package/`, 非預設入口 `arbitrary-entry.java` 等, 均附真機驗證記錄.",
+  "p_editor_completion": "編輯器補全: Ace Editor 插件按本插件凍結的 `protocol/jvm-source-api.aar` (JVM Entry API 4) 內置 `AutoJsJvmEntry`, `JvmScriptContext` 等 7 個類型: 補全列出它們的 17 個方法, 編譯診斷也能解析這些類型. 使用其他 IDE 時, 可把該 AAR 中的 `classes.jar` 加入編譯類路徑.",
   "h3_boundaries": "能力邊界",
   "p_boundaries_intro": "為保證安全與行為可預期, 目前版本刻意保持以下邊界",
   "boundaries": [
